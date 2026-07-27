@@ -1,43 +1,57 @@
 name: Update Shopify Inventory
 
-
 on:
-
   schedule:
-    - cron: "*/30 * * * *"
+   - cron: "*/5 * * * *"
 
   workflow_dispatch:
 
-
 jobs:
-
   sync:
-
     runs-on: ubuntu-latest
 
-
     steps:
+      - name: Checkout codice
+        uses: actions/checkout@v4
 
-      - uses: actions/checkout@v4
-
-
-      - uses: actions/setup-node@v4
-
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
 
+      - name: Installa dipendenze
+        run: npm install
 
-      - run: npm install
-
-
-      - run: npm run sync
-
+      - name: Esegui sync inventario
+        id: sync_step
+        continue-on-error: true
+        run: npm run sync
         env:
-          SHOPIFY_TOKEN:
-            ${{ secrets.SHOPIFY_TOKEN }}
+          SHOPIFY_CLIENT_ID: ${{ secrets.SHOPIFY_CLIENT_ID }}
+          SHOPIFY_SHOP_DOMAIN: ${{ secrets.SHOPIFY_SHOP_DOMAIN }}
+          SHOPIFY_CLIENT_SECRET: ${{ secrets.SHOPIFY_CLIENT_SECRET }}
 
-          SHOPIFY_STORE:
-            ${{ secrets.SHOPIFY_STORE }}
+      - name: Invia email di notifica
+        if: always()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.EMAIL_USER }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: "Tonishop Sync — ${{ steps.sync_step.outcome == 'success' && '✅ OK' || '❌ ERRORE' }}"
+          body: |
+            Ciao,
 
-          SHOPIFY_LOCATION:
-            ${{ secrets.SHOPIFY_LOCATION }}
+            il job di sincronizzazione inventario è stato eseguito.
+
+            📅 Data: ${{ github.event.repository.updated_at || github.run_id }}
+            🔧 Esito: ${{ steps.sync_step.outcome }}
+            🔗 Log completi: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+            ${{ steps.sync_step.outcome == 'success' && 'Tutto a posto.' || '⚠️ Controlla il log, lo script ha riportato un errore.' }}
+
+            —
+            GitHub Actions
+          to: ${{ secrets.EMAIL_TO }}
+          from: GitHub Actions <${{ secrets.EMAIL_USER }}>
