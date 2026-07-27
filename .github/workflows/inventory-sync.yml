@@ -2,8 +2,7 @@ name: Update Shopify Inventory
 
 on:
   schedule:
-   - cron: "*/5 * * * *"
-
+    - cron: "*/5 * * * *"  # ✅ 4 spazi prima di - cron
   workflow_dispatch:
 
 jobs:
@@ -45,7 +44,7 @@ jobs:
 
             il job di sincronizzazione inventario è stato eseguito.
 
-            📅 Data: ${{ github.event.repository.updated_at || github.run_id }}
+            📅 Data: ${{ github.run_id }}
             🔧 Esito: ${{ steps.sync_step.outcome }}
             🔗 Log completi: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
