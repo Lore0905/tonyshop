@@ -29,28 +29,3 @@ jobs:
           SHOPIFY_CLIENT_ID: ${{ secrets.SHOPIFY_CLIENT_ID }}
           SHOPIFY_SHOP_DOMAIN: ${{ secrets.SHOPIFY_SHOP_DOMAIN }}
           SHOPIFY_CLIENT_SECRET: ${{ secrets.SHOPIFY_CLIENT_SECRET }}
-
-      - name: Invia email di notifica
-        if: always()
-        uses: dawidd6/action-send-mail@v3
-        with:
-          server_address: smtp.gmail.com
-          server_port: 587
-          username: ${{ secrets.EMAIL_USER }}
-          password: ${{ secrets.EMAIL_PASSWORD }}
-          subject: "Tonishop Sync — ${{ steps.sync_step.outcome == 'success' && '✅ OK' || '❌ ERRORE' }}"
-          body: |
-            Ciao,
-
-            il job di sincronizzazione inventario è stato eseguito.
-
-            📅 Data: ${{ github.run_id }}
-            🔧 Esito: ${{ steps.sync_step.outcome }}
-            🔗 Log completi: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-
-            ${{ steps.sync_step.outcome == 'success' && 'Tutto a posto.' || '⚠️ Controlla il log, lo script ha riportato un errore.' }}
-
-            —
-            GitHub Actions
-          to: ${{ secrets.EMAIL_TO }}
-          from: GitHub Actions <${{ secrets.EMAIL_USER }}>
