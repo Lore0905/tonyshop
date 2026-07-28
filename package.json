@@ -1,0 +1,20 @@
+{
+  "name": "tonyshop",
+  "version": "1.0.0",
+  "description": "",
+  "main": "commons.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Lore0905/tonyshop.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Lore0905/tonyshop/issues"
+  },
+  "homepage": "https://github.com/Lore0905/tonyshop#readme"
+}
