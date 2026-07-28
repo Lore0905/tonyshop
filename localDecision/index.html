@@ -35,7 +35,7 @@
             justify-content: center;
             align-items: center;
             gap: 15px;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             flex-wrap: wrap;
         }
         
@@ -56,7 +56,6 @@
         
         .btn-save:hover { background: #1d4ed8; transform: translateY(-1px); }
         .btn-save:disabled { background: #9ca3af; cursor: not-allowed; }
-        
         .btn-save.saved { background: #059669; }
         
         .status {
@@ -70,6 +69,90 @@
         .status.warn { background: #fef3c7; color: #92400e; }
         .status.error { background: #fee2e2; color: #991b1b; }
         
+        /* ─── FILTRI ─── */
+        .filters-bar {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: flex-end;
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex: 1;
+            min-width: 180px;
+        }
+        
+        .filter-group label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #4b5563;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        
+        .filter-group select,
+        .filter-group input {
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            background: #f9fafb;
+            transition: border-color 0.2s;
+        }
+        
+        .filter-group select:focus,
+        .filter-group input:focus {
+            outline: none;
+            border-color: #2563eb;
+            background: white;
+        }
+        
+        .price-inputs {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .price-inputs input {
+            width: 100%;
+        }
+        
+        .price-inputs span {
+            color: #9ca3af;
+            font-size: 0.9rem;
+        }
+        
+        .btn-reset {
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #d1d5db;
+            padding: 10px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            height: fit-content;
+        }
+        
+        .btn-reset:hover { background: #e5e7eb; }
+        
+        .results-count {
+            width: 100%;
+            font-size: 0.85rem;
+            color: #6b7280;
+            margin-top: -5px;
+        }
+        
+        /* ─── GRIGLIA ─── */
         .grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
@@ -210,18 +293,10 @@
             letter-spacing: 0.3px;
         }
         
-        .btn-keep {
-            background: #10b981;
-            color: white;
-        }
-        
+        .btn-keep { background: #10b981; color: white; }
         .btn-keep:hover { background: #059669; }
         
-        .btn-delete {
-            background: #ef4444;
-            color: white;
-        }
-        
+        .btn-delete { background: #ef4444; color: white; }
         .btn-delete:hover { background: #dc2626; }
         .btn-delete.active { background: #6b7280; }
         
@@ -242,27 +317,47 @@
             grid-column: 1 / -1;
         }
         
-        .error-box button {
-            margin-top: 10px;
-            padding: 8px 16px;
-            background: #991b1b;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
+        .no-results {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6b7280;
+            grid-column: 1 / -1;
+            font-size: 1.1rem;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>📦 Catalogo Prodotti</h1>
-        <p class="subtitle">Dati caricati da <code>data.json</code> — clicca Elimina per marcare l'articolo</p>
+        <p class="subtitle">Dati caricati da <code>data.json</code> — usa i filtri per cercare rapidamente</p>
         
         <div class="toolbar">
             <button class="btn-save" id="btnSave" onclick="saveToFile()">
                 💾 Salva su data.json
             </button>
-            <div class="status ok" id="statusMsg">File caricato correttamente</div>
+            <div class="status ok" id="statusMsg">Caricamento in corso...</div>
+        </div>
+
+        <!-- FILTRI -->
+        <div class="filters-bar" id="filtersBar" style="display:none;">
+            <div class="filter-group">
+                <label for="filterCategory">Categoria</label>
+                <select id="filterCategory" onchange="applyFilters()">
+                    <option value="">Tutte le categorie</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label>Prezzo (IVA incl.)</label>
+                <div class="price-inputs">
+                    <input type="number" id="filterPriceMin" placeholder="Min €" min="0" step="0.01" oninput="applyFilters()">
+                    <span>—</span>
+                    <input type="number" id="filterPriceMax" placeholder="Max €" min="0" step="0.01" oninput="applyFilters()">
+                </div>
+            </div>
+            
+            <button class="btn-reset" onclick="resetFilters()">↺ Reset</button>
+            <div class="results-count" id="resultsCount"></div>
         </div>
 
         <div class="grid" id="productGrid">
@@ -272,30 +367,30 @@
 
     <script>
         let products = [];
+        let filteredProducts = [];
         let fileHandle = null;
         const STORAGE_KEY = 'product_data_cache';
-        const FILE_HANDLE_KEY = 'data_json_handle';
 
         // ─── Caricamento dati ───
         async function loadData() {
-            // 1. Prova a caricare da localStorage (se già modificato in precedenza)
             const cached = localStorage.getItem(STORAGE_KEY);
             if (cached) {
                 try {
                     products = JSON.parse(cached);
-                    renderCards();
+                    initFilters();
+                    applyFilters();
                     setStatus('Dati ripristinati da cache locale', 'ok');
                     return;
                 } catch(e) { localStorage.removeItem(STORAGE_KEY); }
             }
 
-            // 2. Prova a caricare data.json
             try {
                 const response = await fetch('data.json');
-                if (!response.ok) throw new Error('File non trovato');
+                if (!response.ok) throw new Error('HTTP ' + response.status);
                 products = await response.json();
                 saveToCache();
-                renderCards();
+                initFilters();
+                applyFilters();
                 setStatus('File data.json caricato correttamente', 'ok');
             } catch (err) {
                 console.error('Errore caricamento:', err);
@@ -304,9 +399,95 @@
                         <p>❌ Impossibile caricare <b>data.json</b></p>
                         <p style="font-size:0.9rem; margin-top:8px;">Assicurati che il file sia nella stessa cartella di questa pagina.</p>
                         <p style="font-size:0.85rem; margin-top:8px; color:#b91c1c;">Errore: ${err.message}</p>
+                        <p style="font-size:0.8rem; margin-top:12px; color:#7f1d1d;">
+                            💡 Se stai aprendo il file con doppio click, prova invece a usare un server locale.<br>
+                            Ad esempio: <code>npx serve</code> o <code>python -m http.server</code>
+                        </p>
                     </div>
                 `;
                 setStatus('Errore caricamento data.json', 'error');
+            }
+        }
+
+        // ─── Filtri ───
+        function getAllCategories() {
+            const set = new Set();
+            products.forEach(p => {
+                const cats = getCategories(p["Nomi delle categorie (x,y,z...)"]);
+                cats.forEach(c => set.add(c));
+            });
+            return Array.from(set).sort();
+        }
+
+        function getCategories(str) {
+            if (!str) return [];
+            return str.split(',').map(c => c.trim()).filter(c => c);
+        }
+
+        function initFilters() {
+            const select = document.getElementById('filterCategory');
+            const categories = getAllCategories();
+            
+            // Mantieni solo l'opzione default
+            select.innerHTML = '<option value="">Tutte le categorie</option>';
+            
+            categories.forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat;
+                opt.textContent = cat;
+                select.appendChild(opt);
+            });
+            
+            // Calcola min/max prezzi per placeholder
+            const prices = products.map(p => p["Prezzo (Tasse Incluse)"] || 0);
+            const minPrice = Math.floor(Math.min(...prices));
+            const maxPrice = Math.ceil(Math.max(...prices));
+            
+            document.getElementById('filterPriceMin').placeholder = `Min (${minPrice}€)`;
+            document.getElementById('filterPriceMax').placeholder = `Max (${maxPrice}€)`;
+            
+            document.getElementById('filtersBar').style.display = 'flex';
+        }
+
+        function applyFilters() {
+            const catFilter = document.getElementById('filterCategory').value;
+            const minPrice = parseFloat(document.getElementById('filterPriceMin').value) || 0;
+            const maxPrice = parseFloat(document.getElementById('filterPriceMax').value) || Infinity;
+
+            filteredProducts = products.filter(p => {
+                // Filtro categoria
+                if (catFilter) {
+                    const cats = getCategories(p["Nomi delle categorie (x,y,z...)"]);
+                    if (!cats.includes(catFilter)) return false;
+                }
+                
+                // Filtro prezzo
+                const price = p["Prezzo (Tasse Incluse)"] || 0;
+                if (price < minPrice || price > maxPrice) return false;
+                
+                return true;
+            });
+
+            renderCards();
+            updateResultsCount();
+        }
+
+        function resetFilters() {
+            document.getElementById('filterCategory').value = '';
+            document.getElementById('filterPriceMin').value = '';
+            document.getElementById('filterPriceMax').value = '';
+            applyFilters();
+        }
+
+        function updateResultsCount() {
+            const total = products.length;
+            const showing = filteredProducts.length;
+            const el = document.getElementById('resultsCount');
+            
+            if (showing === total) {
+                el.textContent = `Visualizzati tutti i ${total} prodotti`;
+            } else {
+                el.textContent = `Visualizzati ${showing} di ${total} prodotti`;
             }
         }
 
@@ -322,16 +503,16 @@
             }).format(price || 0);
         }
 
-        function getCategories(str) {
-            if (!str) return [];
-            return str.split(',').map(c => c.trim()).filter(c => c);
-        }
-
         function renderCards() {
             const grid = document.getElementById('productGrid');
             grid.innerHTML = '';
 
-            products.forEach(product => {
+            if (filteredProducts.length === 0) {
+                grid.innerHTML = '<div class="no-results">Nessun prodotto corrisponde ai filtri selezionati.</div>';
+                return;
+            }
+
+            filteredProducts.forEach(product => {
                 const isDeleted = product.toDelete === true;
                 const cats = getCategories(product["Nomi delle categorie (x,y,z...)"]);
                 
@@ -376,7 +557,6 @@
 
         // ─── Azioni ───
         function keepProduct(btn) {
-            // Non fa nulla sui dati, solo feedback visivo
             const original = btn.innerHTML;
             btn.innerHTML = '✓ Mantenuto';
             btn.style.background = '#059669';
@@ -397,11 +577,9 @@
             }
 
             saveToCache();
-            renderCards();
+            applyFilters(); // Rerenderizza mantenendo i filtri attivi
             
-            // Auto-salva su file se il handle è già disponibile
-            if (fileHandle || ('showSaveFilePicker' in window === false)) {
-                // Se la API non è supportata, offri download automatico
+            if (fileHandle || !('showSaveFilePicker' in window)) {
                 if (!('showSaveFilePicker' in window)) {
                     autoDownload();
                 } else if (fileHandle) {
