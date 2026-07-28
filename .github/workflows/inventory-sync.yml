@@ -22,7 +22,7 @@ jobs:
         run: npm install
 
       - name: Esegui sync inventario
-        id: sync_step
+        id: sync
         continue-on-error: true
         run: npm run sync
         env:
