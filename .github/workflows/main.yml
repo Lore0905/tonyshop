@@ -1,0 +1,29 @@
+name: Update Shopify Inventory
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"  # ogni giorno alle 9:00 italiane
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout codice
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+
+      - name: Installa dipendenze
+        run: npm install
+
+      - name: Esegui sync inventario
+        id: sync
+        continue-on-error: true
+        run: npm run sync
+        env:
+          SHOPIFY_CLIENT_ID: ${{ secrets.SHOPIFY_CLIENT_ID }}
+          SHOPIFY_SHOP_DOMAIN: ${{ secrets.SHOPIFY_SHOP_DOMAIN }}
+          SHOPIFY_CLIENT_SECRET: ${{ secrets.SHOPIFY_CLIENT_SECRET }}
