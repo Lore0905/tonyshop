@@ -2,8 +2,7 @@ name: Update Shopify Inventory
 
 on:
   schedule:
-    - cron: "0 7 * * *"  # ogni giorno alle 9:00 italiane
-  workflow_dispatch:
+    - cron: "2 * * * *"
 
 jobs:
   sync:
