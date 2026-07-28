@@ -29,3 +29,19 @@ jobs:
           SHOPIFY_CLIENT_ID: ${{ secrets.SHOPIFY_CLIENT_ID }}
           SHOPIFY_SHOP_DOMAIN: ${{ secrets.SHOPIFY_SHOP_DOMAIN }}
           SHOPIFY_CLIENT_SECRET: ${{ secrets.SHOPIFY_CLIENT_SECRET }}
+
+      - name: Notifica Telegram — SUCCESSO
+        if: steps.sync.outcome == 'success'
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d "parse_mode=Markdown" \
+            -d "text=✅ *Sync Tonishop completata*%0A%0A📦 Inventario aggiornato con successo.%0A⏰ $(date +'%d/%m %H:%M')%0A%0A[🔗 Vedi log](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+
+      - name: Notifica Telegram — ERRORE
+        if: steps.sync.outcome == 'failure'
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d "parse_mode=Markdown" \
+            -d "text=❌ *Sync Tonishop FALLITA*%0A%0A⚠️ Controlla il log per gli errori.%0A⏰ $(date +'%d/%m %H:%M')%0A%0A[🔗 Vedi log](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
