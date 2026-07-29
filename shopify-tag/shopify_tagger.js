@@ -3,8 +3,8 @@ const fs = require('fs');
 // ============================================
 // CONFIGURAZIONE
 // ============================================
-const INPUT_FILE = './shopify-tag/tag_data.json'; 
-const OUTPUT_FILE = './output-tags.json';
+const INPUT_FILE = './shopify-tag/tag_input.json'; 
+const OUTPUT_FILE = './shopify-tag/tag_output.json';
 
 // ============================================
 // KEYWORDS
@@ -315,10 +315,8 @@ try {
 
   for (const p of products) {
     const tag = classifyProduct(p);
-    results.push({
-      'Codice prodotto': p['Codice prodotto'],
-      tag: tag
-    });
+    let obj = {...p, tag};
+    results.push(obj);
     stats[tag] = (stats[tag] || 0) + 1;
   }
 

@@ -1,31 +1,105 @@
-Data questi dati che ti ho allegato mi ritorni un array di oggetti anche se me lo vuoi fare in formto json così dopo me lo scarico con questa struttura
+const fs = require('fs');
+const path = require('path');
+const commons = require('../commons');
 
-[{
-    Codice prodotto: x,
-    tag : il tag lo dvei stabilire te con la seguente logica
-}]
+// --- Configurazione ---
+const INPUT_FILE = process.argv[2] || __dirname + '/tag_output.json';
 
-🏍️ Veicoli
-   ├── Minimoto
-   ├── Minicross
-   ├── Miniquad
-   └── Quad
+/**
+ * Aggiunge un tag al prodotto se non è già presente.
+ * Ritorna l'esito dell'operazione.
+ */
+async function aggiungiTag(productId, tagsEsistenti, nuovoTag) {
+  // Evita duplicati
+  if (tagsEsistenti.includes(nuovoTag)) {
+    return { skipped: true, reason: `Tag "${nuovoTag}" già presente` };
+  }
 
-🔧 Ricambi
-   ├── Pit Bike / Cross / Motard
-   ├── Minicross
-   ├── Minimoto
-   ├── Miniquad 2T
-   ├── Quad 4T
-   ├── Gomme
-   ├── Freni
-   ├── Motori
-   └── Elettrico
+  const mutation = `
+    mutation($input: ProductInput!) {
+      productUpdate(input: $input) {
+        product {
+          id
+          tags
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }
+  `;
 
-🌿 Giardinaggio (opzionale)
-   └── Decespugliatori
+  const result = await commons.shopifyGraphQL(mutation, {
+    input: {
+      id: productId,
+      tags: [...tagsEsistenti, nuovoTag]
+    }
+  });
 
-   se pensi che faccia parte della categoria veicoli, e se pensi che faccia parte della sottocategoria Minimoto allora il tag : veicoli-Minimoto
-   altro esempio categoria Ricambi e sottocategoria Gomme allora tag = ricambi-gomme
+  return result.data?.productUpdate || { userErrors: [{ message: 'Risposta GraphQL non valida' }] };
+}
 
-per determinale il tag concentrati su nome, descrizione e Nomi delle categorie (x,y,z...)
+// --- Main ---
+
+async function main() {
+  if (!fs.existsSync(INPUT_FILE)) {
+    console.error(`❌ File non trovato: ${INPUT_FILE}`);
+    console.error('Uso: node aggiorna-tags.js [percorso-file.json]');
+    process.exit(1);
+  }
+
+  const dati = JSON.parse(fs.readFileSync(INPUT_FILE, 'utf8'));
+  console.log(`📦 Trovati ${dati.length} prodotti da processare\n`);
+
+  let aggiornati = 0;
+  let saltati = 0;
+  let errori = 0;
+
+  for (let i = 0; i < dati.length; i++) {
+    const item = dati[i];
+    const sku = item.Riferimento;
+    const tag = item.tag;
+
+    console.log(`[${i + 1}/${dati.length}] Riferimento: ${sku || 'N/D'} | Tag da aggiungere: ${tag || 'N/D'}`);
+
+    if (!sku || !tag) {
+      console.log('   ⏭️  SKIP: Riferimento o tag mancante');
+      saltati++;
+      continue;
+    }
+
+    try {
+      // Se findBySku è già in commons, puoi usare: await commons.findBySku(sku)
+      const prodotto = await commons.findBySku(sku);
+
+      if (!prodotto) {
+        console.log(`   ❌ NOT FOUND: nessun prodotto trovato per SKU "${sku}"`);
+        errori++;
+        continue;
+      }
+
+      console.log('ARRIVA');
+
+      const result = await aggiungiTag(prodotto.id, prodotto.tags || [], tag);
+
+      if (result.skipped) {
+        console.log(`   ⏭️  SKIP: ${result.reason}`);
+        saltati++;
+      } else if (result.userErrors && result.userErrors.length > 0) {
+        console.log(`   ❌ ERRORE GraphQL:`, result.userErrors);
+        errori++;
+      } else {
+        console.log(`   ✅ OK: tag "${tag}" aggiunto a "${prodotto.title}"`);
+        aggiornati++;
+      }
+    } catch (err) {
+      console.error(`   💥 EXCEPTION:`, err.message);
+      errori++;
+    }
+  }
+
+  console.log(`\n🏁 Finito. Aggiornati: ${aggiornati} | Saltati: ${saltati} | Errori: ${errori}`);
+}
+
+main().catch(console.error);
