@@ -121,7 +121,8 @@
     "Prezzo (Tasse Incluse)": 2.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi quad 4 tempi,Fanali e lampadine,Miniquad elettrici",
     "Quantità": 364,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/2/42.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/2/42.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 30,
@@ -197,7 +198,8 @@
     "Prezzo (Tasse Incluse)": 5.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi per tipologia,C.Aria",
     "Quantità": 165,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/9/49.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/9/49.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 37,
@@ -230,7 +232,8 @@
     "Prezzo (Tasse Incluse)": 24.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,Ricambi quad 4 tempi,Bobine, cablaggi e centraline,Miniquad elettrici,Bobine,Cablaggi e centraline",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/2/52.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/2/52.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 40,
@@ -340,7 +343,8 @@
     "Prezzo (Tasse Incluse)": 3.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi minimoto,Ricambi minicross,Ricambi miniquad 2 tempi,Carburatori collettori filtri,Miniquad elettrici",
     "Quantità": 199,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/6/4/64.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/6/4/64.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 51,
@@ -363,7 +367,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi minimoto,Ricambi minicross,Ricambi miniquad 2 tempi,Leve, cavi e pedaline,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 36,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/6/6/66.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/6/6/66.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 54,
@@ -634,7 +639,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi per tipologia,C.Aria",
     "Quantità": 246,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/0/1/101.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/0/1/101.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 87,
@@ -670,7 +676,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi minimoto,Ricambi minicross,Ricambi miniquad 2 tempi,Ricambi motori,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 9,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/0/5/105.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/0/5/105.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 90,
@@ -869,7 +876,8 @@
     "Prezzo (Tasse Incluse)": 229,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi quad 4 tempi,Telai e parti,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/2/6/126.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/2/6/126.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 112,
@@ -892,7 +900,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,Telai e parti,Trasmissione catena,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 9,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/5/9/8/5598.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/5/9/8/5598.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 114,
@@ -1054,7 +1063,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi per tipologia,C.Aria",
     "Quantità": 71,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/4/3/143.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/4/3/143.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 131,
@@ -1216,7 +1226,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi minicross,Replica KTM morini LEM,Ricambi motori,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 18,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/6/1/161.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/6/1/161.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 147,
@@ -1277,7 +1288,8 @@
     "Prezzo (Tasse Incluse)": 8.989999,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi minimoto,Ricambi minicross,Ricambi pit bike cross / motard / minigp,Ricambi miniquad 2 tempi,Ricambi quad 4 tempi,Ricambi motori,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 489,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/6/7/167.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/6/7/167.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 152,
@@ -1288,7 +1300,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi giardinaggio,Ricambi decespugliatori,Ricambi minimoto,Ricambi minicross,Ricambi miniquad 2 tempi,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/6/8/168.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/6/8/168.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 153,
@@ -1333,7 +1346,8 @@
     "Prezzo (Tasse Incluse)": 19.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,Plastiche selle adesivi e fanali,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/7/4/174.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/7/4/174.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 159,
@@ -1403,7 +1417,8 @@
     "Prezzo (Tasse Incluse)": 1.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi minimoto,Ricambi minicross,Ricambi miniquad 2 tempi,Trasmissione catena,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 155,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/1/9/5/4195.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/1/9/5/4195.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 169,
@@ -1651,7 +1666,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,Ricambi quad 4 tempi,Carburatori collettori filtri,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/6/206.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/6/206.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 197,
@@ -1663,7 +1679,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,Ricambi quad 4 tempi,Carburatori collettori filtri,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 61,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/7/207.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/7/207.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 198,
@@ -1730,7 +1747,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi minimoto,Ricambi minicross,Serbatoi tubi e rubinetti,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 143,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/1/3/213.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/1/3/213.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 204,
@@ -1765,7 +1783,8 @@
     "Prezzo (Tasse Incluse)": 1.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi minimoto,Ricambi minicross,Ricambi miniquad 2 tempi,Trasmissione catena,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 123,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/1/6/216.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/1/6/216.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 208,
@@ -1776,7 +1795,8 @@
     "Prezzo (Tasse Incluse)": 1.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi miniquad 2 tempi,Telai e parti,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 4,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/1/7/217.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/1/7/217.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 209,
@@ -1810,7 +1830,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,Telai e parti,Trasmissione catena,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 96,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/2/2/222.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/2/2/222.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 213,
@@ -1981,7 +2002,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,Manubri comandi e interruttori,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/3/9/239.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/3/9/239.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 234,
@@ -2059,7 +2081,8 @@
     "Prezzo (Tasse Incluse)": 2.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi minimoto,Ricambi minicross,Ricambi pit bike cross / motard / minigp,Ricambi miniquad 2 tempi,Ricambi quad 4 tempi,Carburatori collettori filtri,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 42,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/4/8/248.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/4/8/248.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 242,
@@ -2072,7 +2095,8 @@
     "Prezzo (Tasse Incluse)": 2.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,Ricambi quad 4 tempi,Trasmissione catena,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 501,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/5/0/250.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/5/0/250.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 243,
@@ -2084,7 +2108,8 @@
     "Prezzo (Tasse Incluse)": 2.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,Ricambi quad 4 tempi,Trasmissione catena,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 172,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/5/1/251.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/5/1/251.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 244,
@@ -2108,7 +2133,8 @@
     "Prezzo (Tasse Incluse)": 5.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi minimoto,Ricambi minicross,Ricambi miniquad 2 tempi,Trasmissione catena,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 138,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/5/3/253.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/5/3/253.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 246,
@@ -2120,7 +2146,8 @@
     "Prezzo (Tasse Incluse)": 5.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi minimoto,Ricambi minicross,Ricambi miniquad 2 tempi,Trasmissione catena,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/5/4/254.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/5/4/254.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 247,
@@ -2224,7 +2251,8 @@
     "Prezzo (Tasse Incluse)": 3.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi miniquad 2 tempi,Ricambi per tipologia,C.Aria",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/6/4/264.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/6/4/264.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 257,
@@ -2303,7 +2331,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi per tipologia,C.Aria",
     "Quantità": 403,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/7/2/272.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/7/2/272.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 265,
@@ -2496,7 +2525,8 @@
     "Prezzo (Tasse Incluse)": 19.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,Leve, cavi e pedaline,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/9/5/295.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/9/5/295.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 283,
@@ -2868,7 +2898,8 @@
     "Prezzo (Tasse Incluse)": 16.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,Plastiche selle adesivi e fanali,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/4/0/340.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/4/0/340.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 323,
@@ -3283,7 +3314,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,Ricambi quad 4 tempi,Bobine, cablaggi e centraline,Ricambi per tipologia,Miniquad elettrici,Bobine,Cablaggi e centraline",
     "Quantità": 21,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/9/2/392.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/9/2/392.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 371,
@@ -3466,7 +3498,8 @@
     "Prezzo (Tasse Incluse)": 6.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,Leve, cavi e pedaline,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 66,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/1/3/413.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/1/3/413.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 388,
@@ -3615,7 +3648,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,Ricambi quad 4 tempi,Carburatori collettori filtri,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 17,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/2/7/427.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/2/7/427.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 401,
@@ -3918,7 +3952,8 @@
     "Prezzo (Tasse Incluse)": 7.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi per tipologia,C.Aria",
     "Quantità": 116,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/5/5/455.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/5/5/455.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 430,
@@ -3953,7 +3988,8 @@
     "Prezzo (Tasse Incluse)": 5.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi per tipologia,C.Aria",
     "Quantità": 51,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/5/9/459.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/5/9/459.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 433,
@@ -3965,7 +4001,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi minicross,Ricambi per tipologia,Miniquad elettrici,C.Aria",
     "Quantità": 105,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/6/0/460.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/6/0/460.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 434,
@@ -3998,7 +4035,8 @@
     "Prezzo (Tasse Incluse)": 6.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi per tipologia,C.Aria",
     "Quantità": 30,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/6/3/463.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/6/3/463.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 439,
@@ -4008,7 +4046,8 @@
     "Prezzo (Tasse Incluse)": 6.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi per tipologia,C.Aria",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/6/4/464.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/6/4/464.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 440,
@@ -4336,7 +4375,8 @@
     "Prezzo (Tasse Incluse)": 19.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,Ricambi miniquad 2 tempi,Ricambi quad 4 tempi,Bobine, cablaggi e centraline,Ricambi per tipologia,Miniquad elettrici,Bobine,Cablaggi e centraline",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/0/2/502.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/0/2/502.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 474,
@@ -4358,7 +4398,8 @@
     "Prezzo (Tasse Incluse)": 19.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi quad 4 tempi,Plastiche selle adesivi e fanali,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 97,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/0/4/504.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/0/4/504.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 476,
@@ -4369,7 +4410,8 @@
     "Prezzo (Tasse Incluse)": 19.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi quad 4 tempi,Plastiche selle adesivi e fanali,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 9,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/0/5/505.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/0/5/505.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 478,
@@ -4438,7 +4480,8 @@
     "Prezzo (Tasse Incluse)": 19.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi miniquad 2 tempi,Leve, cavi e pedaline,Manubri comandi e interruttori,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 15,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/1/7/517.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/1/7/517.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 484,
@@ -4545,7 +4588,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi miniquad 2 tempi,Plastiche selle adesivi e fanali,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 21,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/2/7/527.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/2/7/527.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 493,
@@ -4556,7 +4600,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi miniquad 2 tempi,Plastiche selle adesivi e fanali,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 16,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/2/8/528.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/2/8/528.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 494,
@@ -4934,7 +4979,8 @@
     "Prezzo (Tasse Incluse)": 10.600001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,Ricambi quad 4 tempi,Trasmissione catena,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 10,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/6/7/567.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/6/7/567.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 535,
@@ -4960,7 +5006,8 @@
     "Prezzo (Tasse Incluse)": 11.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,Ricambi quad 4 tempi,Trasmissione catena,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 41,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/6/9/569.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/6/9/569.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 537,
@@ -5188,7 +5235,8 @@
     "Prezzo (Tasse Incluse)": 14.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,Ricambi quad 4 tempi,Attrezzatura e accessori,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/9/1/591.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/9/1/591.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 562,
@@ -5199,7 +5247,8 @@
     "Prezzo (Tasse Incluse)": 14.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi quad 4 tempi,Serbatoi tubi e rubinetti,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 53,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/9/2/592.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/9/2/592.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 564,
@@ -5221,7 +5270,8 @@
     "Prezzo (Tasse Incluse)": 16.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,Trasmissione catena,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 30,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/9/8/598.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/9/8/598.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 566,
@@ -5233,7 +5283,8 @@
     "Prezzo (Tasse Incluse)": 16.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,Ricambi quad 4 tempi,Trasmissione catena,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 46,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/9/9/599.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/9/9/599.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 570,
@@ -5281,7 +5332,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,Serbatoi tubi e rubinetti,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/6/0/6/606.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/6/0/6/606.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 574,
@@ -5375,7 +5427,8 @@
     "Prezzo (Tasse Incluse)": 14.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Attrezzatura e accessori,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/6/1/6/616.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/6/1/6/616.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 583,
@@ -5507,7 +5560,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,Cerchi e mozzi,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 82,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/6/3/6/636.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/6/3/6/636.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 597,
@@ -5542,7 +5596,8 @@
     "Prezzo (Tasse Incluse)": 14.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,Sospensioni ammortizzatori piastre,Telai e parti,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 27,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/6/4/2/642.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/6/4/2/642.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 600,
@@ -5555,7 +5610,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,Cerchi e mozzi,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/6/4/3/643.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/6/4/3/643.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 601,
@@ -5635,7 +5691,8 @@
     "Prezzo (Tasse Incluse)": 2.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Cerchi e mozzi,Ricambi per tipologia,C.Aria",
     "Quantità": 36,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/6/5/1/651.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/6/5/1/651.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 622,
@@ -5659,7 +5716,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,Cerchi e mozzi,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/6/5/3/653.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/6/5/3/653.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 624,
@@ -5825,7 +5883,8 @@
     "Prezzo (Tasse Incluse)": 2.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi minimoto,Ricambi per tipologia,C.Aria",
     "Quantità": 190,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/6/6/7/667.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/6/6/7/667.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 639,
@@ -6007,7 +6066,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi miniquad 2 tempi,Telai e parti,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 24,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/6/8/5/685.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/6/8/5/685.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 656,
@@ -6207,7 +6267,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi minimoto,Ricambi miniquad 2 tempi,Carburatori collettori filtri,Ricambi per tipologia",
     "Quantità": 325,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/7/0/9/709.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/7/0/9/709.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 683,
@@ -6325,7 +6386,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi per tipologia,C.Aria",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/7/2/1/721.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/7/2/1/721.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 696,
@@ -6712,7 +6774,8 @@
     "Prezzo (Tasse Incluse)": 7.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi quad 4 tempi,Plastiche selle adesivi e fanali,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 23,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/7/6/6/766.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/7/6/6/766.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 729,
@@ -6810,7 +6873,8 @@
     "Prezzo (Tasse Incluse)": 5.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi minimoto,Ricambi minicross,Ricambi miniquad 2 tempi,Trasmissione catena,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/7/7/8/778.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/7/7/8/778.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 744,
@@ -7099,7 +7163,8 @@
     "Prezzo (Tasse Incluse)": 16.385247,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi quad 4 tempi,PANTERA 250,Trasmissione catena,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 7,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/8/1/3/813.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/8/1/3/813.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 789,
@@ -7238,7 +7303,8 @@
     "Prezzo (Tasse Incluse)": 11.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi quad 4 tempi,Ricambi motori,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/8/3/4/834.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/8/3/4/834.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 807,
@@ -7307,7 +7373,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,KAYO GP1 Motard,Manubri comandi e interruttori,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 6,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/8/4/2/842.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/8/4/2/842.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 816,
@@ -7320,7 +7387,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,KAYO GP1 Motard,Manubri comandi e interruttori,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 41,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/8/4/4/844.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/8/4/4/844.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 817,
@@ -7452,7 +7520,8 @@
     "Prezzo (Tasse Incluse)": 3.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,KRZ Cross,Ricambi per tipologia,Kit, pompe e pinze freni,Miniquad elettrici,Kit,Pompe e pinze freni",
     "Quantità": 42,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/8/6/3/863.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/8/6/3/863.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 839,
@@ -7546,7 +7615,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,Ricambi quad 4 tempi,KAYO GP1 Motard,KRZ Cross,Ricambi motori,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/8/7/5/875.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/8/7/5/875.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 848,
@@ -7619,7 +7689,8 @@
     "Prezzo (Tasse Incluse)": 8.989999,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,Carburatori collettori filtri,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/8/8/2/882.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/8/8/2/882.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 855,
@@ -7849,7 +7920,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi miniquad 2 tempi,Ricambi quad 4 tempi,Manubri comandi e interruttori,Ricambi per tipologia",
     "Quantità": 25,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/9/0/8/908.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/9/0/8/908.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 882,
@@ -7972,7 +8044,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi minimoto,Ricambi minicross,Ricambi pit bike cross / motard / minigp,Manubri comandi e interruttori,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 92,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/9/2/0/920.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/9/2/0/920.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 894,
@@ -8108,7 +8181,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi veicoli elettrici,Biciclette scooter,Miniquad elettrici",
     "Quantità": 87,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/9/4/1/941.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/9/4/1/941.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 906,
@@ -8163,7 +8237,8 @@
     "Prezzo (Tasse Incluse)": 5.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi veicoli elettrici,Biciclette scooter,Miniquad elettrici",
     "Quantità": 3,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/9/4/9/949.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/9/4/9/949.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 911,
@@ -8303,7 +8378,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi veicoli elettrici,Biciclette scooter,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/9/6/3/963.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/9/6/3/963.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 926,
@@ -8314,7 +8390,8 @@
     "Prezzo (Tasse Incluse)": 11.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi veicoli elettrici,Biciclette scooter,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/9/6/4/964.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/9/6/4/964.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 927,
@@ -8361,7 +8438,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi veicoli elettrici,Biciclette scooter,Miniquad elettrici",
     "Quantità": 11,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/9/6/9/969.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/9/6/9/969.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 932,
@@ -8440,7 +8518,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi veicoli elettrici,Biciclette scooter,Miniquad elettrici",
     "Quantità": 34,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/9/7/6/976.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/9/7/6/976.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 940,
@@ -8463,7 +8542,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi veicoli elettrici,Biciclette scooter,Miniquad elettrici,C.Aria",
     "Quantità": 46,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/9/7/8/978.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/9/7/8/978.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 942,
@@ -8518,7 +8598,8 @@
     "Prezzo (Tasse Incluse)": 11.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi veicoli elettrici,Biciclette scooter,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/9/8/3/983.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/9/8/3/983.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 949,
@@ -8615,7 +8696,8 @@
     "Prezzo (Tasse Incluse)": 19.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,KRZ Cross,Plastiche selle adesivi e fanali,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 24,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/0/0/9/1009.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/0/0/9/1009.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 958,
@@ -8775,7 +8857,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,Ricambi quad 4 tempi,Carburatori collettori filtri,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 88,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/0/2/7/1027.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/0/2/7/1027.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 973,
@@ -8786,7 +8869,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,Ricambi quad 4 tempi,Carburatori collettori filtri,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 42,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/0/2/8/1028.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/0/2/8/1028.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 974,
@@ -8809,7 +8893,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,KAYO GP1 Motard,KRZ Cross,Serbatoi tubi e rubinetti,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/0/3/0/1030.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/0/3/0/1030.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 976,
@@ -8821,7 +8906,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,KAYO GP1 Motard,KRZ Cross,Serbatoi tubi e rubinetti,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 34,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/0/3/1/1031.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/0/3/1/1031.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 977,
@@ -9909,7 +9995,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,KAYO GP1 Motard,KRZ Cross,Leve, cavi e pedaline,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 265,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/1/5/3/1153.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/1/5/3/1153.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1104,
@@ -9944,7 +10031,8 @@
     "Prezzo (Tasse Incluse)": 19.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi veicoli elettrici,Biciclette scooter,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/4/3/2/4432.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/4/3/2/4432.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1108,
@@ -9977,7 +10065,8 @@
     "Prezzo (Tasse Incluse)": 1.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi quad 4 tempi,Plastiche selle adesivi e fanali,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 90,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/1/6/0/1160.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/1/6/0/1160.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1111,
@@ -10013,7 +10102,8 @@
     "Prezzo (Tasse Incluse)": 1.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi quad 4 tempi,Cerchi e mozzi,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 40,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/2/2/4/5224.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/2/2/4/5224.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1116,
@@ -10025,7 +10115,8 @@
     "Prezzo (Tasse Incluse)": 0.5,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi minimoto,Ricambi minicross,Ricambi miniquad 2 tempi,Carburatori collettori filtri,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 9,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/1/6/4/1164.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/1/6/4/1164.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1117,
@@ -10085,7 +10176,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,Ricambi quad 4 tempi,Offerte,PANTERA 250,KAYO GP1 Motard,KRZ Cross,Viper 125cc,NEW 125 SPORT,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/1/7/0/1170.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/1/7/0/1170.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1123,
@@ -10417,7 +10509,8 @@
     "Prezzo (Tasse Incluse)": 7.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,KRZ Cross,Ricambi motori,Ricambi per tipologia",
     "Quantità": 8,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/2/1/3/1213.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/2/1/3/1213.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1156,
@@ -10615,7 +10708,8 @@
     "Prezzo (Tasse Incluse)": 3.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi minicross,Replica KTM morini LEM,Ricambi motori,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/2/3/1/1231.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/2/3/1/1231.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1175,
@@ -10638,7 +10732,8 @@
     "Prezzo (Tasse Incluse)": 12.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi quad 4 tempi,NEW 125 SPORT,Plastiche selle adesivi e fanali,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/2/3/4/1234.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/2/3/4/1234.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1177,
@@ -10660,7 +10755,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi quad 4 tempi,NEW 125 SPORT,Manubri comandi e interruttori,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/2/3/6/1236.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/2/3/6/1236.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1179,
@@ -10671,7 +10767,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi quad 4 tempi,NEW 125 SPORT,Manubri comandi e interruttori,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/2/3/7/1237.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/2/3/7/1237.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1180,
@@ -10683,7 +10780,8 @@
     "Prezzo (Tasse Incluse)": 14.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,Offerte,Plastiche selle adesivi e fanali,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/2/3/8/1238.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/2/3/8/1238.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1181,
@@ -10695,7 +10793,8 @@
     "Prezzo (Tasse Incluse)": 14.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,Offerte,Plastiche selle adesivi e fanali,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/2/3/9/1239.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/2/3/9/1239.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1182,
@@ -10707,7 +10806,8 @@
     "Prezzo (Tasse Incluse)": 14.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,Offerte,Plastiche selle adesivi e fanali,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 2,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/2/4/0/1240.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/2/4/0/1240.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1183,
@@ -10839,7 +10939,8 @@
     "Prezzo (Tasse Incluse)": 7.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi minimoto,Ricambi minicross,Ricambi pit bike cross / motard / minigp,Ricambi miniquad 2 tempi,Ricambi quad 4 tempi,Carburatori collettori filtri,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/2/6/3/1263.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/2/6/3/1263.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1196,
@@ -10879,7 +10980,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,Manubri comandi e interruttori,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/2/6/8/1268.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/2/6/8/1268.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1202,
@@ -10889,7 +10991,8 @@
     "Prezzo (Tasse Incluse)": 2.5,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,Ricambi quad 4 tempi,Scarichi marmitte,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 94,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/2/6/9/1269.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/2/6/9/1269.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1203,
@@ -10901,7 +11004,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi minicross,Cerchi e mozzi,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 9,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/2/7/0/1270.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/2/7/0/1270.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1204,
@@ -10965,7 +11069,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi veicoli elettrici,Biciclette scooter,Miniquad elettrici",
     "Quantità": 29,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/2/7/7/1277.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/2/7/7/1277.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1211,
@@ -11030,7 +11135,8 @@
     "Prezzo (Tasse Incluse)": 1.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi veicoli elettrici,Biciclette scooter,Miniquad elettrici",
     "Quantità": 19,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/2/8/3/1283.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/2/8/3/1283.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1229,
@@ -11063,7 +11169,8 @@
     "Prezzo (Tasse Incluse)": 8.989999,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi quad 4 tempi,NEW 125 SPORT,Plastiche selle adesivi e fanali,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 3,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/2/8/6/1286.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/2/8/6/1286.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1236,
@@ -11129,7 +11236,8 @@
     "Prezzo (Tasse Incluse)": 5.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi per tipologia,C.Aria",
     "Quantità": 11,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/2/9/6/1296.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/2/9/6/1296.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1245,
@@ -11162,7 +11270,8 @@
     "Prezzo (Tasse Incluse)": 19.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,Plastiche selle adesivi e fanali,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 15,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/2/9/9/1299.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/2/9/9/1299.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1248,
@@ -11309,7 +11418,8 @@
     "Prezzo (Tasse Incluse)": 14.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi veicoli elettrici,Biciclette scooter,Miniquad elettrici",
     "Quantità": 878,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/1/6/4/4164.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/1/6/4/4164.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1262,
@@ -11376,7 +11486,8 @@
     "Prezzo (Tasse Incluse)": 19.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi motori,Ricambi per tipologia,RICAMBI YX 170,Miniquad elettrici",
     "Quantità": 10,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/3/3/8/1338.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/3/3/8/1338.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1268,
@@ -11869,7 +11980,8 @@
     "Prezzo (Tasse Incluse)": 2.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi minicross,Replica KTM morini LEM,Ricambi motori,Ricambi per tipologia,RICAMBI 50cc ARIA TIPO MORINI,Miniquad elettrici",
     "Quantità": 19,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/4/0/1/1401.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/4/0/1/1401.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1324,
@@ -12017,7 +12129,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi quad 4 tempi,Leve, cavi e pedaline,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 97,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/4/2/1/1421.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/4/2/1/1421.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1341,
@@ -12131,7 +12244,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi minicross,Replica KTM morini LEM,Carburatori collettori filtri,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 26,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/4/3/9/1439.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/4/3/9/1439.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1353,
@@ -12507,7 +12621,8 @@
     "Prezzo (Tasse Incluse)": 12.286885,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi quad 4 tempi,Plastiche selle adesivi e fanali,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 2,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/4/9/7/1497.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/4/9/7/1497.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1392,
@@ -12518,7 +12633,8 @@
     "Prezzo (Tasse Incluse)": 4.909836,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,Trasmissione catena,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/4/9/8/1498.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/4/9/8/1498.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1393,
@@ -12530,7 +12646,8 @@
     "Prezzo (Tasse Incluse)": 1.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi quad 4 tempi,Telai e parti,Trasmissione catena,Ricambi per tipologia",
     "Quantità": 104,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/4/9/9/1499.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/4/9/9/1499.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1394,
@@ -12645,7 +12762,8 @@
     "Prezzo (Tasse Incluse)": 19.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi minicross,Leve, cavi e pedaline,Ricambi per tipologia",
     "Quantità": 49,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/5/1/1/1511.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/5/1/1/1511.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1405,
@@ -12924,7 +13042,8 @@
     "Prezzo (Tasse Incluse)": 7.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi minicross,Replica KTM morini LEM,Plastiche selle adesivi e fanali,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 14,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/5/4/3/1543.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/5/4/3/1543.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1433,
@@ -12975,7 +13094,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi minicross,Replica KTM morini LEM,Ricambi motori,Ricambi per tipologia,RICAMBI 50cc ARIA TIPO MORINI,Ricambi 65cc liquido tipo Morini",
     "Quantità": 33,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/5/4/9/1549.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/5/4/9/1549.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1438,
@@ -13196,7 +13316,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi veicoli elettrici,Biciclette scooter,Miniquad elettrici",
     "Quantità": 83,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/5/7/2/1572.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/5/7/2/1572.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1463,
@@ -13230,7 +13351,8 @@
     "Prezzo (Tasse Incluse)": 19.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi veicoli elettrici,Biciclette scooter",
     "Quantità": 112,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/5/7/5/1575.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/5/7/5/1575.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1466,
@@ -13240,7 +13362,8 @@
     "Prezzo (Tasse Incluse)": 19.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi veicoli elettrici,Biciclette scooter,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/5/7/6/1576.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/5/7/6/1576.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1467,
@@ -13251,7 +13374,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi veicoli elettrici,Biciclette scooter,Miniquad elettrici",
     "Quantità": 393,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/5/7/7/1577.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/5/7/7/1577.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1468,
@@ -13363,7 +13487,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,Carburatori collettori filtri,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 43,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/5/9/0/1590.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/5/9/0/1590.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1480,
@@ -13607,7 +13732,8 @@
     "Prezzo (Tasse Incluse)": 3.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi minicross,Leve, cavi e pedaline,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 30,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/6/1/8/1618.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/6/1/8/1618.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1509,
@@ -13827,7 +13953,8 @@
     "Prezzo (Tasse Incluse)": 11.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi minicross,Miniquad elettrici",
     "Quantità": 11,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/6/4/2/1642.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/6/4/2/1642.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1530,
@@ -13933,7 +14060,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Manubri comandi e interruttori,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/6/5/7/1657.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/6/5/7/1657.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1543,
@@ -13987,7 +14115,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi minicross,Replica KTM morini LEM,Ricambi motori,Ricambi per tipologia,RICAMBI 50cc ARIA TIPO MORINI,Ricambi 65cc liquido tipo Morini,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/6/6/5/1665.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/6/6/5/1665.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1549,
@@ -13997,7 +14126,8 @@
     "Prezzo (Tasse Incluse)": 2.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi minicross,Replica KTM morini LEM,Ricambi motori,Ricambi per tipologia,RICAMBI 50cc ARIA TIPO MORINI,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/6/6/6/1666.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/6/6/6/1666.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1550,
@@ -14112,7 +14242,8 @@
     "Prezzo (Tasse Incluse)": 19.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi motori,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 76,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/6/8/7/1687.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/6/8/7/1687.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1571,
@@ -14162,7 +14293,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Bobine, cablaggi e centraline,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 10,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/6/9/3/1693.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/6/9/3/1693.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1576,
@@ -14302,7 +14434,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Bobine, cablaggi e centraline,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/7/0/8/1708.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/7/0/8/1708.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1592,
@@ -14526,7 +14659,8 @@
     "Prezzo (Tasse Incluse)": 2.49,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi minimoto,Ricambi minicross,Ricambi pit bike cross / motard / minigp,Ricambi miniquad 2 tempi,Ricambi quad 4 tempi,Serbatoi tubi e rubinetti,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 25,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/8/2/5/5825.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/8/2/5/5825.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1627,
@@ -14537,7 +14671,8 @@
     "Prezzo (Tasse Incluse)": 2.49,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi minimoto,Ricambi minicross,Ricambi pit bike cross / motard / minigp,Ricambi miniquad 2 tempi,Ricambi quad 4 tempi,Serbatoi tubi e rubinetti,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 20,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/8/2/6/5826.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/8/2/6/5826.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1628,
@@ -14547,7 +14682,8 @@
     "Prezzo (Tasse Incluse)": 2.49,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi minimoto,Ricambi minicross,Ricambi pit bike cross / motard / minigp,Ricambi miniquad 2 tempi,Ricambi quad 4 tempi,Serbatoi tubi e rubinetti,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 26,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/8/2/7/5827.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/8/2/7/5827.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1629,
@@ -14621,7 +14757,8 @@
     "Prezzo (Tasse Incluse)": 2.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi minicross,Ricambi motori,Ricambi per tipologia,RICAMBI 50cc ARIA TIPO MORINI,Miniquad elettrici",
     "Quantità": 121,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/7/6/1/1761.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/7/6/1/1761.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1638,
@@ -14655,7 +14792,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi minimoto,Ricambi minicross,Ricambi pit bike cross / motard / minigp,Ricambi miniquad 2 tempi,Ricambi quad 4 tempi,Serbatoi tubi e rubinetti,Ricambi per tipologia",
     "Quantità": 1,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/7/6/4/1764.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/7/6/4/1764.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1641,
@@ -14709,7 +14847,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi quad 4 tempi,Leve, cavi e pedaline,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 6,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/7/6/9/1769.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/7/6/9/1769.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1646,
@@ -14775,7 +14914,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi quad 4 tempi,Carburatori collettori filtri,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 3,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/7/7/5/1775.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/7/7/5/1775.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1652,
@@ -14821,7 +14961,8 @@
     "Prezzo (Tasse Incluse)": 7.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Carburatori collettori filtri,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 23,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/7/7/9/1779.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/7/7/9/1779.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1656,
@@ -14922,7 +15063,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi motori,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 8,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/7/8/9/1789.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/7/8/9/1789.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1665,
@@ -14953,7 +15095,8 @@
     "Prezzo (Tasse Incluse)": 14.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi pit bike cross / motard / minigp,Leve, cavi e pedaline,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/7/9/2/1792.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/7/9/2/1792.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1668,
@@ -15266,7 +15409,8 @@
     "Prezzo (Tasse Incluse)": 19.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi motori,Ricambi per tipologia,RICAMBI YX 160,Miniquad elettrici",
     "Quantità": 9,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/2/2/6/5226.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/2/2/6/5226.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1698,
@@ -15381,7 +15525,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi motori,Ricambi per tipologia,RICAMBI YX 140,Miniquad elettrici",
     "Quantità": 43,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/2/2/5/5225.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/2/2/5/5225.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1708,
@@ -15449,7 +15594,8 @@
     "Prezzo (Tasse Incluse)": 8.990001,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi quad 4 tempi,PANTERA 250,Bobine, cablaggi e centraline,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 92,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/8/5/0/1850.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/8/5/0/1850.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1717,
@@ -15648,7 +15794,8 @@
     "Prezzo (Tasse Incluse)": 2.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi pit bike cross / motard / minigp,Ricambi quad 4 tempi,Ricambi motori,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 4,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/8/7/1/1871.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/8/7/1/1871.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1737,
@@ -15680,7 +15827,8 @@
     "Prezzo (Tasse Incluse)": 3.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi pit bike cross / motard / minigp,Trasmissione catena,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/8/7/5/1875.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/8/7/5/1875.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1740,
@@ -15711,7 +15859,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Sospensioni ammortizzatori piastre,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/8/7/8/1878.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/8/7/8/1878.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1743,
@@ -15776,7 +15925,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 9,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/8/8/4/1884.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/8/8/4/1884.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1751,
@@ -15831,7 +15981,8 @@
     "Prezzo (Tasse Incluse)": 19.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi pit bike cross / motard / minigp,Plastiche selle adesivi e fanali,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/8/9/0/1890.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/8/9/0/1890.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1757,
@@ -15872,7 +16023,8 @@
     "Prezzo (Tasse Incluse)": 19.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi veicoli elettrici,Biciclette scooter,Miniquad elettrici",
     "Quantità": 2,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/8/9/6/1896.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/8/9/6/1896.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1761,
@@ -15912,7 +16064,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi veicoli elettrici,Biciclette scooter,Miniquad elettrici",
     "Quantità": 8,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/9/0/0/1900.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/9/0/0/1900.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1765,
@@ -15943,7 +16096,8 @@
     "Prezzo (Tasse Incluse)": 7.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi veicoli elettrici,Biciclette scooter,Miniquad elettrici",
     "Quantità": 7,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/9/0/6/1906.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/9/0/6/1906.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1768,
@@ -15953,7 +16107,8 @@
     "Prezzo (Tasse Incluse)": 2.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi veicoli elettrici,Biciclette scooter,Miniquad elettrici",
     "Quantità": 8,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/9/0/7/1907.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/9/0/7/1907.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1769,
@@ -15973,7 +16128,8 @@
     "Prezzo (Tasse Incluse)": 14.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi veicoli elettrici,Biciclette scooter,Miniquad elettrici",
     "Quantità": 6,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/9/0/9/1909.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/9/0/9/1909.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1771,
@@ -15983,7 +16139,8 @@
     "Prezzo (Tasse Incluse)": 14.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi veicoli elettrici,Biciclette scooter,Miniquad elettrici",
     "Quantità": 135,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/9/1/0/1910.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/9/1/0/1910.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1772,
@@ -16113,7 +16270,8 @@
     "Prezzo (Tasse Incluse)": 5.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi motori,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 530,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/9/2/8/1928.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/9/2/8/1928.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1785,
@@ -16425,7 +16583,8 @@
     "Prezzo (Tasse Incluse)": 0.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Leve, cavi e pedaline,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 1,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/9/6/6/1966.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/9/6/6/1966.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1817,
@@ -16435,7 +16594,8 @@
     "Prezzo (Tasse Incluse)": 3.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Leve, cavi e pedaline,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/9/6/7/1967.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/9/6/7/1967.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1818,
@@ -16445,7 +16605,8 @@
     "Prezzo (Tasse Incluse)": 0.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Leve, cavi e pedaline,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 4,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/9/6/8/1968.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/9/6/8/1968.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1819,
@@ -16455,7 +16616,8 @@
     "Prezzo (Tasse Incluse)": 1.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Leve, cavi e pedaline,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 93,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/9/6/9/1969.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/9/6/9/1969.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1820,
@@ -16465,7 +16627,8 @@
     "Prezzo (Tasse Incluse)": 1.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Leve, cavi e pedaline,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 53,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/9/7/0/1970.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/9/7/0/1970.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1821,
@@ -16571,7 +16734,8 @@
     "Prezzo (Tasse Incluse)": 2.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Manubri comandi e interruttori,Miniquad elettrici",
     "Quantità": 45,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/9/8/3/1983.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/9/8/3/1983.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1832,
@@ -16636,7 +16800,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Cerchi e mozzi,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 23,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/9/9/0/1990.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/9/9/0/1990.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1839,
@@ -16647,7 +16812,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Cerchi e mozzi,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 14,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/9/9/1/1991.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/9/9/1/1991.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1840,
@@ -16657,7 +16823,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Cerchi e mozzi,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/9/9/2/1992.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/9/9/2/1992.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1842,
@@ -16677,7 +16844,8 @@
     "Prezzo (Tasse Incluse)": 19.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Plastiche selle adesivi e fanali,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/9/9/4/1994.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/9/9/4/1994.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1844,
@@ -16721,7 +16889,8 @@
     "Prezzo (Tasse Incluse)": 2.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Manubri comandi e interruttori,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 47,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/1/9/9/9/1999.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/1/9/9/9/1999.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1848,
@@ -16751,7 +16920,8 @@
     "Prezzo (Tasse Incluse)": 5.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Manubri comandi e interruttori,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/0/3/2003.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/0/3/2003.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1852,
@@ -16771,7 +16941,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi veicoli elettrici,Biciclette scooter,Fanali e lampadine,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 103,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/0/5/2005.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/0/5/2005.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1854,
@@ -16782,7 +16953,8 @@
     "Prezzo (Tasse Incluse)": 8.989999,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi per tipologia,C.Aria",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/0/6/2006.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/0/6/2006.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1855,
@@ -16793,7 +16965,8 @@
     "Prezzo (Tasse Incluse)": 1.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi per tipologia,Miniquad elettrici,C.Aria",
     "Quantità": 154,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/0/7/2007.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/0/7/2007.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1856,
@@ -16868,7 +17041,8 @@
     "Prezzo (Tasse Incluse)": 7.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi per tipologia,C.Aria",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/1/4/2014.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/1/4/2014.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1864,
@@ -16960,7 +17134,8 @@
     "Prezzo (Tasse Incluse)": 14.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Plastiche selle adesivi e fanali,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 9,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/2/4/2024.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/2/4/2024.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1874,
@@ -16994,7 +17169,8 @@
     "Prezzo (Tasse Incluse)": 10.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Trasmissione catena,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 7,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/2/7/2027.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/2/7/2027.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1878,
@@ -17153,7 +17329,8 @@
     "Prezzo (Tasse Incluse)": 1.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Telai e parti,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 49,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/4/7/2047.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/4/7/2047.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1898,
@@ -17176,7 +17353,8 @@
     "Prezzo (Tasse Incluse)": 2.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Telai e parti,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 211,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/4/9/2049.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/4/9/2049.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1900,
@@ -17186,7 +17364,8 @@
     "Prezzo (Tasse Incluse)": 6.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Telai e parti,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 100,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/5/0/2050.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/5/0/2050.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1901,
@@ -17197,7 +17376,8 @@
     "Prezzo (Tasse Incluse)": 5.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Telai e parti,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 20,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/5/1/2051.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/5/1/2051.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1902,
@@ -17207,7 +17387,8 @@
     "Prezzo (Tasse Incluse)": 2.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Telai e parti,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 65,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/5/2/2052.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/5/2/2052.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1903,
@@ -17217,7 +17398,8 @@
     "Prezzo (Tasse Incluse)": 2.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Telai e parti,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/5/3/2053.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/5/3/2053.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1904,
@@ -17227,7 +17409,8 @@
     "Prezzo (Tasse Incluse)": 2.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Telai e parti,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 43,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/5/4/2054.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/5/4/2054.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1905,
@@ -17238,7 +17421,8 @@
     "Prezzo (Tasse Incluse)": 2.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Telai e parti,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 156,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/5/5/2055.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/5/5/2055.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1906,
@@ -17249,7 +17433,8 @@
     "Prezzo (Tasse Incluse)": 2.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Telai e parti,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 52,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/5/6/2056.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/5/6/2056.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1907,
@@ -17259,7 +17444,8 @@
     "Prezzo (Tasse Incluse)": 2.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Telai e parti,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 200,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/5/7/2057.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/5/7/2057.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1908,
@@ -17269,7 +17455,8 @@
     "Prezzo (Tasse Incluse)": 6.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Telai e parti,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/5/8/2058.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/5/8/2058.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1909,
@@ -17279,7 +17466,8 @@
     "Prezzo (Tasse Incluse)": 2.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Telai e parti,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 24,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/5/9/2059.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/5/9/2059.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1910,
@@ -17290,7 +17478,8 @@
     "Prezzo (Tasse Incluse)": 3.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Telai e parti,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 21,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/6/0/2060.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/6/0/2060.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1911,
@@ -17301,7 +17490,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Telai e parti,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 46,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/6/1/2061.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/6/1/2061.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1912,
@@ -17311,7 +17501,8 @@
     "Prezzo (Tasse Incluse)": 3.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Telai e parti,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 21,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/6/2/2062.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/6/2/2062.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1913,
@@ -17321,7 +17512,8 @@
     "Prezzo (Tasse Incluse)": 2.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Telai e parti,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 1,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/6/3/2063.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/6/3/2063.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1914,
@@ -17331,7 +17523,8 @@
     "Prezzo (Tasse Incluse)": 3.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi per tipologia,Ricambi 65cc liquido tipo Morini,Miniquad elettrici",
     "Quantità": 7,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/6/4/2064.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/6/4/2064.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1915,
@@ -17514,7 +17707,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Trasmissione catena,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 92,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/9/5/2095.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/0/9/5/2095.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1934,
@@ -17558,7 +17752,8 @@
     "Prezzo (Tasse Incluse)": 3.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Leve, cavi e pedaline,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 8,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/1/0/7/2107.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/1/0/7/2107.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1942,
@@ -17599,7 +17794,8 @@
     "Prezzo (Tasse Incluse)": 1.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi per tipologia,Miniquad elettrici,C.Aria",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/1/1/8/2118.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/1/1/8/2118.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1947,
@@ -17895,7 +18091,8 @@
     "Prezzo (Tasse Incluse)": 5.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/1/4/6/2146.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/1/4/6/2146.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1974,
@@ -17956,7 +18153,8 @@
     "Prezzo (Tasse Incluse)": 3.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Telai e parti,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 5,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/1/5/2/2152.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/1/5/2/2152.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1980,
@@ -17966,7 +18164,8 @@
     "Prezzo (Tasse Incluse)": 3.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Telai e parti,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/1/5/3/2153.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/1/5/3/2153.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1981,
@@ -17988,7 +18187,8 @@
     "Prezzo (Tasse Incluse)": 6.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi per tipologia,C.Aria",
     "Quantità": 30,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/1/5/5/2155.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/1/5/5/2155.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1983,
@@ -18081,7 +18281,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Carburatori collettori filtri,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/1/6/7/2167.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/1/6/7/2167.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1994,
@@ -18091,7 +18292,8 @@
     "Prezzo (Tasse Incluse)": 7.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi per tipologia,Kit, pompe e pinze freni,Miniquad elettrici,Kit,Pompe e pinze freni",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/1/7/4/2174.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/1/7/4/2174.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1995,
@@ -18101,7 +18303,8 @@
     "Prezzo (Tasse Incluse)": 7.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi per tipologia,Kit, pompe e pinze freni,Miniquad elettrici,Kit,Pompe e pinze freni",
     "Quantità": 19,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/1/7/5/2175.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/1/7/5/2175.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1996,
@@ -18131,7 +18334,8 @@
     "Prezzo (Tasse Incluse)": 7.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Manubri comandi e interruttori,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 1,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/1/7/9/2179.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/1/7/9/2179.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 1999,
@@ -18255,7 +18459,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi per tipologia,C.Aria",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/1/9/4/2194.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/1/9/4/2194.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2011,
@@ -18265,7 +18470,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi per tipologia,C.Aria",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/1/9/5/2195.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/1/9/5/2195.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2012,
@@ -18306,7 +18512,8 @@
     "Prezzo (Tasse Incluse)": 2.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi veicoli elettrici,Biciclette scooter,Miniquad elettrici",
     "Quantità": 33,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/2/0/0/2200.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/2/0/0/2200.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2016,
@@ -18542,7 +18749,8 @@
     "Prezzo (Tasse Incluse)": 0.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi per tipologia,Kit, pompe e pinze freni,Miniquad elettrici,Kit,Pompe e pinze freni",
     "Quantità": 20,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/2/2/5/2225.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/2/2/5/2225.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2041,
@@ -18554,7 +18762,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Cerchi e mozzi,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 66,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/2/2/6/2226.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/2/2/6/2226.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2042,
@@ -18565,7 +18774,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Cerchi e mozzi,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 28,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/2/2/7/2227.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/2/2/7/2227.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2043,
@@ -18576,7 +18786,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Cerchi e mozzi,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/2/2/8/2228.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/2/2/8/2228.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2044,
@@ -18587,7 +18798,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Cerchi e mozzi,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/2/2/9/2229.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/2/2/9/2229.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2045,
@@ -18599,7 +18811,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Cerchi e mozzi,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 68,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/2/7/4/5274.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/2/7/4/5274.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2046,
@@ -18610,7 +18823,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Cerchi e mozzi,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 9,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/2/3/1/2231.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/2/3/1/2231.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2047,
@@ -18620,7 +18834,8 @@
     "Prezzo (Tasse Incluse)": 1.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Trasmissione catena,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 247,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/2/3/2/2232.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/2/3/2/2232.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2048,
@@ -18642,7 +18857,8 @@
     "Prezzo (Tasse Incluse)": 3.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi pit bike cross / motard / minigp,Ricambi quad 4 tempi,Ricambi motori,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 15,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/2/3/4/2234.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/2/3/4/2234.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2050,
@@ -18653,7 +18869,8 @@
     "Prezzo (Tasse Incluse)": 3.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi pit bike cross / motard / minigp,Ricambi quad 4 tempi,Ricambi motori,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 50,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/2/3/5/2235.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/2/3/5/2235.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2052,
@@ -18663,7 +18880,8 @@
     "Prezzo (Tasse Incluse)": 2.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 9,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/2/3/6/2236.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/2/3/6/2236.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2053,
@@ -18673,7 +18891,8 @@
     "Prezzo (Tasse Incluse)": 2.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi pit bike cross / motard / minigp,Ricambi quad 4 tempi,Ricambi motori,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 20,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/2/3/7/2237.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/2/3/7/2237.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2054,
@@ -18685,7 +18904,8 @@
     "Prezzo (Tasse Incluse)": 3.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi pit bike cross / motard / minigp,Ricambi quad 4 tempi,Ricambi motori,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 72,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/2/3/8/2238.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/2/3/8/2238.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2055,
@@ -18696,7 +18916,8 @@
     "Prezzo (Tasse Incluse)": 2.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi pit bike cross / motard / minigp,Ricambi quad 4 tempi,Ricambi motori,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 27,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/2/3/9/2239.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/2/3/9/2239.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2056,
@@ -18748,7 +18969,8 @@
     "Prezzo (Tasse Incluse)": 19.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Leve, cavi e pedaline,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/2/5/0/2250.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/2/5/0/2250.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2061,
@@ -18758,7 +18980,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Plastiche selle adesivi e fanali,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 102,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/2/5/1/2251.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/2/5/1/2251.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2062,
@@ -19121,7 +19344,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Manubri comandi e interruttori,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/2/9/7/2297.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/2/9/7/2297.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2101,
@@ -19231,7 +19455,8 @@
     "Prezzo (Tasse Incluse)": 14.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Oli lubrificanti e attrezzi,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/3/1/5/2315.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/3/1/5/2315.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2115,
@@ -19251,7 +19476,8 @@
     "Prezzo (Tasse Incluse)": 1.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi veicoli elettrici,Biciclette scooter,Miniquad elettrici",
     "Quantità": 661,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/3/1/7/2317.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/3/1/7/2317.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2117,
@@ -19415,7 +19641,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Leve, cavi e pedaline,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 108,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/3/4/3/2343.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/3/4/3/2343.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2135,
@@ -19499,7 +19726,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi veicoli elettrici,Monopattini,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/3/5/3/2353.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/3/5/3/2353.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2144,
@@ -19559,7 +19787,8 @@
     "Prezzo (Tasse Incluse)": 14.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi veicoli elettrici,Monopattini,Miniquad elettrici",
     "Quantità": 45,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/3/6/1/2361.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/3/6/1/2361.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2150,
@@ -19600,7 +19829,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Carburatori collettori filtri,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 85,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/3/6/9/2369.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/3/6/9/2369.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2155,
@@ -19630,7 +19860,8 @@
     "Prezzo (Tasse Incluse)": 5.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi veicoli elettrici,Monopattini,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/3/7/4/2374.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/3/7/4/2374.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2158,
@@ -20160,7 +20391,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi veicoli elettrici,Monopattini,Miniquad elettrici",
     "Quantità": 37,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/4/3/9/2439.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/4/3/9/2439.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2207,
@@ -20286,7 +20518,8 @@
     "Prezzo (Tasse Incluse)": 6.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Leve, cavi e pedaline,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 63,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/4/5/2/2452.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/4/5/2/2452.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2221,
@@ -20512,7 +20745,8 @@
     "Prezzo (Tasse Incluse)": 5.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Scarichi marmitte,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 47,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/4/7/9/2479.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/4/7/9/2479.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2244,
@@ -21118,7 +21352,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi veicoli elettrici,Biciclette scooter,Miniquad elettrici",
     "Quantità": 7,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/5/7/6/2576.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/5/7/6/2576.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2313,
@@ -21279,7 +21514,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Manubri comandi e interruttori,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 36,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/5/9/4/2594.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/5/9/4/2594.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2332,
@@ -21289,7 +21525,8 @@
     "Prezzo (Tasse Incluse)": 19.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Plastiche selle adesivi e fanali,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 14,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/5/9/5/2595.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/5/9/5/2595.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2333,
@@ -21299,7 +21536,8 @@
     "Prezzo (Tasse Incluse)": 2.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Telai e parti,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 26,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/5/9/8/2598.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/5/9/8/2598.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2334,
@@ -21425,7 +21663,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Carburatori collettori filtri,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/6/3/4/2634.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/6/3/4/2634.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2349,
@@ -21435,7 +21674,8 @@
     "Prezzo (Tasse Incluse)": 5.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Trasmissione catena,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/6/3/5/2635.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/6/3/5/2635.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2350,
@@ -21707,7 +21947,8 @@
     "Prezzo (Tasse Incluse)": 1.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Oli lubrificanti e attrezzi,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/6/8/5/2685.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/6/8/5/2685.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2383,
@@ -21717,7 +21958,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Oli lubrificanti e attrezzi,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 50,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/6/8/7/2687.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/6/8/7/2687.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2384,
@@ -21831,7 +22073,8 @@
     "Prezzo (Tasse Incluse)": 19.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Trasmissione catena,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 18,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/7/0/7/2707.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/7/0/7/2707.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2395,
@@ -21851,7 +22094,8 @@
     "Prezzo (Tasse Incluse)": 0.5,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi quad 4 tempi,Cerchi e mozzi,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 111,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/7/1/0/2710.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/7/1/0/2710.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2397,
@@ -21862,7 +22106,8 @@
     "Prezzo (Tasse Incluse)": 0.5,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi quad 4 tempi,Cerchi e mozzi,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 33,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/7/1/1/2711.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/7/1/1/2711.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2398,
@@ -21872,7 +22117,8 @@
     "Prezzo (Tasse Incluse)": 0.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi quad 4 tempi,Cerchi e mozzi,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 45,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/7/1/2/2712.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/7/1/2/2712.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2399,
@@ -21882,7 +22128,8 @@
     "Prezzo (Tasse Incluse)": 1.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi quad 4 tempi,Cerchi e mozzi,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 87,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/7/1/3/2713.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/7/1/3/2713.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2400,
@@ -21892,7 +22139,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi quad 4 tempi,Cerchi e mozzi,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 12,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/7/1/5/2715.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/7/1/5/2715.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2401,
@@ -22036,7 +22284,8 @@
     "Prezzo (Tasse Incluse)": 3.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Oli lubrificanti e attrezzi,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 49,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/7/3/5/2735.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/7/3/5/2735.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2416,
@@ -22131,7 +22380,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi minicross,Manubri comandi e interruttori,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 76,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/7/4/6/2746.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/7/4/6/2746.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2425,
@@ -22206,7 +22456,8 @@
     "Prezzo (Tasse Incluse)": 10.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi quad 4 tempi,Trasmissione catena,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 53,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/7/5/4/2754.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/7/5/4/2754.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2434,
@@ -22228,7 +22479,8 @@
     "Prezzo (Tasse Incluse)": 6.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi per tipologia,C.Aria",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/7/5/6/2756.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/7/5/6/2756.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2436,
@@ -22260,7 +22512,8 @@
     "Prezzo (Tasse Incluse)": 7.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Trasmissione catena,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 153,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/7/6/0/2760.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/7/6/0/2760.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2440,
@@ -22304,7 +22557,8 @@
     "Prezzo (Tasse Incluse)": 11.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Trasmissione catena,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/7/6/4/2764.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/7/6/4/2764.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2444,
@@ -22314,7 +22568,8 @@
     "Prezzo (Tasse Incluse)": 7.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi per tipologia,Miniquad elettrici,C.Aria",
     "Quantità": 13,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/7/6/5/2765.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/7/6/5/2765.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2445,
@@ -22335,7 +22590,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Serbatoi tubi e rubinetti,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 68,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/7/6/7/2767.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/7/6/7/2767.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2447,
@@ -22355,7 +22611,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Carburatori collettori filtri,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 54,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/7/7/0/2770.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/7/7/0/2770.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2449,
@@ -22535,7 +22792,8 @@
     "Prezzo (Tasse Incluse)": 0.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi pit bike cross / motard / minigp,Ricambi quad 4 tempi,Bobine, cablaggi e centraline,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/7/9/2/2792.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/7/9/2/2792.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2468,
@@ -22545,7 +22803,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Leve, cavi e pedaline,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 4,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/7/9/3/2793.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/7/9/3/2793.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2469,
@@ -22555,7 +22814,8 @@
     "Prezzo (Tasse Incluse)": 3.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Leve, cavi e pedaline,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 194,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/7/9/4/2794.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/7/9/4/2794.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2470,
@@ -22566,7 +22826,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Leve, cavi e pedaline,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 92,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/7/9/5/2795.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/7/9/5/2795.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2471,
@@ -22803,7 +23064,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi veicoli elettrici,Monopattini,Miniquad elettrici",
     "Quantità": 20,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/8/3/1/2831.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/8/3/1/2831.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2497,
@@ -22981,7 +23243,8 @@
     "Prezzo (Tasse Incluse)": 14.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Leve, cavi e pedaline,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 185,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/8/5/2/2852.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/8/5/2/2852.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2518,
@@ -23253,7 +23516,8 @@
     "Prezzo (Tasse Incluse)": 14.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Trasmissione catena,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 69,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/8/9/2/2892.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/8/9/2/2892.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2545,
@@ -23287,7 +23551,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Manubri comandi e interruttori,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/8/9/5/2895.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/8/9/5/2895.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2548,
@@ -23429,7 +23694,8 @@
     "Prezzo (Tasse Incluse)": 2.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Trasmissione catena,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 12,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/9/1/4/2914.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/9/1/4/2914.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2562,
@@ -23766,7 +24032,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Leve, cavi e pedaline,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 14,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/9/5/8/2958.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/9/5/8/2958.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2595,
@@ -23787,7 +24054,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Leve, cavi e pedaline,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 13,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/9/6/1/2961.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/9/6/1/2961.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2597,
@@ -23808,7 +24076,8 @@
     "Prezzo (Tasse Incluse)": 19.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Trasmissione catena,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/9/6/3/2963.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/9/6/3/2963.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2599,
@@ -23881,7 +24150,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi minicross,Leve, cavi e pedaline,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/2/9/7/6/2976.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/2/9/7/6/2976.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2608,
@@ -24081,7 +24351,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Leve, cavi e pedaline,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/0/0/1/3001.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/0/0/1/3001.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2627,
@@ -24093,7 +24364,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Telai e parti,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 75,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/0/0/2/3002.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/0/0/2/3002.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2628,
@@ -24188,7 +24460,8 @@
     "Prezzo (Tasse Incluse)": 5.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Trasmissione catena,Ricambi per tipologia",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/0/2/7/3027.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/0/2/7/3027.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2639,
@@ -24547,7 +24820,8 @@
     "Prezzo (Tasse Incluse)": 14.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi pit bike cross / motard / minigp,Leve, cavi e pedaline,Manubri comandi e interruttori,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/0/6/7/3067.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/0/6/7/3067.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2678,
@@ -24557,7 +24831,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Manubri comandi e interruttori,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 10,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/0/6/8/3068.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/0/6/8/3068.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2679,
@@ -24826,7 +25101,8 @@
     "Prezzo (Tasse Incluse)": 10.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Trasmissione catena,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/1/0/0/3100.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/1/0/0/3100.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2707,
@@ -24965,7 +25241,8 @@
     "Prezzo (Tasse Incluse)": 8.989999,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Leve, cavi e pedaline,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 460,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/1/2/7/3127.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/1/2/7/3127.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2721,
@@ -25106,7 +25383,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi motori,Ricambi per tipologia,RICAMBI AU180,Miniquad elettrici",
     "Quantità": 5,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/1/4/9/3149.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/1/4/9/3149.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2734,
@@ -25117,7 +25395,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi motori,Ricambi per tipologia,RICAMBI AU180,Miniquad elettrici",
     "Quantità": 8,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/1/5/1/3151.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/1/5/1/3151.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2735,
@@ -25128,7 +25407,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi motori,Ricambi per tipologia,RICAMBI AU180,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/1/5/3/3153.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/1/5/3/3153.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2736,
@@ -25139,7 +25419,8 @@
     "Prezzo (Tasse Incluse)": 1.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi motori,Ricambi per tipologia,RICAMBI AU180,Miniquad elettrici",
     "Quantità": 4,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/1/5/5/3155.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/1/5/5/3155.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2737,
@@ -25150,7 +25431,8 @@
     "Prezzo (Tasse Incluse)": 1.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi motori,Ricambi per tipologia,RICAMBI AU180,Miniquad elettrici",
     "Quantità": 4,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/1/5/7/3157.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/1/5/7/3157.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2738,
@@ -25161,7 +25443,8 @@
     "Prezzo (Tasse Incluse)": 1.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi motori,Ricambi per tipologia,RICAMBI AU180,Miniquad elettrici",
     "Quantità": 3,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/1/5/9/3159.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/1/5/9/3159.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2739,
@@ -25421,7 +25704,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi motori,Ricambi per tipologia,RICAMBI AU180,Miniquad elettrici",
     "Quantità": 9,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/2/0/1/3201.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/2/0/1/3201.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2765,
@@ -25432,7 +25716,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi motori,Ricambi per tipologia,RICAMBI AU180,Miniquad elettrici",
     "Quantità": 55,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/2/0/3/3203.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/2/0/3/3203.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2766,
@@ -25443,7 +25728,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi motori,Ricambi per tipologia,RICAMBI AU180,Miniquad elettrici",
     "Quantità": 8,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/2/0/5/3205.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/2/0/5/3205.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2767,
@@ -25455,7 +25741,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi motori,Ricambi per tipologia,RICAMBI AU180,Miniquad elettrici",
     "Quantità": 34,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/2/0/8/3208.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/2/0/8/3208.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2768,
@@ -25466,7 +25753,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi motori,Ricambi per tipologia,RICAMBI AU180,Miniquad elettrici",
     "Quantità": 2,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/2/1/0/3210.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/2/1/0/3210.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2769,
@@ -25509,7 +25797,8 @@
     "Prezzo (Tasse Incluse)": 2.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi motori,Ricambi per tipologia,RICAMBI AU180,Miniquad elettrici",
     "Quantità": 3,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/2/1/7/3217.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/2/1/7/3217.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2773,
@@ -25551,7 +25840,8 @@
     "Prezzo (Tasse Incluse)": 0.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi motori,Ricambi per tipologia,RICAMBI AU180,Miniquad elettrici",
     "Quantità": 5,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/2/2/3/3223.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/2/2/3/3223.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2778,
@@ -25826,7 +26116,8 @@
     "Prezzo (Tasse Incluse)": 2.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Telai e parti,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 20,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/2/7/2/3272.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/2/7/2/3272.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2805,
@@ -25838,7 +26129,8 @@
     "Prezzo (Tasse Incluse)": 2.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Telai e parti,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 29,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/2/7/3/3273.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/2/7/3/3273.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2806,
@@ -25882,7 +26174,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Manubri comandi e interruttori,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 16,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/2/7/9/3279.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/2/7/9/3279.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2810,
@@ -25944,7 +26237,8 @@
     "Prezzo (Tasse Incluse)": 7.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Trasmissione catena,Ricambi per tipologia",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/2/8/5/3285.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/2/8/5/3285.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2816,
@@ -25967,7 +26261,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Telai e parti,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 13,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/2/9/4/3294.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/2/9/4/3294.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2820,
@@ -26092,7 +26387,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi motori,Ricambi per tipologia,RICAMBI AU180,Miniquad elettrici",
     "Quantità": 5,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/3/2/1/3321.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/3/2/1/3321.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2836,
@@ -26228,7 +26524,8 @@
     "Prezzo (Tasse Incluse)": 1.990001,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi pit bike cross / motard / minigp,Ricambi per tipologia,C.Aria",
     "Quantità": 181,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/3/4/0/3340.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/3/4/0/3340.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2849,
@@ -26428,7 +26725,8 @@
     "Prezzo (Tasse Incluse)": 19.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Trasmissione catena,Ricambi per tipologia",
     "Quantità": 15,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/3/7/8/3378.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/3/7/8/3378.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2871,
@@ -26492,7 +26790,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Carburatori collettori filtri,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 159,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/3/8/6/3386.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/3/8/6/3386.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2877,
@@ -26502,7 +26801,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Leve, cavi e pedaline,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 25,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/3/8/8/3388.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/3/8/8/3388.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2878,
@@ -26513,7 +26813,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Trasmissione catena,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/3/8/9/3389.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/3/8/9/3389.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2880,
@@ -26786,7 +27087,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Leve, cavi e pedaline,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/4/6/9/3469.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/4/6/9/3469.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2907,
@@ -26855,7 +27157,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Leve, cavi e pedaline,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 15,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/4/7/6/3476.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/4/7/6/3476.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2913,
@@ -26931,7 +27234,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi veicoli elettrici,Biciclette scooter,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/4/8/4/3484.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/4/8/4/3484.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2921,
@@ -27058,7 +27362,8 @@
     "Prezzo (Tasse Incluse)": 19.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Biciclette scooter,Miniquad elettrici",
     "Quantità": 5,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/5/0/3/3503.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/5/0/3/3503.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2933,
@@ -27170,7 +27475,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Cerchi e mozzi,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 254,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/5/1/6/3516.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/5/1/6/3516.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2944,
@@ -27261,7 +27567,8 @@
     "Prezzo (Tasse Incluse)": 11.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Trasmissione catena,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 208,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/5/2/6/3526.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/5/2/6/3526.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2952,
@@ -27273,7 +27580,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Radiatori olio liquido,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 38,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/5/2/7/3527.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/5/2/7/3527.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2953,
@@ -27673,7 +27981,8 @@
     "Prezzo (Tasse Incluse)": 3,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Attrezzatura e accessori,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/5/7/9/3579.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/5/7/9/3579.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2991,
@@ -27729,7 +28038,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi motori,Ricambi per tipologia,RICAMBI CROSS 250,Miniquad elettrici",
     "Quantità": 13,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/5/8/5/3585.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/5/8/5/3585.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2997,
@@ -27740,7 +28050,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi motori,Ricambi per tipologia,RICAMBI CROSS 250,Miniquad elettrici",
     "Quantità": 5,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/5/8/6/3586.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/5/8/6/3586.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2998,
@@ -27752,7 +28063,8 @@
     "Prezzo (Tasse Incluse)": 6.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Carburatori collettori filtri,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 10,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/5/8/7/3587.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/5/8/7/3587.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 2999,
@@ -27763,7 +28075,8 @@
     "Prezzo (Tasse Incluse)": 3.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi motori,Ricambi per tipologia,RICAMBI CROSS 250,Miniquad elettrici",
     "Quantità": 2,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/5/8/9/3589.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/5/8/9/3589.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3000,
@@ -27785,7 +28098,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi motori,Ricambi per tipologia,RICAMBI CROSS 250,Miniquad elettrici",
     "Quantità": 3,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/5/9/2/3592.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/5/9/2/3592.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3002,
@@ -27796,7 +28110,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi motori,Ricambi per tipologia,RICAMBI CROSS 250,Miniquad elettrici",
     "Quantità": 4,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/5/9/3/3593.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/5/9/3/3593.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3003,
@@ -28375,7 +28690,8 @@
     "Prezzo (Tasse Incluse)": 1.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi per tipologia,C.Aria",
     "Quantità": 130,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/6/6/1/3661.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/6/6/1/3661.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3055,
@@ -28649,7 +28965,8 @@
     "Prezzo (Tasse Incluse)": 14.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi motori,Ricambi per tipologia,RICAMBI ZS 190,Miniquad elettrici",
     "Quantità": 3,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/7/0/1/3701.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/7/0/1/3701.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3079,
@@ -28682,7 +28999,8 @@
     "Prezzo (Tasse Incluse)": 18.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi motori,Ricambi per tipologia,RICAMBI ZS 190,Miniquad elettrici",
     "Quantità": 29,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/7/0/4/3704.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/7/0/4/3704.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3082,
@@ -29348,7 +29666,8 @@
     "Prezzo (Tasse Incluse)": 3.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Telai e parti,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 25,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/7/9/5/3795.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/7/9/5/3795.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3147,
@@ -29527,7 +29846,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Leve, cavi e pedaline,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 9,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/8/1/5/3815.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/8/1/5/3815.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3166,
@@ -29652,7 +29972,8 @@
     "Prezzo (Tasse Incluse)": 19.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Plastiche selle adesivi e fanali,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 16,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/6/8/4/5684.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/6/8/4/5684.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3177,
@@ -29866,7 +30187,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi pit bike cross / motard / minigp,Carburatori collettori filtri,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 92,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/8/6/1/3861.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/8/6/1/3861.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3196,
@@ -30001,7 +30323,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Carburatori collettori filtri,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 39,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/8/8/1/3881.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/8/8/1/3881.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3208,
@@ -30144,7 +30467,8 @@
     "Prezzo (Tasse Incluse)": 8.989999,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi motori,Ricambi per tipologia,RICAMBI ZS 300,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/9/0/3/3903.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/9/0/3/3903.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3221,
@@ -30267,7 +30591,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi motori,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 4,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/9/1/9/3919.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/9/1/9/3919.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3233,
@@ -30299,7 +30624,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi motori,Ricambi per tipologia,RICAMBI YX110,Miniquad elettrici",
     "Quantità": 4,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/9/2/2/3922.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/9/2/2/3922.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3236,
@@ -30592,7 +30918,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Plastiche selle adesivi e fanali,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 18,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/9/5/2/3952.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/9/5/2/3952.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3265,
@@ -30756,7 +31083,8 @@
     "Prezzo (Tasse Incluse)": 4.090163,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi motori,Ricambi per tipologia,RICAMBI ZL60,Miniquad elettrici",
     "Quantità": 5,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/9/7/2/3972.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/9/7/2/3972.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3280,
@@ -30925,7 +31253,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Telai e parti,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 2,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/9/8/7/3987.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/9/8/7/3987.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3296,
@@ -30936,7 +31265,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Telai e parti,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/9/8/8/3988.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/9/8/8/3988.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3297,
@@ -30947,7 +31277,8 @@
     "Prezzo (Tasse Incluse)": 14.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi motori,Ricambi per tipologia,RICAMBI ZL60,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/9/8/9/3989.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/9/8/9/3989.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3298,
@@ -30981,7 +31312,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi motori,Ricambi per tipologia,RICAMBI ZL60,Miniquad elettrici",
     "Quantità": 2,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/3/9/9/3/3993.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/3/9/9/3/3993.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3301,
@@ -31048,7 +31380,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi motori,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 4,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/0/0/0/4000.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/0/0/0/4000.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3308,
@@ -31197,7 +31530,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Home,Abbigliamento e protezioni,Offerte,Merchandising e Protezioni,Merchandising",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/0/2/2/4022.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/0/2/2/4022.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3323,
@@ -31217,7 +31551,8 @@
     "Prezzo (Tasse Incluse)": 1.990001,
     "Nomi delle categorie (x,y,z...)": "Home,Offerte,Merchandising e Protezioni,Merchandising",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/0/2/4/4024.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/0/2/4/4024.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3325,
@@ -31237,7 +31572,8 @@
     "Prezzo (Tasse Incluse)": 19.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Attrezzatura e accessori,Arredamento,Abbigliamento e protezioni,Offerte,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/0/2/6/4026.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/0/2/6/4026.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3327,
@@ -31268,7 +31604,8 @@
     "Prezzo (Tasse Incluse)": 11.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi minicross,Ricambi quad 4 tempi,Trasmissione catena,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/0/2/9/4029.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/0/2/9/4029.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3330,
@@ -31699,7 +32036,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi minicross,Sospensioni ammortizzatori piastre,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 100,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/0/7/6/4076.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/0/7/6/4076.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3374,
@@ -31805,7 +32143,8 @@
     "Prezzo (Tasse Incluse)": 6.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Trasmissione catena,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 385,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/0/9/7/4097.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/0/9/7/4097.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3387,
@@ -31827,7 +32166,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi motori,Ricambi per tipologia,RICAMBI ZS 190",
     "Quantità": 17,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/0/9/9/4099.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/0/9/9/4099.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3389,
@@ -32038,7 +32378,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi motori,Ricambi per tipologia",
     "Quantità": 3,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/1/3/4/4134.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/1/3/4/4134.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3410,
@@ -32293,7 +32634,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Telai e parti,Ricambi per tipologia",
     "Quantità": 5,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/1/8/4/4184.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/1/8/4/4184.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3448,
@@ -32429,7 +32771,8 @@
     "Prezzo (Tasse Incluse)": 14.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Leve, cavi e pedaline,Ricambi per tipologia",
     "Quantità": 166,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/2/2/1/4221.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/2/2/1/4221.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3467,
@@ -32511,7 +32854,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi motori,Ricambi per tipologia,RICAMBI YX 160",
     "Quantità": 5,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/2/2/6/4226.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/2/2/6/4226.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3475,
@@ -32523,7 +32867,8 @@
     "Prezzo (Tasse Incluse)": 19.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Plastiche selle adesivi e fanali,Ricambi per tipologia",
     "Quantità": 9,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/2/2/8/4228.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/2/2/8/4228.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3476,
@@ -32559,7 +32904,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Cerchi e mozzi,Ricambi per tipologia",
     "Quantità": 10,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/2/3/3/4233.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/2/3/3/4233.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3480,
@@ -32571,7 +32917,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Cerchi e mozzi,Ricambi per tipologia",
     "Quantità": 10,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/2/3/5/4235.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/2/3/5/4235.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3481,
@@ -32594,7 +32941,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi pit bike cross / motard / minigp,Plastiche selle adesivi e fanali,Ricambi per tipologia",
     "Quantità": 22,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/2/3/9/4239.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/2/3/9/4239.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3483,
@@ -32674,7 +33022,8 @@
     "Prezzo (Tasse Incluse)": 7.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Sospensioni ammortizzatori piastre,Ricambi per tipologia",
     "Quantità": 5,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/2/6/3/4263.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/2/6/3/4263.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3491,
@@ -32685,7 +33034,8 @@
     "Prezzo (Tasse Incluse)": 11.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Carburatori collettori filtri,Ricambi per tipologia",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/2/6/4/4264.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/2/6/4/4264.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3492,
@@ -32754,7 +33104,8 @@
     "Prezzo (Tasse Incluse)": 19.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Manubri comandi e interruttori,Ricambi per tipologia",
     "Quantità": 9,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/2/7/1/4271.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/2/7/1/4271.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3498,
@@ -32892,7 +33243,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Manubri comandi e interruttori,Ricambi per tipologia",
     "Quantità": 8,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/2/8/5/4285.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/2/8/5/4285.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3510,
@@ -33399,7 +33751,8 @@
     "Prezzo (Tasse Incluse)": 19.990001,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Plastiche selle adesivi e fanali,Ricambi per tipologia",
     "Quantità": 31,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/3/7/5/5375.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/3/7/5/5375.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3560,
@@ -33451,7 +33804,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi veicoli elettrici,Monopattini",
     "Quantità": 5,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/3/5/6/4356.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/3/5/6/4356.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3565,
@@ -33543,7 +33897,8 @@
     "Prezzo (Tasse Incluse)": 11.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi pit bike cross / motard / minigp,KRZ Cross,Ricambi motori,Ricambi per tipologia,RICAMBI YX 140",
     "Quantità": 23,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/3/6/8/4368.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/3/6/8/4368.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3573,
@@ -33686,7 +34041,8 @@
     "Prezzo (Tasse Incluse)": 3.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi motori,Ricambi per tipologia",
     "Quantità": 20,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/3/9/1/4391.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/3/9/1/4391.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3587,
@@ -33697,7 +34053,8 @@
     "Prezzo (Tasse Incluse)": 3.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi motori,Ricambi per tipologia",
     "Quantità": 5,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/3/9/2/4392.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/3/9/2/4392.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3588,
@@ -33754,7 +34111,8 @@
     "Prezzo (Tasse Incluse)": 11.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Manubri comandi e interruttori,Telai e parti,Ricambi per tipologia",
     "Quantità": 48,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/3/9/7/4397.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/3/9/7/4397.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3593,
@@ -33778,7 +34136,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi pit bike cross / motard / minigp,KRZ Cross,Ricambi motori,Ricambi per tipologia,RICAMBI YX 140,RICAMBI YX 160,RICAMBI ZS155",
     "Quantità": 8,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/3/9/9/4399.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/3/9/9/4399.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3595,
@@ -33801,7 +34160,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi pit bike cross / motard / minigp,KRZ Cross,Ricambi motori,Ricambi per tipologia,RICAMBI YX 125",
     "Quantità": 47,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/4/0/1/4401.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/4/0/1/4401.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3597,
@@ -34257,7 +34617,8 @@
     "Prezzo (Tasse Incluse)": 7.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi quad 4 tempi,Ricambi motori,Ricambi per tipologia",
     "Quantità": 67,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/4/6/9/4469.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/4/6/9/4469.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3644,
@@ -34313,7 +34674,8 @@
     "Prezzo (Tasse Incluse)": 19.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi minicross,Replica KTM morini LEM,Plastiche selle adesivi e fanali,Ricambi per tipologia",
     "Quantità": 4,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/8/1/8/4818.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/8/1/8/4818.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3649,
@@ -34579,7 +34941,8 @@
     "Prezzo (Tasse Incluse)": 19.99,
     "Nomi delle categorie (x,y,z...)": "Ricambi,Ricambi per tipologia,Kit, pompe e pinze freni,Kit,Pompe e pinze freni",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/5/0/7/4507.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/5/0/7/4507.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3674,
@@ -34845,7 +35208,8 @@
     "Prezzo (Tasse Incluse)": 19.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Telai e parti,Ricambi per tipologia",
     "Quantità": 30,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/5/2/9/4529.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/5/2/9/4529.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3697,
@@ -35025,7 +35389,8 @@
     "Prezzo (Tasse Incluse)": 7.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi motori,Ricambi per tipologia,RICAMBI QUAD 200 250",
     "Quantità": 5,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/5/6/4/4564.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/5/6/4/4564.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3713,
@@ -35048,7 +35413,8 @@
     "Prezzo (Tasse Incluse)": 19.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Carburatori collettori filtri,Ricambi per tipologia",
     "Quantità": 12,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/5/6/7/4567.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/5/6/7/4567.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3715,
@@ -35154,7 +35520,8 @@
     "Prezzo (Tasse Incluse)": 5.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi minicross,Spider & Tiger,Plastiche selle adesivi e fanali,Ricambi per tipologia",
     "Quantità": 5,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/5/8/9/4589.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/5/8/9/4589.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3727,
@@ -35375,7 +35742,8 @@
     "Prezzo (Tasse Incluse)": 5.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi quad 4 tempi,Trasmissione catena,Ricambi per tipologia",
     "Quantità": 18,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/6/5/8/4658.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/6/5/8/4658.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3758,
@@ -35385,7 +35753,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi quad 4 tempi,Ricambi motori,Telai e parti,Ricambi per tipologia",
     "Quantità": 5,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/6/5/9/4659.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/6/5/9/4659.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3759,
@@ -35421,7 +35790,8 @@
     "Prezzo (Tasse Incluse)": 2.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi quad 4 tempi,Ricambi motori,Ricambi per tipologia,RICAMBI QUAD 200 250",
     "Quantità": 10,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/6/6/2/4662.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/6/6/2/4662.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3762,
@@ -35514,7 +35884,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi veicoli elettrici,Trasmissione catena,Ricambi per tipologia,Miniquad elettrici",
     "Quantità": 5,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/6/7/8/4678.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/6/7/8/4678.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3772,
@@ -35708,7 +36079,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi miniquad 2 tempi,Leve, cavi e pedaline,Ricambi per tipologia",
     "Quantità": 48,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/7/0/1/4701.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/7/0/1/4701.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3790,
@@ -35832,7 +36204,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Oli lubrificanti e attrezzi,Ricambi per tipologia",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/7/1/6/4716.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/7/1/6/4716.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3801,
@@ -35854,7 +36227,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Trasmissione catena,Ricambi per tipologia",
     "Quantità": 1,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/7/1/8/4718.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/7/1/8/4718.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3804,
@@ -35887,7 +36261,8 @@
     "Prezzo (Tasse Incluse)": 5.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Trasmissione catena,Ricambi per tipologia",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/7/2/3/4723.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/7/2/3/4723.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3807,
@@ -36064,7 +36439,8 @@
     "Prezzo (Tasse Incluse)": 15.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi quad 4 tempi,Ricambi motori,Ricambi per tipologia,RICAMBI QUAD 200 250",
     "Quantità": 4,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/7/4/0/4740.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/7/4/0/4740.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3824,
@@ -36122,7 +36498,8 @@
     "Prezzo (Tasse Incluse)": 2.49,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Manubri comandi e interruttori,Ricambi per tipologia",
     "Quantità": 4,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/7/4/5/4745.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/7/4/5/4745.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3830,
@@ -36192,7 +36569,8 @@
     "Prezzo (Tasse Incluse)": 3.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Sospensioni ammortizzatori piastre,Ricambi per tipologia",
     "Quantità": 9,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/7/5/2/4752.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/7/5/2/4752.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3836,
@@ -36703,7 +37081,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi pit bike cross / motard / minigp,Cerchi e mozzi,Ricambi per tipologia",
     "Quantità": 93,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/8/2/1/4821.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/8/2/1/4821.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3887,
@@ -36780,7 +37159,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Carburatori collettori filtri,Ricambi per tipologia",
     "Quantità": 63,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/8/3/5/4835.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/8/3/5/4835.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3895,
@@ -36981,7 +37361,8 @@
     "Prezzo (Tasse Incluse)": 0,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi pit bike cross / motard / minigp,Ricambi motori,Ricambi per tipologia,RICAMBI YX110",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/8/7/7/4877.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/8/7/7/4877.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3913,
@@ -37192,7 +37573,8 @@
     "Prezzo (Tasse Incluse)": 19.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi veicoli elettrici,Biciclette",
     "Quantità": 18,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/9/1/1/4911.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/9/1/1/4911.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3936,
@@ -37315,7 +37697,8 @@
     "Prezzo (Tasse Incluse)": 19.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Plastiche selle adesivi e fanali,Ricambi per tipologia",
     "Quantità": 10,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/4/9/3/2/4932.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/9/3/2/4932.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3954,
@@ -37549,7 +37932,8 @@
     "Prezzo (Tasse Incluse)": 19.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Plastiche selle adesivi e fanali,Ricambi per tipologia",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/0/2/6/5026.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/0/2/6/5026.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3980,
@@ -37714,7 +38098,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Leve, cavi e pedaline,Ricambi per tipologia",
     "Quantità": 112,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/0/7/2/5072.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/0/7/2/5072.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 3997,
@@ -38007,7 +38392,8 @@
     "Prezzo (Tasse Incluse)": 1.990001,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi motori,Ricambi per tipologia,RICAMBI MOTORE KT50",
     "Quantità": 47,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/1/1/7/5117.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/1/1/7/5117.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 4027,
@@ -38029,7 +38415,8 @@
     "Prezzo (Tasse Incluse)": 3.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi motori,Ricambi per tipologia,RICAMBI MOTORE KT50",
     "Quantità": 8,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/1/2/5/5125.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/1/2/5/5125.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 4029,
@@ -38722,7 +39109,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Trasmissione catena,Ricambi per tipologia",
     "Quantità": 0,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/2/8/5/5285.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/2/8/5/5285.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 4097,
@@ -38745,7 +39133,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi minicross,Leve, cavi e pedaline,Ricambi per tipologia",
     "Quantità": 9,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/2/8/7/5287.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/2/8/7/5287.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 4099,
@@ -38779,7 +39168,8 @@
     "Prezzo (Tasse Incluse)": 3.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Sospensioni ammortizzatori piastre,Ricambi per tipologia",
     "Quantità": 38,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/3/0/4/5304.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/3/0/4/5304.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 4102,
@@ -38822,7 +39212,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi pit bike cross / motard / minigp,Telai e parti,Ricambi per tipologia",
     "Quantità": 6,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/3/2/1/5321.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/3/2/1/5321.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 4107,
@@ -38898,7 +39289,8 @@
     "Prezzo (Tasse Incluse)": 3.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Telai e parti,Ricambi per tipologia",
     "Quantità": 10,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/3/4/0/5340.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/3/4/0/5340.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 4116,
@@ -38910,7 +39302,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Telai e parti,Ricambi per tipologia",
     "Quantità": 1,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/3/4/1/5341.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/3/4/1/5341.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 4117,
@@ -38930,7 +39323,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi veicoli elettrici,Leve, cavi e pedaline,Ricambi per tipologia",
     "Quantità": 23,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/3/5/0/5350.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/3/5/0/5350.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 4120,
@@ -39042,7 +39436,8 @@
     "Prezzo (Tasse Incluse)": 2.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi per tipologia,Pompe e pinze freni",
     "Quantità": 5,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/3/6/4/5364.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/3/6/4/5364.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 4130,
@@ -39132,7 +39527,8 @@
     "Prezzo (Tasse Incluse)": 14.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Plastiche selle adesivi e fanali,Ricambi per tipologia",
     "Quantità": 94,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/3/8/1/5381.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/3/8/1/5381.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 4138,
@@ -39301,7 +39697,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi quad 4 tempi,Carburatori collettori filtri,Ricambi per tipologia",
     "Quantità": 2,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/4/1/5/5415.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/4/1/5/5415.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 4155,
@@ -39528,7 +39925,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Leve, cavi e pedaline,Ricambi per tipologia",
     "Quantità": 2,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/4/6/0/5460.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/4/6/0/5460.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 4176,
@@ -39642,7 +40040,8 @@
     "Prezzo (Tasse Incluse)": 11.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi quad 4 tempi,Leve, cavi e pedaline,Ricambi per tipologia",
     "Quantità": 4,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/4/8/2/5482.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/4/8/2/5482.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 4186,
@@ -39870,7 +40269,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi quad 4 tempi,Serbatoi tubi e rubinetti,Ricambi per tipologia",
     "Quantità": 3,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/5/2/0/5520.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/5/2/0/5520.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 4209,
@@ -40914,7 +41314,8 @@
     "Prezzo (Tasse Incluse)": 14.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Plastiche selle adesivi e fanali,Ricambi per tipologia",
     "Quantità": 9,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/7/3/3/5733.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/7/3/3/5733.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 4309,
@@ -40924,7 +41325,8 @@
     "Prezzo (Tasse Incluse)": 14.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Plastiche selle adesivi e fanali,Ricambi per tipologia",
     "Quantità": 10,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/7/3/5/5735.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/7/3/5/5735.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 4310,
@@ -40934,7 +41336,8 @@
     "Prezzo (Tasse Incluse)": 14.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Plastiche selle adesivi e fanali,Ricambi per tipologia",
     "Quantità": 10,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/7/3/7/5737.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/7/3/7/5737.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 4311,
@@ -40985,7 +41388,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Leve, cavi e pedaline,Ricambi per tipologia",
     "Quantità": 93,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/7/5/1/5751.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/7/5/1/5751.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 4317,
@@ -41116,7 +41520,8 @@
     "Prezzo (Tasse Incluse)": 19.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Plastiche selle adesivi e fanali,Ricambi per tipologia",
     "Quantità": 19,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/7/7/2/5772.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/7/7/2/5772.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 4331,
@@ -41248,7 +41653,8 @@
     "Prezzo (Tasse Incluse)": 9.990001,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Blocchi motori completi,Ricambi motori,Ricambi per tipologia,RICAMBI CROSS 250",
     "Quantità": 20,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/8/2/8/5828.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/8/2/8/5828.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 4347,
@@ -41372,7 +41778,8 @@
     "Prezzo (Tasse Incluse)": 19.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Leve, cavi e pedaline,Ricambi per tipologia",
     "Quantità": 20,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/8/4/9/5849.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/8/4/9/5849.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 4360,
@@ -41396,7 +41803,8 @@
     "Prezzo (Tasse Incluse)": 7.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi motori,Ricambi per tipologia",
     "Quantità": 48,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/8/5/6/5856.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/8/5/6/5856.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 4362,
@@ -41453,7 +41861,8 @@
     "Prezzo (Tasse Incluse)": 19.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Carburatori collettori filtri,Ricambi per tipologia",
     "Quantità": 9,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/8/6/1/5861.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/8/6/1/5861.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 4367,
@@ -41544,7 +41953,8 @@
     "Prezzo (Tasse Incluse)": 19.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Trasmissione catena,Ricambi per tipologia",
     "Quantità": 5,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/8/7/6/5876.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/8/7/6/5876.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 4375,
@@ -41685,7 +42095,8 @@
     "Prezzo (Tasse Incluse)": 4.99,
     "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Serbatoi tubi e rubinetti,Ricambi per tipologia",
     "Quantità": 9,
-    "URL immagine di copertina": "https://autofantasy.it/img/p/5/8/9/6/5896.jpg"
+    "URL immagine di copertina": "https://autofantasy.it/img/p/5/8/9/6/5896.jpg",
+    "toDelete": true
   },
   {
     "Codice prodotto": 4387,
