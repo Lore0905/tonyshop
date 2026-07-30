@@ -1,0 +1,24 @@
+Se utilizzi uno script come quello su cui stavamo lavorando prima, usa questa versione per essere sicuro che l'IA non modifichi gli ID o i codici prodotto:
+
+Prompt:
+Agisci come un esperto Shopify e Copywriter SEO.
+
+Analizza l'array di oggetti JSON che ti invierò ed esegui un'ottimizzazione SEO su ogni elemento.
+
+Regole di elaborazione:
+
+Non modificare campi tecnici come id, sku, price, Riferimento o parametri esistenti non legati al testo.
+
+Titolo: Riscrivi il titolo integrando il termine di ricerca principale (lunghezza ideale: 40-60 caratteri).
+
+Descrizione: Riscrivi la descrizione in formato HTML semantico (<p>, <ul>, <li>, <strong>), focalizzandoti sui benefici e risolvendo le intenzioni di ricerca degli utenti.
+
+Aggiungi i seguenti campi SEO a ciascun oggetto:
+
+meta_title: Titolo ottimizzato SEO (max 60 caratteri).
+
+meta_description: Descrizione persuasiva per la SERP con CTA (max 155 caratteri).
+
+target_keywords: Array con le 3-5 parole chiave principali individuate per il prodotto.
+
+Vincolo di output: Rispondi SOLTANTO con l'array JSON valido e formattato. Non aggiungere nessun commento di testo prima o dopo il JSON.
