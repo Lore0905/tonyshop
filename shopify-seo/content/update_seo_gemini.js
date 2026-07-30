@@ -5,14 +5,15 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 // CONFIGURAZIONE
 // ═══════════════════════════════════════════════════════════════
 
-const FILE_NUM = 1;
+const FILE_NUM = 4;
 const PRODOTTI_PATH = __dirname + `/files/${FILE_NUM}_todo.json`;
 const OUTPUT_PATH = __dirname + `/files/${FILE_NUM}_done.json`;
 const PROGRESS_PATH = __dirname + `/files/${FILE_NUM}_progress.json`;
 
 // API Key da variabile d'ambiente
 const API_KEY =
-    process.env.GEMINI_API_KEY || 'AQ.Ab8RN6KkXQKPox1i0WGRK_tLsThhz4WAPmpBRLRxGgZGI1L41w';
+    process.env.GEMINI_API_KEY || 'AQ.Ab8RN6LZcN2qzGJtSRl0V1DfKA0PZQIM1CfRICGanILcNloBRA';
+    //'AQ.Ab8RN6KkXQKPox1i0WGRK_tLsThhz4WAPmpBRLRxGgZGI1L41w';
     //'AQ.Ab8RN6IITcwZl5EoNxVxCTduS-RaRiQR2owioe6x6OgzVaAmkg'
 // "AQ.Ab8RN6K_iECj-ahsGbuseWDl9sBZhLL9fpHOzWVxkvt3GhE-2g";
 if (!API_KEY) {
@@ -231,38 +232,6 @@ function chunkArray(array, size) {
         chunks.push(array.slice(i, i + size));
     }
     return chunks;
-}
-
-function extractJSON(text) {
-    // Prova 1: estrai da markdown code block ```json ... ```
-    const mdMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
-    if (mdMatch) {
-        try {
-            return JSON.parse(mdMatch[1].trim());
-        } catch (e) { /* fallback */ }
-    }
-
-    // Prova 2: cerca primo { e ultimo }
-    const first = text.indexOf('{');
-    const last = text.lastIndexOf('}');
-    if (first !== -1 && last !== -1 && last > first) {
-        try {
-            return JSON.parse(text.substring(first, last + 1));
-        } catch (e) { /* fallback */ }
-    }
-
-    // Prova 3: pulisci e riprova
-    const cleaned = text
-        .replace(/```json\s*/gi, '')
-        .replace(/```\s*/gi, '')
-        .trim();
-    const f = cleaned.indexOf('{');
-    const l = cleaned.lastIndexOf('}');
-    if (f !== -1 && l !== -1 && l > f) {
-        return JSON.parse(cleaned.substring(f, l + 1));
-    }
-
-    throw new Error('Nessun oggetto JSON valido trovato nella risposta');
 }
 
 function loadProgress() {
