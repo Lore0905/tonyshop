@@ -1,48 +1,39 @@
-#!/usr/bin/env node
 
-/**
- * Shopify SEO Product Updater
- * Aggiorna prodotti Shopify con dati SEO ottimizzati da un file JSON.
- * 
- * Uso:
- *   node update-shopify-seo.js ./dati-prodotto.json
- * 
- * Variabili d'ambiente richieste:
- *   SHOPIFY_SHOP_DOMAIN    -> tuo-dominio.myshopify.com
- *   SHOPIFY_ACCESS_TOKEN   -> Admin API access token (App private o Custom App)
- *   SHOPIFY_PRODUCT_ID     -> ID numerico del prodotto Shopify (es: 8234156810423)
- * 
- * Se SHOPIFY_PRODUCT_ID non è impostato, lo script cerca il prodotto per handle.
- */
-
-const fs = require('fs').promises;
 const path = require('path');
+const fs = require("fs");
+require("dotenv").config();
+
+const commons = require('../../commons.js');
+const PRODUCTS_PATH = `${__dirname}/../../products.json`;
 
 // ==================== CONFIGURAZIONE ====================
-const CONFIG = {
-  SHOP_DOMAIN: process.env.SHOPIFY_SHOP_DOMAIN,
-  ACCESS_TOKEN: process.env.SHOPIFY_ACCESS_TOKEN,
-  API_VERSION: process.env.SHOPIFY_API_VERSION || '2024-10',
-  PRODUCT_ID: process.env.SHOPIFY_PRODUCT_ID || null,
-};
+const FILE_N = 9;
+const SHOPIFY_SHOP_DOMAIN = process.env.SHOPIFY_SHOP_DOMAIN;
+const API_VERSION = '2024-01';
+const FILE_PATH = __dirname + `/files/${FILE_N}_done.json`;
+
 
 // ==================== UTILS API ====================
 function getBaseUrl() {
-  return `https://${CONFIG.SHOP_DOMAIN}/admin/api/${CONFIG.API_VERSION}`;
+  return `https://${SHOPIFY_SHOP_DOMAIN}/admin/api/${API_VERSION}`;
 }
 
-function getHeaders() {
+async function getHeaders() {
+  let token = await commons.validateShopifyToken();
   return {
     'Content-Type': 'application/json',
-    'X-Shopify-Access-Token': CONFIG.ACCESS_TOKEN,
+    'X-Shopify-Access-Token': token
   };
 }
 
 async function shopifyFetch(endpoint, options = {}) {
   const url = `${getBaseUrl()}${endpoint}`;
+  console.log(`url ${url}`)
+  const basicHeader = await getHeaders();
+  console.log(`basic header ${JSON.stringify(basicHeader)}`);
   const res = await fetch(url, {
     ...options,
-    headers: { ...getHeaders(), ...options.headers },
+    headers: { ...basicHeader , ...options.headers },
   });
 
   const data = await res.json().catch(() => ({}));
@@ -163,30 +154,27 @@ async function updateImagesAltText(productId, altText) {
 
 // ==================== CORE LOGIC ====================
 async function processProduct(jsonData) {
-  // Il tuo JSON ha una struttura numerata: { "9": { ... } }
-  // Estraiamo il primo prodotto disponibile o iteriamo su tutti
   const keys = Object.keys(jsonData);
   
   for (const key of keys) {
     const item = jsonData[key];
-    console.log(`\n🚀 Processando prodotto chiave "${key}" -> ${item.nome}`);
+    // console.log(`\n🚀 Processando prodotto chiave "${key}" -> ${item.nome}`);
 
-    // 1. Identifica prodotto Shopify
-    let product;
-    if (CONFIG.PRODUCT_ID) {
-      console.log(`🔍 Ricerca per ID: ${CONFIG.PRODUCT_ID}`);
-      product = await getProductById(CONFIG.PRODUCT_ID);
-    } else {
-      console.log(`🔍 Ricerca per handle: ${item.url_handle_suggestion}`);
-      product = await getProductByHandle(item.url_handle_suggestion);
-    }
+    const products = JSON.parse(fs.readFileSync(PRODUCTS_PATH, "utf8"));
 
-    const productId = product.id;
-    console.log(`🎯 Trovato: "${product.title}" (ID: ${productId})`);
+    console.log(`key ${key}`)
+
+    const sku = products.find((el) => String(el['Codice prodotto']) === String(key)).Riferimento ?? null;
+    console.log(`sku ${sku}`)
+
+    let productId = await commons.findBySku(sku);
+    productId = commons.extractShopifyId(productId.id);
+    console.log(`🎯 productId ${productId}`);
 
     // 2. Prepara descrizione con FAQ Schema
     const faqSchemaHtml = buildFaqSchema(item.faq_schema);
     const fullBodyHtml = `${item.descrizione}\n${faqSchemaHtml}`;
+
 
     // 3. Prepara payload prodotto
     const updatePayload = {
@@ -237,19 +225,12 @@ async function processProduct(jsonData) {
 (async () => {
   try {
     // Validazione config
-    if (!CONFIG.SHOP_DOMAIN || !CONFIG.ACCESS_TOKEN) {
+    if (!SHOPIFY_SHOP_DOMAIN) {
       console.error('❌ Errore: Configura le variabili d\'ambiente SHOPIFY_SHOP_DOMAIN e SHOPIFY_ACCESS_TOKEN.');
       process.exit(1);
     }
 
-    // Leggi file JSON
-    const filePath = process.argv[2];
-    if (!filePath) {
-      console.error('❌ Errore: Specifica il percorso del file JSON.\nUso: node update-shopify-seo.js ./file.json');
-      process.exit(1);
-    }
-
-    const raw = await fs.readFile(path.resolve(filePath), 'utf-8');
+    const raw = await fs.readFileSync(path.resolve(FILE_PATH), 'utf-8');
     const jsonData = JSON.parse(raw);
 
     await processProduct(jsonData);

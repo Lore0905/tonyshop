@@ -21,6 +21,7 @@
     "@google/generative-ai": "^0.24.1",
     "axios": "^1.18.1",
     "dotenv": "^17.4.2",
+    "fs": "^0.0.1-security",
     "xlsx": "^0.18.5"
   }
 }

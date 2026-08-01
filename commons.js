@@ -374,11 +374,16 @@ async function findBySku(sku) {
   return data.data?.products?.edges?.[0]?.node;
 }
 
+function extractShopifyId(gid) {
+  return gid.split('/').pop();
+}
+
 module.exports = {
   getVendorProducts,
   getShopifyProducts,
   updateShopifyInventory,
   validateShopifyToken,
   findBySku,
-  shopifyGraphQL
+  shopifyGraphQL,
+  extractShopifyId
 };

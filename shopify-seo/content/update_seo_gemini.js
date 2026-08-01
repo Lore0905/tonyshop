@@ -5,17 +5,21 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 // CONFIGURAZIONE
 // ═══════════════════════════════════════════════════════════════
 
-const FILE_NUM = 4;
+const FILE_NUM = 10;
 const PRODOTTI_PATH = __dirname + `/files/${FILE_NUM}_todo.json`;
 const OUTPUT_PATH = __dirname + `/files/${FILE_NUM}_done.json`;
 const PROGRESS_PATH = __dirname + `/files/${FILE_NUM}_progress.json`;
 
 // API Key da variabile d'ambiente
 const API_KEY =
-    process.env.GEMINI_API_KEY || 'AQ.Ab8RN6LZcN2qzGJtSRl0V1DfKA0PZQIM1CfRICGanILcNloBRA';
+    process.env.GEMINI_API_KEY || 'AQ.Ab8RN6IITcwZl5EoNxVxCTduS-RaRiQR2owioe6x6OgzVaAmkg';
+    
     //'AQ.Ab8RN6KkXQKPox1i0WGRK_tLsThhz4WAPmpBRLRxGgZGI1L41w';
-    //'AQ.Ab8RN6IITcwZl5EoNxVxCTduS-RaRiQR2owioe6x6OgzVaAmkg'
-// "AQ.Ab8RN6K_iECj-ahsGbuseWDl9sBZhLL9fpHOzWVxkvt3GhE-2g";
+    
+    //'AQ.Ab8RN6LZcN2qzGJtSRl0V1DfKA0PZQIM1CfRICGanILcNloBRA';
+    
+    //'AQ.Ab8RN6K_iECj-ahsGbuseWDl9sBZhLL9fpHOzWVxkvt3GhE-2g' ;
+ // '
 if (!API_KEY) {
     console.error("❌ Errore: imposta la variabile d'ambiente GEMINI_API_KEY");
     console.error("   Esempio: GEMINI_API_KEY=la_tua_key node script.js");
