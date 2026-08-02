@@ -1,47 +1,17 @@
 const fs = require("fs");
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { freeCallApi } = require('../../lib/free_ai_api_v1');
 
 // ═══════════════════════════════════════════════════════════════
 // CONFIGURAZIONE
 // ═══════════════════════════════════════════════════════════════
 
-const FILE_NUM = 10;
+const FILE_NUM = 12;
 const PRODOTTI_PATH = __dirname + `/files/${FILE_NUM}_todo.json`;
 const OUTPUT_PATH = __dirname + `/files/${FILE_NUM}_done.json`;
 const PROGRESS_PATH = __dirname + `/files/${FILE_NUM}_progress.json`;
 
-// API Key da variabile d'ambiente
-const API_KEY =
-    process.env.GEMINI_API_KEY || 'AQ.Ab8RN6IITcwZl5EoNxVxCTduS-RaRiQR2owioe6x6OgzVaAmkg';
-    
-    //'AQ.Ab8RN6KkXQKPox1i0WGRK_tLsThhz4WAPmpBRLRxGgZGI1L41w';
-    
-    //'AQ.Ab8RN6LZcN2qzGJtSRl0V1DfKA0PZQIM1CfRICGanILcNloBRA';
-    
-    //'AQ.Ab8RN6K_iECj-ahsGbuseWDl9sBZhLL9fpHOzWVxkvt3GhE-2g' ;
- // '
-if (!API_KEY) {
-    console.error("❌ Errore: imposta la variabile d'ambiente GEMINI_API_KEY");
-    console.error("   Esempio: GEMINI_API_KEY=la_tua_key node script.js");
-    process.exit(1);
-}
-
-// Modelli disponibili (gratuiti). Il primo funzionante verrà usato.
-// gemini-1.5-flash = gratis, 15 RPM, 1M token/min
-// gemini-2.0-flash = gratis, più recente, stessi limiti
-const MODEL_CANDIDATES = [
-    "gemini-2.5-flash", // ← più recente, 1M input / 65K output
-    "gemini-2.5-flash-lite", // ← versione lite del 2.5
-    "gemini-flash-latest", // ← alias dinamico all'ultimo Flash
-    "gemini-2.0-flash-lite", // ← se il 2.5 è in overload
-    "gemini-2.0-flash-lite-001", // ← versione pinned del lite,
-    "gemini-3.6-flash"
-];
-
 const BATCH_SIZE = 2;
-const DELAY_MS = 4000; // 15 RPM = 1 chiamata ogni 4s
-const MAX_RETRIES = 3;
-const RETRY_DELAY_MS = 5000;
+const DELAY_MS = 4000; // Delay consapevole tra batch per non stressare le API gratuite
 
 // ═══════════════════════════════════════════════════════════════
 // PROMPT SEO (invariato)
@@ -254,119 +224,46 @@ function saveProgress(progress) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// LISTA MODELLI DISPONIBILI (utility)
+// LOGGER CUSTOM per free_ai_api
 // ═══════════════════════════════════════════════════════════════
 
-async function listAvailableModels() {
-    console.log("🔍 Controllo modelli disponibili con la tua API key...\n");
-    try {
-        const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models?key=${API_KEY}`,
-        );
-        const data = await response.json();
-
-        if (data.error) {
-            console.error("❌ Errore API:", data.error.message);
-            return;
-        }
-
-        const generativeModels = data.models.filter((m) =>
-            m.supportedGenerationMethods?.includes("generateContent"),
-        );
-
-        console.log(
-            `✅ Trovati ${generativeModels.length} modelli con generateContent:\n`,
-        );
-        generativeModels.forEach((m) => {
-            const name = m.name.replace("models/", "");
-            console.log(`   • ${name}`);
-            console.log(`     Display: ${m.displayName}`);
+const customLogger = {
+    info: (tag, msg, data) => {
+        if (msg === "API request") {
             console.log(
-                `     Input tokens: ${m.inputTokenLimit}, Output: ${m.outputTokenLimit}`,
+                `   🤖 [${data.provider}/${data.model}] key=${data.apiKey} | ${data.duration}ms${data.retry ? " (retry)" : ""}`
             );
-            console.log("");
-        });
-
-        console.log(
-            "💡 Suggerimento: copia uno dei nomi sopra e usalo come MODEL_CANDIDATES[0]",
-        );
-    } catch (err) {
-        console.error("❌ Errore nel recupero modelli:", err.message);
-    }
-}
-
-// ═══════════════════════════════════════════════════════════════
-// GEMINI CLIENT CON FALLBACK
-// ═══════════════════════════════════════════════════════════════
-
-const genAI = new GoogleGenerativeAI(API_KEY);
-let ACTIVE_MODEL = null;
-
-async function detectWorkingModel() {
-    console.log("🔧 Verifica modelli disponibili...\n");
-
-    for (const modelName of MODEL_CANDIDATES) {
-        try {
-            const model = genAI.getGenerativeModel({ model: modelName });
-            // Test rapido con un prompt minimo
-            await model.generateContent("Ciao");
-            console.log(`   ✅ Modello attivo: ${modelName}\n`);
-            ACTIVE_MODEL = modelName;
-            return modelName;
-        } catch (err) {
-            if (err.message?.includes("404")) {
-                console.log(`   ❌ ${modelName} → 404 Non trovato`);
-            } else {
-                console.log(`   ⚠️  ${modelName} → ${err.message}`);
-            }
         }
+    },
+    warn: (tag, msg, data) => {
+        if (msg === "Fallback triggered") {
+            console.log(`   🔄 Fallback: ${data.provider}/${data.model} → ${data.reason}`);
+        }
+    },
+    error: (tag, msg, data) => {
+        console.error(`   ❌ [${tag}] ${msg}`, data);
     }
+};
 
-    console.error("\n💥 Nessun modello funzionante trovato!");
-    console.error("   Esegui: node script.js --list");
-    console.error(
-        "   per vedere quali modelli sono disponibili con la tua API key.",
-    );
-    process.exit(1);
-}
+// ═══════════════════════════════════════════════════════════════
+// AI CLIENT — usa free_ai_api (fallback automatico provider/modello/key)
+// ═══════════════════════════════════════════════════════════════
 
-async function callGemini(batch, attempt = 1) {
-    const model = genAI.getGenerativeModel({
-        model: ACTIVE_MODEL,
-        generationConfig: {
-            temperature: 0.1, // più basso = più coerente
-            topP: 0.95,
-            topK: 40,
-            maxOutputTokens: 65536, // massimo per gemini-flash-latest
-            responseMimeType: "application/json", // ← FORZA JSON VALIDO
-        },
-    });
-
+async function callAI(batch) {
     const fullPrompt = PROMPT_BASE + "\n\n" + JSON.stringify(batch, null, 2);
 
-    try {
-        console.log(`   📝 Prompt ~${Math.round(fullPrompt.length / 4)} tokens`);
-        const result = await model.generateContent(fullPrompt);
-        const response = await result.response;
-        const text = response.text();
-        const json = typeof text === 'object' ? text : JSON.parse(text);
+    const result = await freeCallApi({
+        prompt: fullPrompt,
+        temperature: 0.1,
+        maxTokens: 65536,
+        logger: customLogger
+    });
 
-        return json;
-    } catch (error) {
-        console.error(
-            `   ❌ Errore (tentativo ${attempt}/${MAX_RETRIES}):`,
-            error.message,
-        );
+    // result.text contiene la risposta JSON come stringa
+    const text = result.text;
+    const json = typeof text === "object" ? text : JSON.parse(text);
 
-        if (attempt < MAX_RETRIES) {
-            const waitTime = RETRY_DELAY_MS * attempt;
-            console.log(`   ⏳ Attendo ${waitTime / 1000}s prima del retry...`);
-            await sleep(waitTime);
-            return callGemini(batch, attempt + 1);
-        }
-
-        throw error;
-    }
+    return json;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -374,19 +271,10 @@ async function callGemini(batch, attempt = 1) {
 // ═══════════════════════════════════════════════════════════════
 
 async function main() {
-    // Se l'utente passa --list, mostra solo i modelli disponibili
-    if (process.argv.includes("--list")) {
-        await listAvailableModels();
-        return;
-    }
-
-    console.log("🚀 Avvio ottimizzazione SEO prodotti Shopify");
+    console.log("🚀 Avvio ottimizzazione SEO prodotti Shopify (con free_ai_api)");
     console.log(`📁 File input: ${PRODOTTI_PATH}`);
     console.log(`📦 Batch size: ${BATCH_SIZE} prodotti`);
     console.log(`⏱️  Delay tra batch: ${DELAY_MS}ms\n`);
-
-    // Trova il primo modello funzionante
-    await detectWorkingModel();
 
     // Carica prodotti
     if (!fs.existsSync(PRODOTTI_PATH)) {
@@ -428,7 +316,6 @@ async function main() {
     for (let i = 0; i < batches.length; i++) {
         const batch = batches[i];
         const batchIds = batch.map((p) => p["Codice prodotto"]);
-        console.log(`Batch ids ${batchIds}`);
         const batchNum = i + 1;
         const totalBatches = batches.length;
 
@@ -438,7 +325,7 @@ async function main() {
         );
 
         try {
-            const result = await callGemini(batch);
+            const result = await callAI(batch);
 
             const missing = batchIds.filter((id) => !result[String(id)]);
             if (missing.length > 0) {
@@ -458,13 +345,21 @@ async function main() {
             );
         } catch (error) {
             console.error(`   💥 Batch fallito definitivamente:`, error.message);
+            if (error.attempts && error.attempts.length > 0) {
+                console.error(`   📋 Tentativi falliti:`);
+                error.attempts.forEach((a) => {
+                    console.error(
+                        `      - ${a.provider}/${a.model} [${a.keyId}]: ${a.error?.message || "Unknown"}`,
+                    );
+                });
+            }
             failCount += batch.length;
         }
 
         saveProgress(progress);
 
         if (i < batches.length - 1) {
-            console.log(`   ⏳ Rate limit: attesa ${DELAY_MS / 1000}s...`);
+            console.log(`   ⏳ Attesa ${DELAY_MS / 1000}s prima del prossimo batch...`);
             await sleep(DELAY_MS);
         }
     }

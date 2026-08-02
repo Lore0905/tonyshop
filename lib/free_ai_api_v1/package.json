@@ -1,0 +1,18 @@
+{
+  "name": "free_ai_api",
+  "version": "1.0.0",
+  "description": "Libreria per chiamate API AI gratuite con fallback automatico",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["ai", "api", "free", "gemini", "openai", "fallback"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.4.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
