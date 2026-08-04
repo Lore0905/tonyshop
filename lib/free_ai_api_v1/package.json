@@ -4,12 +4,24 @@
   "description": "Libreria per chiamate API AI gratuite con fallback automatico",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "cache:stats": "node scripts/cache-stats.js",
+    "cache:clear": "node scripts/cache-clear.js --force",
+    "cache:warmup": "node scripts/warmup-cache.js",
+    "optimize:prompt": "node scripts/optimize-prompt.js"
   },
-  "keywords": ["ai", "api", "free", "gemini", "openai", "fallback"],
+  "keywords": [
+    "ai",
+    "api",
+    "free",
+    "gemini",
+    "openai",
+    "fallback"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "crypto": "^1.0.1",
     "dotenv": "^16.4.0"
   },
   "engines": {

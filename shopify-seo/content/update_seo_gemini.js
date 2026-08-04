@@ -5,7 +5,7 @@ const { freeCallApi } = require('../../lib/free_ai_api_v1');
 // CONFIGURAZIONE
 // ═══════════════════════════════════════════════════════════════
 
-const FILE_NUM = 12;
+const FILE_NUM = 15;
 const PRODOTTI_PATH = __dirname + `/files/${FILE_NUM}_todo.json`;
 const OUTPUT_PATH = __dirname + `/files/${FILE_NUM}_done.json`;
 const PROGRESS_PATH = __dirname + `/files/${FILE_NUM}_progress.json`;
@@ -14,8 +14,12 @@ const BATCH_SIZE = 2;
 const DELAY_MS = 4000; // Delay consapevole tra batch per non stressare le API gratuite
 
 // ═══════════════════════════════════════════════════════════════
-// PROMPT SEO (invariato)
+// PROMPT SEO (ISTRUZIONE FISSA — viene ottimizzata e cache-ata 1 volta)
 // ═══════════════════════════════════════════════════════════════
+// NOTA: questo prompt NON cambia mai tra i batch.
+// free_ai_api lo ottimizza automaticamente alla prima chiamata (cache MISS)
+// e riusa la versione ottimizzata per tutti i batch successivi (cache HIT).
+// Il risparmio di token è ~2000-3000 token per ogni batch dopo il primo.
 
 const PROMPT_BASE = `Agisci come un Senior E-Commerce SEO Specialist e Conversion Copywriter con 10 anni di esperienza su Shopify, specializzato nel settore [INSERISCI IL TUO SETTORE: es. ricambi auto, giardinaggio, moto].
 
@@ -73,25 +77,25 @@ La chiave del JSON deve essere il "Codice prodotto" (come stringa).
 
 {
   "[Codice prodotto]": {
-    
+
     "nome": "Titolo prodotto ottimizzato",
-    
+
     "sommario": "HTML del sommario riscritto",
-    
+
     "descrizione": "HTML della descrizione riscritta",
-    
+
     "meta_title": "Meta title ottimizzato",
-    
+
     "meta_description": "Meta description persuasiva",
-    
+
     "target_keywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"],
-    
+
     "h1_suggestion": "Suggerimento H1 per la pagina prodotto",
-    
+
     "url_handle_suggestion": "suggerimento-url-prodotto",
-    
+
     "image_alt_text": "Testo ALT ottimizzato per l'immagine principale",
-    
+
     "faq_schema": [
       {"question": "Domanda frequente 1", "answer": "Risposta concisa"},
       {"question": "Domanda frequente 2", "answer": "Risposta concisa"}
@@ -234,10 +238,22 @@ const customLogger = {
                 `   🤖 [${data.provider}/${data.model}] key=${data.apiKey} | ${data.duration}ms${data.retry ? " (retry)" : ""}`
             );
         }
+        if (msg === "Prompt cache HIT") {
+            console.log(`   ⚡ Prompt cache HIT (hash: ${data.hash}) — riuso ottimizzato, nessuna chiamata AI per il template`);
+        }
+        if (msg === "Prompt cache MISS") {
+            console.log(`   🆕 Prompt cache MISS (hash: ${data.hash}) — ottimizzazione AI del template in corso...`);
+        }
+        if (msg === "Prompt optimized via AI") {
+            console.log(`   ✅ Template ottimizzato: ${data.originalTokens} → ${data.optimizedTokens} token (-${data.reduction})`);
+        }
     },
     warn: (tag, msg, data) => {
         if (msg === "Fallback triggered") {
             console.log(`   🔄 Fallback: ${data.provider}/${data.model} → ${data.reason}`);
+        }
+        if (msg === "Prompt optimization failed, using original") {
+            console.log(`   ⚠️  Ottimizzazione template fallita, uso originale: ${data.error}`);
         }
     },
     error: (tag, msg, data) => {
@@ -246,20 +262,31 @@ const customLogger = {
 };
 
 // ═══════════════════════════════════════════════════════════════
-// AI CLIENT — usa free_ai_api (fallback automatico provider/modello/key)
+// AI CLIENT — usa free_ai_api con instruction + input
 // ═══════════════════════════════════════════════════════════════
+// MODIFICA CHIAVE: separa il prompt fisso (instruction) dai dati dinamici (input).
+// free_ai_api ottimizza e cache-a l'istruzione automaticamente.
 
 async function callAI(batch) {
-    const fullPrompt = PROMPT_BASE + "\n\n" + JSON.stringify(batch, null, 2);
-
     const result = await freeCallApi({
-        prompt: fullPrompt,
+        instruction: PROMPT_BASE,   // ← Template SEO fisso: ottimizzato 1 volta, riusato N volte
+        input: batch,               // ← Dati dinamici: cambiano ad ogni batch
         temperature: 0.1,
         maxTokens: 65536,
-        logger: customLogger
+        logger: customLogger,
+        optimize: true              // ← Abilita ottimizzazione AI del template (default true)
     });
 
-    // result.text contiene la risposta JSON come stringa
+    // Log metadati di ottimizzazione (solo per debug/monitoraggio)
+    if (result._promptMeta) {
+        const meta = result._promptMeta;
+        if (meta.fromCache) {
+            console.log(`   💾 Cache: HIT | Token risparmiati: ${meta.stats?.saved || 0}`);
+        } else if (meta.fromOptimizer) {
+            console.log(`   🧠 Cache: MISS | Template ottimizzato e salvato per i prossimi batch`);
+        }
+    }
+
     const text = result.text;
     const json = typeof text === "object" ? text : JSON.parse(text);
 
@@ -271,10 +298,11 @@ async function callAI(batch) {
 // ═══════════════════════════════════════════════════════════════
 
 async function main() {
-    console.log("🚀 Avvio ottimizzazione SEO prodotti Shopify (con free_ai_api)");
+    console.log("🚀 Avvio ottimizzazione SEO prodotti Shopify (con free_ai_api + Prompt Cache)");
     console.log(`📁 File input: ${PRODOTTI_PATH}`);
     console.log(`📦 Batch size: ${BATCH_SIZE} prodotti`);
-    console.log(`⏱️  Delay tra batch: ${DELAY_MS}ms\n`);
+    console.log(`⏱️  Delay tra batch: ${DELAY_MS}ms`);
+    console.log(`🧠 Prompt Optimization: ATTIVA (il template SEO viene ottimizzato 1 volta e cache-ato)\n`);
 
     // Carica prodotti
     if (!fs.existsSync(PRODOTTI_PATH)) {
