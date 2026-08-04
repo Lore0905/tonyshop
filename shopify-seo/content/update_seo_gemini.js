@@ -288,9 +288,36 @@ async function callAI(batch) {
     }
 
     const text = result.text;
-    const json = typeof text === "object" ? text : JSON.parse(text);
+    console.log('text', text)
 
-    return json;
+    return parseAIJson(text);
+}
+
+function parseAIJson(text) {
+    if (typeof text === "object") {
+        return text;
+    }
+
+    let clean = text.trim();
+
+    // Rimuove markdown code block ```json ... ```
+    clean = clean.replace(/^```json\s*/i, "");
+    clean = clean.replace(/^```\s*/i, "");
+    clean = clean.replace(/\s*```$/i, "");
+
+    // Rimuove eventuali spazi
+    clean = clean.trim();
+
+    try {
+        return JSON.parse(clean);
+    } catch (error) {
+        console.error("❌ JSON non valido ricevuto:");
+        console.error(clean.substring(0, 1000));
+
+        throw new Error(
+            `AI response non parseabile: ${error.message}`
+        );
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════
