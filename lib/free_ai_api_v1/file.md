@@ -1,18 +1,5 @@
 
 =================================
-FILE: .env
-=================================
-
-GROQ_KEY_1 = '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';
-GEMINI_KEY_1 = 'AQ.Ab8RN6IITcwZl5EoNxVxCTduS-RaRiQR2owioe6x6OgzVaAmkg';
-GEMINI_KEY_2 = 'AQ.Ab8RN6KkXQKPox1i0WGRK_tLsThhz4WAPmpBRLRxGgZGI1L41w';
-GEMINI_KEY_3 = 'AQ.Ab8RN6LZcN2qzGJtSRl0V1DfKA0PZQIM1CfRICGanILcNloBRA';
-GEMINI_KEY_4 = 'AQ.Ab8RN6K_iECj-ahsGbuseWDl9sBZhLL9fpHOzWVxkvt3GhE-2g';
-GEMINI_KEY_5 = 'AQ.Ab8RN6K7ACWFgqLUzn8cq2Fbxmkm8Ha-xZET8LuauyggNJyiZQ';
-
-
-
-=================================
 FILE: adapters/gemini.js
 =================================
 
@@ -436,20 +423,13 @@ class Compressor {
     this.providerClient = new ProviderClient(keyPool, logger);
   }
 
-  async compress(prompt, targetModel, targetProvider) {
+  async compress(prompt, targetModel, targetProvider, reservedInputTokens = 0) {
     const promptTokens = TokenManager.estimate(prompt);
     const targetLimit = TokenManager.getEffectiveLimit(targetProvider, targetModel).limit;
 
     if (!targetLimit) {
       throw new Error(`Cannot determine limit for ${targetProvider}/${targetModel}`);
     }
-
-    this.logger.info("Prompt exceeds target model limit, initiating semantic compression", {
-      targetProvider,
-      targetModel,
-      promptTokens,
-      targetLimit
-    });
 
     const compressor = this.findCompressorModel(promptTokens);
     if (!compressor) {
@@ -460,13 +440,10 @@ class Compressor {
       throw error;
     }
 
-    this.logger.info("Selected compressor model", {
-      provider: compressor.provider,
-      model: compressor.model,
-      keyId: compressor.key.id
-    });
+    this.logger.model({ purpose: "compressione", provider: compressor.provider, model: compressor.model });
 
-    const compressionPrompt = this.buildCompressionPrompt(prompt, targetModel, targetProvider);
+    const desiredLimit = Math.max(1, targetLimit - reservedInputTokens - 32);
+    const compressionPrompt = this.buildCompressionPrompt(prompt, targetModel, targetProvider, desiredLimit);
     const compressionTokens = TokenManager.estimate(compressionPrompt);
 
     const compressorLimit = TokenManager.getEffectiveLimit(compressor.provider, compressor.model).limit;
@@ -495,18 +472,9 @@ class Compressor {
       const compressedText = result.text || "";
       const compressedTokens = TokenManager.estimate(compressedText);
 
-      this.logger.info("Compression completed", {
-        provider: compressor.provider,
-        model: compressor.model,
-        originalTokens: promptTokens,
-        compressedTokens,
-        duration,
-        reduction: `${Math.round((1 - compressedTokens / promptTokens) * 100)}%`
-      });
-
-      if (compressedTokens > targetLimit) {
+      if (compressedTokens > desiredLimit) {
         const error = new Error(
-          `Compressed prompt still exceeds target model limit (${compressedTokens} > ${targetLimit})`
+          `La compressione non è sufficiente (${compressedTokens} > ${desiredLimit} token)`
         );
         error.status = 413;
         throw error;
@@ -563,8 +531,7 @@ class Compressor {
     return null;
   }
 
-  buildCompressionPrompt(prompt, targetModel, targetProvider) {
-    const targetLimit = TokenManager.getEffectiveLimit(targetProvider, targetModel).limit || 0;
+  buildCompressionPrompt(prompt, targetModel, targetProvider, targetLimit) {
 
     return `You are a semantic compression engine. Your task is to compress the following text while preserving ALL semantic information, facts, data, names, dates, numbers, relationships, and instructions.
 
@@ -573,7 +540,9 @@ CRITICAL REQUIREMENTS:
 2. Preserve EXACTLY: all technical details, requirements, constraints, names, dates, numbers, code, and logical relationships.
 3. The compressed text MUST fit within ${targetLimit} tokens when processed by an AI model.
 4. The meaning must remain 100% intact. Another AI reading the compressed version should produce the same result as if it had read the original.
-5. Do NOT add explanations, markdown formatting, or meta-commentary. Output ONLY the compressed text.
+5. Preserve the requested output contract verbatim: schemas, JSON keys, field names, types, cardinalities, ordering, formatting, examples that define structure, and validation rules.
+6. Preserve imperative strength (ONLY, MUST, NEVER, EXACTLY) and every numeric constraint.
+7. Do NOT add explanations or meta-commentary. Output ONLY the compressed text.
 
 ORIGINAL TEXT:
 ${prompt}
@@ -583,6 +552,7 @@ COMPRESSED TEXT:`;
 }
 
 module.exports = Compressor;
+
 
 =================================
 FILE: core/key-pool.js
@@ -636,6 +606,7 @@ class KeyPool {
                 return { ...k, state: s };
             })
             .filter(k => {
+                if (!k.value) return false;
                 if (k.state.invalid) return false;
                 if (k.state.cooldownUntil > now) return false;
                 if (k.state.rpmCount.length >= k.rpmLimit) return false;
@@ -697,6 +668,7 @@ class KeyPool {
 module.exports = KeyPool;
 module.exports.KeyPool = KeyPool;
 
+
 =================================
 FILE: core/logger.js
 =================================
@@ -738,6 +710,18 @@ class Logger {
         this.logger.info("[INFO]", message, data);
     }
 
+    start() {
+        this.info("start free_ai_api");
+    }
+
+    analysis({ compressed, structure }) {
+        this.info("analisi parametri", { compresso: compressed, struttura: structure });
+    }
+
+    model({ purpose, provider, model, fromCache = false }) {
+        this.info("modello utilizzato", { scopo: purpose, provider, model, cache: fromCache });
+    }
+
     warn(message, data = {}) {
         this.logger.warn("[WARN]", message, data);
     }
@@ -747,13 +731,7 @@ class Logger {
     }
 
     request({ provider, model, apiKey, duration, retry = false }) {
-        this.info("API request", {
-            provider,
-            model,
-            apiKey: this.maskKey(apiKey),
-            duration,
-            retry
-        });
+        // Il riepilogo del modello viene emesso dal router una sola volta.
     }
 
     fallback({ provider, model, reason }) {
@@ -781,8 +759,9 @@ FILE: core/prompt-cache.js
 =================================
 
 /**
- * PromptCache
- * Cache in-memory con TTL, eviction LRU e persistenza opzionale su JSON.
+ * PromptCache (FIXED v3)
+ * FIX: _persist in set() wrappato in try/catch per non far fallire
+ *      l'intera chiamata AI in caso di errore disco/permessi.
  */
 const fs = require("fs");
 const path = require("path");
@@ -848,10 +827,17 @@ class PromptCache {
       ...data,
       savedTokens: Math.max(0, savedTokens),
       createdAt: existing?.createdAt || new Date().toISOString(),
-      lastUsed: new Date().toISOString()
+      lastUsed: new Date().toISOString(),
     });
 
-    this._persist();
+    // FIX: non far crashare l'intera chiamata se il disco ha problemi
+    try {
+      this._persist();
+    } catch (e) {
+      // Silenzioso: la cache in-memory è sufficiente
+    }
+
+    return this;
   }
 
   has(hash) {
@@ -868,14 +854,16 @@ class PromptCache {
       topPrompts: entries
         .sort((a, b) => (b.usageCount || 0) - (a.usageCount || 0))
         .slice(0, 10)
-        .map(e => ({
-          original: e.original.substring(0, 60) + (e.original.length > 60 ? "..." : ""),
+        .map((e) => ({
+          original:
+            e.original.substring(0, 60) + (e.original.length > 60 ? "..." : ""),
           usageCount: e.usageCount,
           savedTokens: e.savedTokens,
-          reduction: e.tokensBefore > 0
-            ? Math.round(((e.tokensBefore - e.tokensAfter) / e.tokensBefore) * 100)
-            : 0
-        }))
+          reduction:
+            e.tokensBefore > 0
+              ? Math.round(((e.tokensBefore - e.tokensAfter) / e.tokensBefore) * 100)
+              : 0,
+        })),
     };
   }
 
@@ -906,7 +894,7 @@ class PromptCache {
     const data = {
       entries: Object.fromEntries(this.cache),
       stats: this.stats,
-      lastPersisted: new Date().toISOString()
+      lastPersisted: new Date().toISOString(),
     };
     fs.writeFileSync(this.persistPath, JSON.stringify(data, null, 2));
   }
@@ -936,15 +924,11 @@ FILE: core/prompt-manager.js
 const crypto = require("crypto");
 const { normalizePrompt } = require("../utils/prompt-normalizer");
 const PromptCache = require("./prompt-cache");
-const PromptOptimizer = require("./prompt-optimizer");
 const TokenManager = require("./token-manager.js");
 
 class PromptManager {
   constructor(keyPool, registry, logger, options = {}) {
     this.cache = new PromptCache(options.cache);
-    this.optimizer = options.optimizeOnMiss !== false
-      ? new PromptOptimizer(keyPool, logger)
-      : null;
     this.logger = logger;
     this.enabled = options.enabled !== false;
   }
@@ -963,68 +947,33 @@ class PromptManager {
     const normalized = normalizePrompt(instruction);
     const hash = this._generateHash(normalized);
 
-    const cached = this.cache.get(hash);
-    if (cached) {
-      this.logger.info("Prompt cache HIT", {
-        hash: hash.substring(0, 8),
-        usageCount: cached.usageCount,
-        savedTokens: cached.savedTokens
-      });
-      return {
-        prompt: this._buildPrompt(cached.optimized, input),
-        hash,
-        fromCache: true,
-        optimized: cached.optimized,
-        original: cached.original,
-        stats: TokenManager.getStats(cached.original, cached.optimized)
-      };
-    }
-
-    this.logger.info("Prompt cache MISS", { hash: hash.substring(0, 8) });
-
-    let optimized = instruction;
-    let fromOptimizer = false;
-
-    if (this.enabled && this.optimizer) {
-      try {
-        optimized = await this.optimizer.optimize(instruction);
-        fromOptimizer = true;
-        const optStats = TokenManager.getStats(instruction, optimized);
-        this.logger.info("Prompt optimized via AI", {
-          hash: hash.substring(0, 8),
-          originalTokens: optStats.before,
-          optimizedTokens: optStats.after,
-          reduction: `${optStats.reductionPercent}%`
-        });
-      } catch (err) {
-        this.logger.warn("Prompt optimization failed, using original", {
-          error: err.message
-        });
-      }
-    }
-
-    const stats = TokenManager.getStats(instruction, optimized);
-
-    this.cache.set(hash, {
-      original: instruction,
-      optimized,
-      tokensBefore: stats.before,
-      tokensAfter: stats.after,
-      usageCount: 1,
-      savedTokens: 0,
-      lastUsed: new Date().toISOString()
-    });
-
     return {
-      prompt: this._buildPrompt(optimized, input),
+      prompt: this._buildPrompt(instruction, input),
       hash,
       fromCache: false,
-      fromOptimizer,
-      optimized,
+      fromOptimizer: false,
+      optimized: instruction,
       original: instruction,
-      stats
+      stats: TokenManager.getStats(instruction, instruction)
     };
   }
+
+  getCompressed(instruction, provider, model) {
+    const hash = this._generateHash(`${normalizePrompt(instruction)}\n${provider}/${model}`);
+    const cached = this.cache.get(hash);
+    return cached ? { hash, text: cached.optimized } : { hash, text: null };
+  }
+
+  saveCompressed(hash, instruction, compressed) {
+    const stats = TokenManager.getStats(instruction, compressed);
+    this.cache.set(hash, {
+      original: instruction, optimized: compressed,
+      tokensBefore: stats.before, tokensAfter: stats.after, usageCount: 1
+    });
+    return stats;
+  }
+
+  buildPrompt(instruction, input) { return this._buildPrompt(instruction, input); }
 
   _prepareLegacy(prompt) {
     return {
@@ -1057,6 +1006,7 @@ class PromptManager {
 
 module.exports = PromptManager;
 
+
 =================================
 FILE: core/prompt-optimizer.js
 =================================
@@ -1079,14 +1029,42 @@ class PromptOptimizer {
       throw new Error("No Gemini key available for prompt optimization");
     }
 
-    const optimizationPrompt = `You are a prompt optimization engine. Your task is to rewrite the following user instruction to be maximally concise and clear for an AI model, removing all unnecessary words while preserving every requirement, constraint, and technical detail.
+    const optimizationPrompt = `You are a prompt optimization engine.
 
-Rules:
-1. Remove filler words, redundancies, and polite phrases.
-2. Keep all technical terms, variable names, field names, and logic intact.
-3. Use imperative, direct language.
-4. Do NOT add explanations, markdown formatting, or meta-commentary.
-5. Output ONLY the optimized instruction text.
+Your task is to reduce the token count of the instruction WITHOUT
+changing its behavioral contract.
+
+ABSOLUTE RULES:
+
+1. Never remove an output field.
+2. Never rename an output field.
+3. Never change the output data type.
+4. Never change array cardinality requirements.
+5. Never remove examples that define output structure.
+6. Never change numerical limits.
+7. Never remove validation rules.
+8. Never remove "must", "exactly", "only", "never" constraints.
+9. Never modify JSON structure.
+10. Never modify HTML requirements.
+11. Never modify priority rules.
+12. Never modify data integrity rules.
+
+The following sections are IMMUTABLE:
+
+OUTPUT SCHEMA
+FIELD NAMES
+CARDINALITY
+VALIDATION RULES
+NUMERICAL LIMITS
+DATA INTEGRITY RULES
+
+Only remove:
+- rhetorical language
+- duplicated explanations
+- redundant examples
+- stylistic prose
+
+Return ONLY the optimized instruction.
 
 Original instruction:
 ${instruction}
@@ -1193,16 +1171,21 @@ FILE: core/router.js
 =================================
 
 /**
- * core/router.js
+ * core/router.js (FIXED v3)
  *
  * FIX:
- * - prevenzione loop infinito fallback
- * - gestione corretta TPM provider limit
- * - max attempts safety
- * - PromptManager singleton
+ * - executeWithRetry fa davvero retry su timeout (1x stessa key)
+ * - 400/INVALID_REQUEST salta modello invece di loopare all'infinito
+ * - 500/UNKNOWN salta modello invece di riprovare key all'infinito
+ * - _routeChunked mergia oggetti JSON, non concatena stringhe
+ * - _routeChunked usa provider per priority, non Object.keys[0]
+ * - Ripristina prompt originale quando cambia modello
+ * - Aggiunto _promptMeta nel risultato
+ * - maxTokens validato vs limite modello prima della chiamata
+ * - RATE_LIMIT_TPM esce dal while key e interrompe i modelli del provider
  */
 
-const { DEFAULT_CONFIG, PROVIDERS } = require("../constants");
+const { DEFAULT_CONFIG, PROVIDERS, MODEL_LIMITS, PROMPT_CACHE_CONFIG } = require("../constants");
 
 const ProviderClient = require("./provider-client");
 const Compressor = require("./compressor");
@@ -1219,23 +1202,15 @@ class Router {
     this.logger = logger;
 
     this.providerClient = new ProviderClient(keyPool, logger);
-
     this.compressor = new Compressor(keyPool, registry, logger);
-
     this.chunkManager = new ChunkManager(logger);
-
     this.promptManager = new PromptManager(keyPool, registry, logger, {
-      cache: {
-        enabled: true,
-      },
+      enabled: PROMPT_CACHE_CONFIG.enabled,
+      cache: PROMPT_CACHE_CONFIG,
     });
 
     this.attempts = [];
-
-    // protezione anti loop
     this.maxAttempts = 50;
-
-    // provider temporaneamente bloccati
     this.providerCooldown = new Map();
   }
 
@@ -1254,29 +1229,21 @@ class Router {
     } = options;
 
     let effectivePrompt = prompt || "";
-
     let promptTokens = 0;
-
     let fromCache = false;
-
     let promptHash = null;
-
-    /*
-            PREPARAZIONE PROMPT
-        */
+    let fromOptimizer = false;
+    let promptStats = null;
+    const structure = instruction ? "instruction + input" : "solo prompt";
+    let compressed = false;
 
     if (instruction) {
-      const prepared = await this.promptManager.prepare({
-        instruction,
-        input,
-      });
-
+      const prepared = await this.promptManager.prepare({ instruction, input });
       effectivePrompt = prepared.prompt;
-
       fromCache = prepared.fromCache;
-
       promptHash = prepared.hash;
-
+      fromOptimizer = prepared.fromOptimizer;
+      promptStats = prepared.stats;
       promptTokens = TokenManager.estimate(
         effectivePrompt,
         typeof input === "object" ? "json" : "text",
@@ -1285,65 +1252,47 @@ class Router {
       promptTokens = TokenManager.estimate(effectivePrompt, "text");
     }
 
-    this.logger.info(`[Router] Estimated ${promptTokens} tokens`);
-
-    /*
-            CHUNKING PREVENTIVO
-        */
-
-    if (Array.isArray(input) && input.length > 0) {
-      const probeProvider =
-        provider || Object.keys(PROVIDERS).find((p) => PROVIDERS[p].enabled);
-
-      const probeModel = model || PROVIDERS[probeProvider]?.models[0];
-
-      if (
-        this.chunkManager.needsChunking(
-          input,
-          instruction || effectivePrompt,
-          probeProvider,
-          probeModel,
-        )
-      ) {
-        return this._routeChunked(options, instruction, input);
-      }
-    }
-
-    const providers = this.resolveProviders(provider);
-
-    /*
-            CICLO PROVIDER
-        */
+    const providers = this.resolveProviders(provider, model);
+    if (providers.length === 0) throw new Error(`Provider non valido: ${provider}`);
+    const originalPrompt = effectivePrompt;
+    const explicitTarget = Boolean(provider || model);
 
     for (const provName of providers) {
-      if (this.isProviderBlocked(provName)) {
-        continue;
-      }
+      if (this.isProviderBlocked(provName)) continue;
 
       const provConfig = PROVIDERS[provName];
-
-      if (!provConfig || !provConfig.enabled) {
-        continue;
-      }
+      if (!provConfig || !provConfig.enabled) continue;
 
       const models = this.resolveModels(provConfig, model);
 
       for (const modelName of models) {
-        /*
-                    TOKEN PREFLIGHT
-                */
+        if (this.isProviderBlocked(provName)) break;
 
-        const check = TokenManager.canHandleRequest(
-          provName,
-          modelName,
-          promptTokens,
+        effectivePrompt = originalPrompt;
+        promptTokens = TokenManager.estimate(
+          effectivePrompt,
+          typeof input === "object" ? "json" : "text",
         );
 
-        if (!check.ok) {
-          this.logger.warn(
-            `[Router] Skip ${provName}/${modelName}: ${check.reason}`,
-          );
+        if (maxTokens) {
+          const modelMaxOut = MODEL_LIMITS[modelName]?.maxOutputTokens;
+          if (modelMaxOut && maxTokens > modelMaxOut) {
+            this.logger.warn(
+              `[Router] Skip ${provName}/${modelName}: maxTokens ${maxTokens} > model limit ${modelMaxOut}`,
+            );
+            this.attempts.push({
+              provider: provName,
+              model: modelName,
+              status: "skipped",
+              reason: `maxTokens ${maxTokens} > model limit ${modelMaxOut}`,
+              preflight: true,
+            });
+            continue;
+          }
+        }
 
+        let check = TokenManager.canHandleRequest(provName, modelName, promptTokens);
+        if (!check.ok) {
           this.attempts.push({
             provider: provName,
             model: modelName,
@@ -1352,26 +1301,46 @@ class Router {
             preflight: true,
           });
 
+          if (explicitTarget) {
+            const err = new Error(
+              `Impossibile eseguire il prompt con ${provName}/${modelName}: richiede circa ${promptTokens} token, oltre il limite di ${check.limit}. Riduci il prompt o non specificare il modello per consentire selezione e compressione automatiche.`
+            );
+            err.code = "PROMPT_TOO_LARGE_FOR_SELECTED_MODEL";
+            err.status = 413;
+            err.provider = provName;
+            err.model = modelName;
+            err.tokens = promptTokens;
+            err.limit = check.limit;
+            this.logger.analysis({ compressed: false, structure });
+            throw err;
+          }
+
           if (compress) {
             try {
-              effectivePrompt = await this.compressor.compress(
-                effectivePrompt,
-                modelName,
-                provName,
-              );
-
-              promptTokens = TokenManager.estimate(effectivePrompt);
-
-              const retry = TokenManager.canHandleRequest(
-                provName,
-                modelName,
-                promptTokens,
-              );
-
-              if (!retry.ok) {
-                continue;
+              if (instruction) {
+                const cached = this.promptManager.getCompressed(instruction, provName, modelName);
+                const inputTokens = TokenManager.estimate(input, typeof input === "object" ? "json" : "text");
+                if (cached.text) {
+                  effectivePrompt = this.promptManager.buildPrompt(cached.text, input);
+                  fromCache = true;
+                  promptHash = cached.hash;
+                  this.logger.model({ purpose: "compressione", provider: "gemini", model: "gemini-flash-latest", fromCache: true });
+                } else {
+                  const compressedInstruction = await this.compressor.compress(instruction, modelName, provName, inputTokens);
+                  this.promptManager.saveCompressed(cached.hash, instruction, compressedInstruction);
+                  effectivePrompt = this.promptManager.buildPrompt(compressedInstruction, input);
+                  promptHash = cached.hash;
+                  fromOptimizer = true;
+                }
+              } else {
+                effectivePrompt = await this.compressor.compress(originalPrompt, modelName, provName);
               }
+              compressed = true;
+              promptTokens = TokenManager.estimate(effectivePrompt);
+              check = TokenManager.canHandleRequest(provName, modelName, promptTokens);
+              if (!check.ok) continue;
             } catch (e) {
+              this.attempts.push({ provider: provName, model: modelName, status: "compression_failed", reason: e.message });
               continue;
             }
           } else {
@@ -1379,12 +1348,7 @@ class Router {
           }
         }
 
-        /*
-                    KEY LOOP
-                */
-
         let key;
-
         while ((key = this.keyPool.getNextKey(provName)) !== null) {
           if (this.attempts.length > this.maxAttempts) {
             throw this.buildFinalError("Maximum routing attempts exceeded");
@@ -1392,97 +1356,89 @@ class Router {
 
           const attempt = {
             provider: provName,
-
             model: modelName,
-
             keyId: key.id,
-
             error: null,
           };
 
-          try {
-            const ProviderClass = this.registry.getProviderClass(provName);
+          let retryCount = 0;
+          const maxRetries = 1;
 
-            if (ProviderClass && ProviderClass.prototype.preFlightCheck) {
-              const instance = new ProviderClass(
-                null,
-                this.keyPool,
-                this.logger,
-              );
+          do {
+            try {
+              const ProviderClass = this.registry.getProviderClass(provName);
+              if (ProviderClass && ProviderClass.prototype.preFlightCheck) {
+                const instance = new ProviderClass(null, this.keyPool, this.logger);
+                await instance.preFlightCheck({ model: modelName, tokens: promptTokens, key });
+              }
 
-              await instance.preFlightCheck({
+              const result = await this.executeWithRetry({
+                provider: provName,
                 model: modelName,
-                tokens: promptTokens,
                 key,
+                prompt: effectivePrompt,
+                temperature,
+                maxTokens,
               });
+
+              this.logger.analysis({ compressed, structure });
+              this.logger.model({ purpose: "richiesta", provider: provName, model: modelName });
+
+              return {
+                ...result,
+                _promptMeta: { fromCache, fromOptimizer, stats: promptStats },
+                fromCache,
+                hash: promptHash,
+                attempts: this.attempts,
+              };
+            } catch (error) {
+              attempt.error = error;
+              const isTimeout =
+                error.name === "AbortError" ||
+                (error.message && error.message.toLowerCase().includes("timeout"));
+
+              if (isTimeout && retryCount < maxRetries) {
+                retryCount++;
+                this.logger.warn(
+                  `[Router] Timeout retry ${retryCount}/${maxRetries} on ${provName}/${modelName} [${key.id}]`,
+                );
+                continue;
+              }
+              break;
             }
+          } while (retryCount <= maxRetries);
 
-            const result = await this.executeWithRetry({
-              provider: provName,
-              model: modelName,
-              key,
-              prompt: effectivePrompt,
-              temperature,
-              maxTokens,
-            });
+          this.attempts.push(attempt);
+          const classified = classifyError(attempt.error, provName);
+          this.logger.warn(
+            `[Router] ${provName}/${modelName} [${key.id}] -> ${classified.type} (status ${classified.status})`,
+          );
 
-            return {
-              ...result,
-
-              fromCache,
-
-              hash: promptHash,
-
-              attempts: this.attempts,
-            };
-          } catch (error) {
-            attempt.error = error;
-
-            this.attempts.push(attempt);
-
-            const classified = classifyError(error, provName);
-
-            this.logger.warn(`[Router] ${provName} ${classified.type}`);
-
-            switch (classified.type) {
-              case ErrorTypes.RATE_LIMIT_TPM:
-                /*
-                                    FIX PRINCIPALE
-
-                                    TPM è provider limit
-                                    non key limit
-                                */
-
-                this.blockProvider(provName, 60000);
-
-                key = null;
-
-                break;
-
-              case ErrorTypes.RATE_LIMIT_RPM:
-
-              case ErrorTypes.QUOTA_EXHAUSTED:
-                this.keyPool.setCooldown(key.id, 60000);
-
-                break;
-
-              case ErrorTypes.INVALID_KEY:
-                this.keyPool.invalidate(provName, key.id);
-
-                break;
-
-              case ErrorTypes.PROMPT_TOO_LARGE:
-
-              case ErrorTypes.PAYLOAD_TOO_LARGE:
-
-              case ErrorTypes.MODEL_NOT_FOUND:
-                key = null;
-
-                break;
-
-              default:
-                break;
-            }
+          switch (classified.type) {
+            case ErrorTypes.RATE_LIMIT_TPM:
+              this.blockProvider(provName, 60000);
+              key = null;
+              break;
+            case ErrorTypes.RATE_LIMIT_RPM:
+            case ErrorTypes.QUOTA_EXHAUSTED:
+              this.keyPool.setCooldown(key.id, 60000);
+              break;
+            case ErrorTypes.INVALID_KEY:
+              this.keyPool.invalidate(provName, key.id);
+              break;
+            case ErrorTypes.INVALID_REQUEST:
+            case ErrorTypes.MODEL_NOT_FOUND:
+            case ErrorTypes.PAYLOAD_TOO_LARGE:
+              key = null;
+              break;
+            case ErrorTypes.TIMEOUT:
+              break;
+            default:
+              // Errori di rete o sconosciuti non devono riprovare all'infinito
+              // la stessa chiave. Passa al modello/provider successivo.
+              this.keyPool.setCooldown(key.id, 5000);
+              key = null;
+              break;
           }
         }
       }
@@ -1493,28 +1449,22 @@ class Router {
 
   isProviderBlocked(provider) {
     const until = this.providerCooldown.get(provider);
-
-    if (!until) {
-      return false;
-    }
-
+    if (!until) return false;
     if (Date.now() > until) {
       this.providerCooldown.delete(provider);
-
       return false;
     }
-
     return true;
   }
 
   blockProvider(provider, ms) {
     this.providerCooldown.set(provider, Date.now() + ms);
+    this.logger.warn(`[Router] Provider ${provider} blocked for ${ms}ms`);
   }
 
   async _routeChunked(options, instruction, input) {
-    const provider = options.provider || Object.keys(PROVIDERS)[0];
-
-    const model = options.model || PROVIDERS[provider].models[0];
+    const provider = options.provider || this.resolveProviders(null)[0];
+    const model = options.model || PROVIDERS[provider]?.models[0];
 
     const chunks = this.chunkManager.splitArrayIntoChunks(
       input,
@@ -1523,81 +1473,70 @@ class Router {
       model,
     );
 
-    const results = [];
+    const mergedResults = {};
 
-    for (const chunk of chunks) {
+    for (let i = 0; i < chunks.length; i++) {
+      this.logger.info(`[Router] Chunk ${i + 1}/${chunks.length}`);
       const res = await this.route({
         ...options,
-
-        input: chunk,
-
+        input: chunks[i],
         compress: false,
       });
 
-      results.push(res.text || res);
+      let parsed;
+      if (typeof res.text === "string") {
+        try {
+          parsed = JSON.parse(res.text);
+        } catch (e) {
+          parsed = { _rawChunk: res.text };
+        }
+      } else if (res.text && typeof res.text === "object") {
+        parsed = res.text;
+      } else {
+        parsed = {};
+      }
+
+      Object.assign(mergedResults, parsed);
     }
 
     return {
-      text: results.join("\n"),
-
+      text: mergedResults,
       chunked: true,
-
       chunksCount: chunks.length,
     };
   }
 
-  resolveProviders(provider) {
-    if (provider) {
-      return [provider];
+  resolveProviders(provider, requestedModel) {
+    if (provider) return [provider];
+    // Se è indicato solo il modello, usa esclusivamente il provider che lo espone.
+    if (requestedModel) {
+      return Object.entries(PROVIDERS)
+        .filter(([, cfg]) => cfg.enabled && cfg.models?.includes(requestedModel))
+        .map(([name]) => name);
     }
-
     return Object.entries(PROVIDERS)
-
       .filter(([, cfg]) => cfg.enabled)
-
       .sort(([, a], [, b]) => a.priority - b.priority)
-
       .map(([name]) => name);
   }
 
   resolveModels(config, model) {
-    if (model) {
-      return [model];
-    }
-
+    if (model) return config.models?.includes(model) ? [model] : [];
     return config.models || [];
   }
 
-  async executeWithRetry({
-    provider,
-    model,
-    key,
-    prompt,
-    temperature,
-    maxTokens,
-  }) {
+  async executeWithRetry({ provider, model, key, prompt, temperature, maxTokens }) {
     const controller = new AbortController();
-
-    const timer = setTimeout(
-      () => controller.abort(),
-      DEFAULT_CONFIG.timeoutMs,
-    );
-
+    const timer = setTimeout(() => controller.abort(), DEFAULT_CONFIG.timeoutMs);
     try {
       return await this.providerClient.execute({
         provider,
-
         payload: {
           prompt,
-
           model,
-
           key,
-
           temperature,
-
           maxTokens,
-
           abortSignal: controller.signal,
         },
       });
@@ -1608,16 +1547,10 @@ class Router {
 
   buildFinalError(message) {
     const details = this.attempts
-      .map(
-        (a) =>
-          `${a.provider}/${a.model} ${a.keyId}: ${a.error?.message || a.reason}`,
-      )
+      .map((a) => `${a.provider}/${a.model} ${a.keyId}: ${a.error?.message || a.reason}`)
       .join("; ");
-
     const err = new Error(`${message}. Attempts: ${details}`);
-
     err.attempts = this.attempts;
-
     return err;
   }
 }
@@ -1630,8 +1563,9 @@ FILE: core/token-manager.js
 =================================
 
 /**
- * core/token-manager.js (FIXED v2)
- * FIX #2, #10, #12: stima instruction+input, getEffectiveLimit, canHandleRequest.
+ * core/token-manager.js (FIXED v3)
+ * FIX: getEffectiveLimit non sottrae maxOutputTokens dai limiti provider.
+ *      Ora sottrae SOLO da contextWindow. I limiti provider sono hard limit.
  */
 const { estimateTokens } = require("../utils/token-estimator");
 const { MODEL_LIMITS, PROVIDER_LIMITS, PROVIDERS } = require("../constants");
@@ -1641,14 +1575,10 @@ class TokenManager {
         return estimateTokens(text, type);
     }
 
-    /**
-     * Stima token di un prompt completo separando instruction e input.
-     * FIX #2: controlla sempre instruction + input, non solo prompt finale.
-     */
     static estimatePromptTokens(instruction, input, instructionType = "instruction", inputType = "json") {
         const instructionTokens = estimateTokens(instruction, instructionType);
         const inputTokens = estimateTokens(input, inputType);
-        const overhead = 4; // separatori
+        const overhead = 4;
         return {
             instruction: instructionTokens,
             input: inputTokens,
@@ -1675,14 +1605,8 @@ class TokenManager {
                 limit = MODEL_LIMITS[modelName]?.contextWindow || MODEL_LIMITS[modelName]?.maxOutputTokens || Infinity;
             }
         }
-        return {
-            tokens,
-            limit,
-            exceeds: tokens > limit,
-            remaining: Math.max(0, limit - tokens)
-        };
+        return { tokens, limit, exceeds: tokens > limit, remaining: Math.max(0, limit - tokens) };
     }
-
 
     static getStats(original, optimized) {
         const before = this.estimate(original);
@@ -1695,46 +1619,34 @@ class TokenManager {
         };
     }
 
-    /**
-     * Calcola il limite effettivo per provider+modello.
-     * FIX #1, #4: min(contextWindow, providerMaxRequest, providerTPM se tpmIsRateLimit=false).
-     */
     static getEffectiveLimit(provider, model) {
         const modelLimit = MODEL_LIMITS[model] || {};
         const providerLimit = PROVIDER_LIMITS[provider] || {};
 
-        const factors = {
-            contextWindow: modelLimit.contextWindow || Infinity,
-            maxOutputTokens: modelLimit.maxOutputTokens || Infinity,
-            providerMaxRequest: providerLimit.maxRequestTokens || Infinity,
-            providerTpm: providerLimit.tpm || Infinity,
-            providerTpmIsRateLimit: providerLimit.tpmIsRateLimit ?? true
-        };
+        const contextWindow = modelLimit.contextWindow || Infinity;
+        const maxOutputTokens = modelLimit.maxOutputTokens || 4096;
+        const providerMaxRequest = providerLimit.maxRequestTokens || Infinity;
+        const providerTpm = providerLimit.tpm || Infinity;
+        const tpmIsRateLimit = providerLimit.tpmIsRateLimit ?? true;
 
-        let candidates = [
-            { value: factors.contextWindow, name: "contextWindow" },
-            { value: factors.providerMaxRequest, name: "providerMaxRequest" }
-        ];
-        if (!factors.providerTpmIsRateLimit) {
-            candidates.push({ value: factors.providerTpm, name: "providerTPM" });
+        const contextInputLimit = contextWindow - maxOutputTokens;
+        let minLimit = Math.min(contextInputLimit, providerMaxRequest);
+        if (!tpmIsRateLimit) {
+            minLimit = Math.min(minLimit, providerTpm);
         }
 
-        const finite = candidates.filter(c => Number.isFinite(c.value));
-        if (finite.length === 0) return { limit: null, bottleneck: "unknown", factors };
+        if (!Number.isFinite(minLimit)) {
+            return { limit: null, bottleneck: "unknown", factors: { contextWindow, maxOutputTokens, providerMaxRequest, providerTpm, tpmIsRateLimit } };
+        }
 
-        const min = finite.reduce((a, b) => a.value < b.value ? a : b);
-        const usableLimit = min.value - (modelLimit.maxOutputTokens || 4096);
-        return {
-            limit: Math.max(0, usableLimit),
-            rawLimit: min.value,
-            bottleneck: min.name,
-            factors
-        };
+        const limit = Math.max(0, minLimit);
+        let bottleneck = "contextWindow";
+        if (limit === Math.max(0, providerMaxRequest)) bottleneck = "providerMaxRequest";
+        else if (!tpmIsRateLimit && limit === Math.max(0, providerTpm)) bottleneck = "providerTPM";
+
+        return { limit, rawLimit: minLimit + maxOutputTokens, bottleneck, factors: { contextWindow, maxOutputTokens, providerMaxRequest, providerTpm, tpmIsRateLimit } };
     }
 
-    /**
-     * Verifica se una richiesta rientra nei limiti.
-     */
     static canHandleRequest(provider, model, totalTokens) {
         const effective = this.getEffectiveLimit(provider, model);
         if (effective.limit === null) return { ok: true, limit: null, bottleneck: "unknown" };
@@ -1769,15 +1681,26 @@ let _router = null;
 
 function init(customLogger) {
     if (_router) return;
-    const logger = customLogger ? new Logger(customLogger) : new Logger();
+    // FIX: evita doppio wrapping se customLogger è già un'istanza Logger
+    const logger = (customLogger && customLogger instanceof Logger)
+        ? customLogger
+        : new Logger(customLogger);
     registry.load(logger);
     _keyPool = new KeyPool(PROVIDERS, logger);
     _router = new Router(_keyPool, registry, logger);
 }
 
-async function freeCallApi(options) {
-    const logger = options.logger ? new Logger(options.logger) : new Logger();
-    init(logger);
+async function freeCallApi(options = {}) {
+    init(options.logger);
+
+    if (!options.prompt && !options.instruction) {
+        throw new TypeError("freeCallApi richiede 'prompt' oppure 'instruction'");
+    }
+    if (options.prompt && options.instruction) {
+        throw new TypeError("Usa 'prompt' oppure 'instruction' + 'input', non entrambi");
+    }
+
+    _router.logger.start();
 
     return _router.route({
         prompt: options.prompt,
@@ -1791,7 +1714,14 @@ async function freeCallApi(options) {
     });
 }
 
-module.exports = { freeCallApi };
+// Solo per test: consente di ricreare i singleton dopo il mock delle API.
+function _resetForTests() {
+    _keyPool = null;
+    _router = null;
+}
+
+module.exports = { freeCallApi, _resetForTests };
+
 
 =================================
 FILE: package-lock.json
@@ -1809,7 +1739,8 @@ FILE: package-lock.json
       "license": "MIT",
       "dependencies": {
         "crypto": "^1.0.1",
-        "dotenv": "^16.4.0"
+        "dotenv": "^16.4.0",
+        "path": "^0.12.7"
       },
       "engines": {
         "node": ">=18.0.0"
@@ -1833,6 +1764,40 @@ FILE: package-lock.json
       "funding": {
         "url": "https://dotenvx.com"
       }
+    },
+    "node_modules/inherits": {
+      "version": "2.0.3",
+      "resolved": "https://registry.npmjs.org/inherits/-/inherits-2.0.3.tgz",
+      "integrity": "sha512-x00IRNXNy63jwGkJmzPigoySHbaqpNuzKbBOmzK+g2OdZpQ9w+sxCN+VSB3ja7IAge2OP2qpfxTjeNcyjmW1uw==",
+      "license": "ISC"
+    },
+    "node_modules/path": {
+      "version": "0.12.7",
+      "resolved": "https://registry.npmjs.org/path/-/path-0.12.7.tgz",
+      "integrity": "sha512-aXXC6s+1w7otVF9UletFkFcDsJeO7lSZBPUQhtb5O0xJe8LtYhj/GxldoL09bBj9+ZmE2hNoHqQSFMN5fikh4Q==",
+      "license": "MIT",
+      "dependencies": {
+        "process": "^0.11.1",
+        "util": "^0.10.3"
+      }
+    },
+    "node_modules/process": {
+      "version": "0.11.10",
+      "resolved": "https://registry.npmjs.org/process/-/process-0.11.10.tgz",
+      "integrity": "sha512-cdGef/drWFoydD1JsMzuFf8100nZl+GT+yacc2bEced5f9Rjk4z+WtFUTBu9PhOi9j/jfmBPu0mMEY4wIdAF8A==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.6.0"
+      }
+    },
+    "node_modules/util": {
+      "version": "0.10.4",
+      "resolved": "https://registry.npmjs.org/util/-/util-0.10.4.tgz",
+      "integrity": "sha512-0Pm9hTQ3se5ll1XihRic3FDIku70C+iHUdT/W926rSgHV5QgXsYbKZN8MSC3tJtSkhuROzvsQjAaFENRXr+19A==",
+      "license": "MIT",
+      "dependencies": {
+        "inherits": "2.0.3"
+      }
     }
   }
 }
@@ -1848,7 +1813,7 @@ FILE: package.json
   "description": "Libreria per chiamate API AI gratuite con fallback automatico",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node --test tests/test.js",
     "cache:stats": "node scripts/cache-stats.js",
     "cache:clear": "node scripts/cache-clear.js --force",
     "cache:warmup": "node scripts/warmup-cache.js",
@@ -1866,7 +1831,8 @@ FILE: package.json
   "license": "MIT",
   "dependencies": {
     "crypto": "^1.0.1",
-    "dotenv": "^16.4.0"
+    "dotenv": "^16.4.0",
+    "path": "^0.12.7"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -2362,151 +2328,291 @@ async function main() {
 main().catch(console.error);
 
 =================================
+FILE: tests/response.json
+=================================
+
+{
+  "instruction": "Agisci come **Senior E-Commerce SEO Specialist e Conversion Copywriter** esperto di Shopify, SEO, Google Shopping, SEO semantica e CRO. Settore: **[INSERISCI SETTORE]**.\n\nRiceverai un array JSON di prodotti. Trasforma ogni prodotto in una scheda SEO naturale, utile e orientata alla conversione.\n\n## REGOLE PRIORITARIE\n\nUsa **SOLO** dati presenti nell'input.\n\nNon modificare, correggere o reinterpretare: Codice prodotto, Riferimento, SKU, EAN, prezzi, quantità, URL, numeri, specifiche, compatibilità, marche, modelli e codici.\n\n**NON INVENTARE MAI** caratteristiche, materiali, dimensioni, colori, prestazioni, compatibilità, anni, certificazioni, omologazioni, garanzie, spedizioni, resi, disponibilità, accessori, promozioni o vantaggi non dimostrabili.\n\nSe un dato manca, omettilo.\n\nPriorità:\n**accuratezza > non invenzione > JSON valido > chiarezza > search intent > SEO > conversione > lunghezza.**\n\nScrivi in italiano naturale e professionale. Evita keyword stuffing, ripetizioni e affermazioni generiche. Usa sinonimi, varianti e termini semanticamente correlati quando supportati dal prodotto. Preferisci termini comprensibili dagli utenti senza alterare le specifiche tecniche.\n\nNon usare ALL CAPS, salvo sigle/unità corrette.\n\n## ANALISI INTERNA\n\nPrima dell'output identifica mentalmente:\n\n* keyword principale;\n* keyword secondarie/long-tail;\n* search intent, privilegiando transazionale/commerciale;\n* prodotto, categoria, marca/modello, tipologia, specifiche e compatibilità;\n* eventuale USP, solo se supportata dai dati.\n\nNon mostrare questa analisi.\n\n## OUTPUT\n\nRestituisci **SOLO JSON valido**, senza markdown, commenti o testo esterno.\n\nLa chiave principale deve essere \"Codice prodotto\" convertito in stringa.\n\nOgni prodotto deve avere esattamente:\n\n{\n\"3538\": {\n\"nome\": \"...\",\n\"sommario\": \"...\",\n\"descrizione\": \"...\",\n\"meta_title\": \"...\",\n\"meta_description\": \"...\",\n\"target_keywords\": [\"...\", \"...\", \"...\", \"...\", \"...\"],\n\"h1_suggestion\": \"...\",\n\"url_handle_suggestion\": \"...\",\n\"image_alt_text\": \"...\",\n\"faq_schema\": [\n{\"question\": \"...\", \"answer\": \"...\"},\n{\"question\": \"...\", \"answer\": \"...\"},\n{\"question\": \"...\", \"answer\": \"...\"}\n]\n}\n}\n\n## CAMPI\n\n**nome**\n\n* Preferibilmente 50-70 caratteri, massimo 100.\n* Keyword principale naturale.\n* Includi specifiche/compatibilità disponibili quando utili.\n* Non copiare semplicemente il nome originale.\n\n**sommario**\n\n* Un solo <p>.\n* Circa 150-250 caratteri.\n* 2-3 frasi.\n* Spiega cosa è e a cosa serve.\n* Keyword principale naturale.\n\n**descrizione**\n\n* Indicativamente 300-600 parole solo se i dati lo consentono.\n* Non aggiungere testo artificiale.\n* Struttura obbligatoria:\n\n  1. introduzione;\n  2. caratteristiche principali;\n  3. specifiche tecniche;\n  4. perché scegliere il prodotto;\n  5. chiusura all'acquisto.\n* Quando possibile, almeno 5 bullet.\n* Trasforma **caratteristica → utilità → beneficio** solo se il beneficio è supportato dai dati.\n* Riporta fedelmente le specifiche.\n* Non creare informazioni mancanti.\n\nHTML consentito/preferito:\n<p> <h3> <ul> <li> <strong> <table> <thead> <tbody> <tr> <th> <td>\n\nNiente CSS inline, classi, JavaScript o <div> inutili.\n\n**meta_title**\n\n* Massimo 60 caratteri.\n* Keyword principale vicino all'inizio.\n* Diverso dall'H1.\n\n**meta_description**\n\n* Target 140-160 caratteri, massimo 160.\n* Keyword principale naturale.\n* Descrittiva e orientata al click.\n* Nessuna promozione/garanzia/spedizione/urgenza inventata.\n\n**target_keywords**\nGenera **esattamente 5 keyword**:\n\n1. principale;\n2. long-tail principale;\n3. long-tail secondaria;\n4. variante semantica;\n5. commerciale/specifica.\n\n**h1_suggestion**\n\n* Diverso dal meta title.\n* Massimo 70 caratteri.\n* Descrittivo e naturale.\n* Keyword principale quando possibile.\n\n**url_handle_suggestion**\nSlug SEO-friendly:\n\n* minuscolo;\n* parole separate da `-`;\n* niente accenti/caratteri speciali;\n* niente codici casuali;\n* niente keyword duplicate;\n* mantieni specifiche importanti.\n\n**image_alt_text**\n\n* Massimo 125 caratteri.\n* Descrittivo e basato sui dati disponibili.\n* Keyword principale quando naturale.\n* Non usare \"immagine di\".\n* Non inventare dettagli visivi.\n\n**faq_schema**\nGenera **esattamente 3 FAQ** pertinenti al prodotto.\n\n* Domande basate sui dati disponibili.\n* Risposte concise, massimo 150 caratteri.\n* Non inventare informazioni.\n\n## VALIDAZIONE\n\nPrima dell'output verifica:\n\n* JSON valido;\n* tutti i Codici prodotto presenti come chiavi;\n* dati originali invariati;\n* zero informazioni inventate;\n* nome ≤100;\n* meta_title ≤60;\n* meta_description ≤160;\n* esattamente 5 keyword;\n* esattamente 3 FAQ;\n* H1 diverso dal meta title;\n* URL valido;\n* ALT ≤125;\n* HTML valido;\n* nessun markdown;\n* nessun keyword stuffing;\n* nessuna informazione commerciale inventata.\n\n**OUTPUT: SOLO JSON VALIDO.**\n\nInput:\n",
+  "input": [
+    {
+      "Codice prodotto": 3538,
+      "Riferimento": "V3538",
+      "Nome": "CERCHIO POSTERIORE 110/90-18 PERNO 25 PER CROSS KAYO T4 250cc",
+      "Sommario": "<p>402000-0049</p>",
+      "Prezzo (Tasse Escluse)": 122.942623,
+      "Prezzo (Tasse Incluse)": 149.99,
+      "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Cerchi e mozzi,Ricambi per tipologia",
+      "Quantità": 7,
+      "URL immagine di copertina": "https://autofantasy.it/img/p/4/3/2/1/4321.jpg",
+      "tag": "ricambi-gomme"
+    },
+    {
+      "Codice prodotto": 3539,
+      "Riferimento": "E3539",
+      "Nome": "PARAFANGO ANTERIORE MONOPATTINO ELETTRICO CHAOS SERIE GOLD",
+      "Prezzo (Tasse Escluse)": 9.827869,
+      "Prezzo (Tasse Incluse)": 11.99,
+      "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi veicoli elettrici,Monopattini",
+      "Quantità": 46,
+      "URL immagine di copertina": "https://autofantasy.it/img/p/4/3/2/3/4323.jpg",
+      "tag": "ricambi-altro"
+    }
+  ],
+  "response": "{\n  \"3538\": {\n    \"nome\": \"Cerchio posteriore 110/90-18 per Cross Kayo T4 250cc\",\n    \"sommario\": \"<p>Il cerchio posteriore misura 110/90-18 ed è dotato di perno da 25 mm, progettato per il cross Kayo T4 250 cc. Ideale per sostituire o aggiornare il cerchio di serie, garantendo montaggio preciso e affidabilità.</p>\",\n    \"descrizione\": \"<p>Il cerchio posteriore da 110/90‑18 è la soluzione perfetta per il tuo cross Kayo T4 250 cc, offrendo compatibilità totale con il modello originale.</p><h3>Caratteristiche principali</h3><ul><li>Misura 110/90‑18 per una calzata perfetta</li><li>Perno da 25 mm, standard per il Kayo T4</li><li>Progettato per uso su terreni off‑road</li><li>Facile installazione grazie al design originale</li><li>Costruzione robusta per resistere a sollecitazioni elevate</li></ul><h3>Specifiche tecniche</h3><table><thead><tr><th>Parametro</th><th>Valore</th></tr></thead><tbody><tr><td>Dimensione pneumatico</td><td>110/90‑18</td></tr><tr><td>Perno</td><td>25 mm</td></tr><tr><td>Modello compatibile</td><td>Cross Kayo T4 250 cc</td></tr></tbody></table><h3>Perché scegliere questo cerchio</h3><p>Realizzato secondo le specifiche del costruttore, il cerchio assicura una perfetta corrispondenza con i componenti di serie, riducendo al minimo il rischio di usura prematura o problemi di montaggio. La robustezza del profilo garantisce stabilità anche nelle condizioni più impegnative.</p><h3>Acquista ora</h3><p>Ordina il cerchio posteriore 110/90‑18 per il tuo Cross Kayo T4 250 cc e ripristina la performance originale del tuo veicolo.</p>\",\n    \"meta_title\": \"Cerchio posteriore 110/90-18 per Cross Kayo T4 - Ricambio\",\n    \"meta_description\": \"Cerchio posteriore 110/90-18 con perno 25 mm, compatibile con Cross Kayo T4 250 cc. Montaggio facile, robusto e pronto all'uso.\",\n    \"target_keywords\": [\n      \"cerchio posteriore cross kayo\",\n      \"cerchio posteriore 110/90-18 per Kayo T4 250cc\",\n      \"cerchio posteriore per monopattino cross Kayo\",\n      \"ruota posteriore cross Kayo\",\n      \"cerchio posteriore ricambio Kayo\"\n    ],\n    \"h1_suggestion\": \"Cerchio posteriore 110/90‑18 per Cross Kayo T4 250 cc\",\n    \"url_handle_suggestion\": \"cerchio-posteriore-110-90-18-cross-kayo-t4\",\n    \"image_alt_text\": \"Cerchio posteriore 110/90-18 per Cross Kayo T4 250cc\",\n    \"faq_schema\": [\n      {\n        \"question\": \"Qual è la misura del cerchio posteriore?\",\n        \"answer\": \"Il cerchio è di misura 110/90‑18.\"\n      },\n      {\n        \"question\": \"Per quale modello è compatibile questo cerchio?\",\n        \"answer\": \"È compatibile con il Cross Kayo T4 250 cc.\"\n      },\n      {\n        \"question\": \"Qual è il diametro del perno?\",\n        \"answer\": \"Il perno ha un diametro di 25 mm.\"\n      }\n    ]\n  },\n  \"3539\": {\n    \"nome\": \"Parafango anteriore per monopattino elettrico Chaos Serie Gold\",\n    \"sommario\": \"<p>Parafango anteriore specifico per il monopattino elettrico Chaos Serie Gold, pensato per proteggere la parte frontale da detriti e urti durante la guida.</p>\",\n    \"descrizione\": \"<p>Il parafango anteriore è progettato per il monopattino elettrico Chaos della Serie Gold, offrendo una protezione efficace alla parte frontale del veicolo.</p><h3>Caratteristiche principali</h3><ul><li>Modello dedicato al monopattino Chaos Serie Gold</li><li>Montaggio anteriore semplice e rapido</li><li>Design che devia detriti e schizzi</li><li>Compatibilità garantita con la struttura del monopattino</li><li>Leggero ma resistente</li></ul><h3>Specifiche tecniche</h3><table><thead><tr><th>Parametro</th><th>Valore</th></tr></thead><tbody><tr><td>Modello compatibile</td><td>Chaos Serie Gold</td></tr><tr><td>Posizione di montaggio</td><td>Anteriore</td></tr></tbody></table><h3>Perché scegliere questo parafango</h3><p>Realizzato su misura per il Chaos Gold, il parafango mantiene l'estetica originale del monopattino e migliora la sicurezza durante l'uso quotidiano, evitando che polvere e piccoli ostacoli raggiungano il veicolo.</p><h3>Acquista ora</h3><p>Aggiungi il parafango anteriore al tuo monopattino elettrico Chaos Serie Gold per una guida più pulita e protetta.</p>\",\n    \"meta_title\": \"Parafango anteriore per monopattino Chaos Gold - Ricambio\",\n    \"meta_description\": \"Parafango anteriore specifico per monopattino elettrico Chaos Serie Gold. Installazione semplice, protegge la parte frontale da detriti.\",\n    \"target_keywords\": [\n      \"parafango anteriore monopattino chaos\",\n      \"parafango anteriore Chaos Serie Gold\",\n      \"parafango ricambio monopattino elettrico\",\n      \"parafango frontale per Chaos Gold\",\n      \"parafango Chaos Gold\"\n    ],\n    \"h1_suggestion\": \"Parafango anteriore per monopattino elettrico Chaos Serie Gold\",\n    \"url_handle_suggestion\": \"parafango-anteriore-monopattino-chaos-gold\",\n    \"image_alt_text\": \"Parafango anteriore per monopattino elettrico Chaos Serie Gold\",\n    \"faq_schema\": [\n      {\n        \"question\": \"Per quale modello è compatibile il parafango?\",\n        \"answer\": \"È compatibile con il monopattino elettrico Chaos Serie Gold.\"\n      },\n      {\n        \"question\": \"Dove va installato il parafango?\",\n        \"answer\": \"Il parafango si monta sulla parte anteriore del monopattino.\"\n      },\n      {\n        \"question\": \"Qual è la funzione principale del parafango?\",\n        \"answer\": \"Protegge la parte anteriore dal detrito e dagli schizzi durante la guida.\"\n      }\n    ]\n  }\n}"
+}
+
+=================================
 FILE: tests/test.js
 =================================
 
-/**
- * tests/test-fix.js
- * Test suite compatibile con il codebase esistente.
- * Esegui con: node tests/test-fix.js
- */
-const assert = require("assert");
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const { writeFile } = require('fs/promises');
+const { freeCallApi } = require('../index');
+const { PROVIDERS } = require('../constants');
 
-require("dotenv").config({ path: path.join(__dirname, ".env") });
+const promptText = `Agisci come **Senior E-Commerce SEO Specialist e Conversion Copywriter** esperto di Shopify, SEO, Google Shopping, SEO semantica e CRO. Settore: **[INSERISCI SETTORE]**.
+
+Riceverai un array JSON di prodotti. Trasforma ogni prodotto in una scheda SEO naturale, utile e orientata alla conversione.
+
+## REGOLE PRIORITARIE
+
+Usa **SOLO** dati presenti nell'input.
+
+Non modificare, correggere o reinterpretare: Codice prodotto, Riferimento, SKU, EAN, prezzi, quantità, URL, numeri, specifiche, compatibilità, marche, modelli e codici.
+
+**NON INVENTARE MAI** caratteristiche, materiali, dimensioni, colori, prestazioni, compatibilità, anni, certificazioni, omologazioni, garanzie, spedizioni, resi, disponibilità, accessori, promozioni o vantaggi non dimostrabili.
+
+Se un dato manca, omettilo.
+
+Priorità:
+**accuratezza > non invenzione > JSON valido > chiarezza > search intent > SEO > conversione > lunghezza.**
+
+Scrivi in italiano naturale e professionale. Evita keyword stuffing, ripetizioni e affermazioni generiche. Usa sinonimi, varianti e termini semanticamente correlati quando supportati dal prodotto. Preferisci termini comprensibili dagli utenti senza alterare le specifiche tecniche.
+
+Non usare ALL CAPS, salvo sigle/unità corrette.
+
+## ANALISI INTERNA
+
+Prima dell'output identifica mentalmente:
+
+* keyword principale;
+* keyword secondarie/long-tail;
+* search intent, privilegiando transazionale/commerciale;
+* prodotto, categoria, marca/modello, tipologia, specifiche e compatibilità;
+* eventuale USP, solo se supportata dai dati.
+
+Non mostrare questa analisi.
+
+## OUTPUT
+
+Restituisci **SOLO JSON valido**, senza markdown, commenti o testo esterno.
+
+La chiave principale deve essere "Codice prodotto" convertito in stringa.
+
+Ogni prodotto deve avere esattamente:
+
+{
+"3538": {
+"nome": "...",
+"sommario": "...",
+"descrizione": "...",
+"meta_title": "...",
+"meta_description": "...",
+"target_keywords": ["...", "...", "...", "...", "..."],
+"h1_suggestion": "...",
+"url_handle_suggestion": "...",
+"image_alt_text": "...",
+"faq_schema": [
+{"question": "...", "answer": "..."},
+{"question": "...", "answer": "..."},
+{"question": "...", "answer": "..."}
+]
+}
+}
+
+## CAMPI
+
+**nome**
+
+* Preferibilmente 50-70 caratteri, massimo 100.
+* Keyword principale naturale.
+* Includi specifiche/compatibilità disponibili quando utili.
+* Non copiare semplicemente il nome originale.
+
+**sommario**
+
+* Un solo <p>.
+* Circa 150-250 caratteri.
+* 2-3 frasi.
+* Spiega cosa è e a cosa serve.
+* Keyword principale naturale.
+
+**descrizione**
+
+* Indicativamente 300-600 parole solo se i dati lo consentono.
+* Non aggiungere testo artificiale.
+* Struttura obbligatoria:
+
+  1. introduzione;
+  2. caratteristiche principali;
+  3. specifiche tecniche;
+  4. perché scegliere il prodotto;
+  5. chiusura all'acquisto.
+* Quando possibile, almeno 5 bullet.
+* Trasforma **caratteristica → utilità → beneficio** solo se il beneficio è supportato dai dati.
+* Riporta fedelmente le specifiche.
+* Non creare informazioni mancanti.
+
+HTML consentito/preferito:
+<p> <h3> <ul> <li> <strong> <table> <thead> <tbody> <tr> <th> <td>
+
+Niente CSS inline, classi, JavaScript o <div> inutili.
+
+**meta_title**
+
+* Massimo 60 caratteri.
+* Keyword principale vicino all'inizio.
+* Diverso dall'H1.
+
+**meta_description**
+
+* Target 140-160 caratteri, massimo 160.
+* Keyword principale naturale.
+* Descrittiva e orientata al click.
+* Nessuna promozione/garanzia/spedizione/urgenza inventata.
+
+**target_keywords**
+Genera **esattamente 5 keyword**:
+
+1. principale;
+2. long-tail principale;
+3. long-tail secondaria;
+4. variante semantica;
+5. commerciale/specifica.
+
+**h1_suggestion**
+
+* Diverso dal meta title.
+* Massimo 70 caratteri.
+* Descrittivo e naturale.
+* Keyword principale quando possibile.
+
+**url_handle_suggestion**
+Slug SEO-friendly:
+
+* minuscolo;
+* parole separate da \`-\`;
+* niente accenti/caratteri speciali;
+* niente codici casuali;
+* niente keyword duplicate;
+* mantieni specifiche importanti.
+
+**image_alt_text**
+
+* Massimo 125 caratteri.
+* Descrittivo e basato sui dati disponibili.
+* Keyword principale quando naturale.
+* Non usare "immagine di".
+* Non inventare dettagli visivi.
+
+**faq_schema**
+Genera **esattamente 3 FAQ** pertinenti al prodotto.
+
+* Domande basate sui dati disponibili.
+* Risposte concise, massimo 150 caratteri.
+* Non inventare informazioni.
+
+## VALIDAZIONE
+
+Prima dell'output verifica:
+
+* JSON valido;
+* tutti i Codici prodotto presenti come chiavi;
+* dati originali invariati;
+* zero informazioni inventate;
+* nome ≤100;
+* meta_title ≤60;
+* meta_description ≤160;
+* esattamente 5 keyword;
+* esattamente 3 FAQ;
+* H1 diverso dal meta title;
+* URL valido;
+* ALT ≤125;
+* HTML valido;
+* nessun markdown;
+* nessun keyword stuffing;
+* nessuna informazione commerciale inventata.
+
+**OUTPUT: SOLO JSON VALIDO.**
+
+Input:
+`;
+const input = [
+  {
+    "Codice prodotto": 3538,
+    "Riferimento": "V3538",
+    "Nome": "CERCHIO POSTERIORE 110/90-18 PERNO 25 PER CROSS KAYO T4 250cc",
+    "Sommario": "<p>402000-0049</p>",
+    "Prezzo (Tasse Escluse)": 122.942623,
+    "Prezzo (Tasse Incluse)": 149.99,
+    "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Cerchi e mozzi,Ricambi per tipologia",
+    "Quantità": 7,
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/3/2/1/4321.jpg",
+    "tag": "ricambi-gomme"
+  },
+  {
+    "Codice prodotto": 3539,
+    "Riferimento": "E3539",
+    "Nome": "PARAFANGO ANTERIORE MONOPATTINO ELETTRICO CHAOS SERIE GOLD",
+    "Prezzo (Tasse Escluse)": 9.827869,
+    "Prezzo (Tasse Incluse)": 11.99,
+    "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi veicoli elettrici,Monopattini",
+    "Quantità": 46,
+    "URL immagine di copertina": "https://autofantasy.it/img/p/4/3/2/3/4323.jpg",
+    "tag": "ricambi-altro"
+  }]
 
 
-const TokenManager = require("../core/token-manager.js");
-const PromptManager = require("../core/prompt-manager");
-const ChunkManager = require("../core/chunk-manager");
-const { MODEL_LIMITS } = require("../constants");
-const KeyPool = require("../core/key-pool");          // FIX: default export
-const Router = require("../core/router");
-const registry = require("../registry");
-const Logger = require("../core/logger");
 
-// Logger silenzioso compatibile con la classe Logger del progetto
-const silentLogger = new Logger({
-    info: () => {},
-    warn: () => {},
-    error: () => {},
-    request: () => {},
-    failure: () => {},
-    fallback: () => {}
+
+
+const freeApiObj = {
+    instruction : promptText,
+    input: input
+}
+
+const hasApiKey = Object.values(PROVIDERS).some(provider =>
+    provider.apiKeys.some(key => Boolean(key.value))
+);
+test('integrazione SEO: freeCallApi restituisce JSON per tutti i prodotti', {
+    skip: hasApiKey ? false : 'Nessuna API key configurata nel file .env'
+}, async () => {
+    const freeApi = await freeCallApi(freeApiObj);
+
+    assert.equal(typeof freeApi.text, 'string', 'La risposta deve contenere text');
+    assert.ok(freeApi.text.trim(), 'La risposta non deve essere vuota');
+    assert.ok(freeApi.provider, 'Deve essere indicato il provider utilizzato');
+    assert.ok(freeApi.model, 'Deve essere indicato il modello utilizzato');
+
+    const cleanText = freeApi.text
+
+    await writeFile(`${__dirname}/response.json`, JSON.stringify({
+        instruction: freeApiObj.instruction,
+        input: freeApiObj.input,
+        response: JSON.parse(cleanText),
+    }, null, 2));
 });
 
-console.log("========================================");
-console.log("🧪 free_ai_api - Test Suite (COMPATIBILE)");
-console.log("========================================\n");
-
-// --- Test 1: TokenManager stima testo ---
-console.log("Test 1: TokenManager - Stima base");
-const estInstr = TokenManager.estimate("Aggiungi campo toDeleted agli oggetti");
-const estInput = TokenManager.estimate(JSON.stringify([{ id: 1, name: "Prodotto A" }, { id: 2, name: "Prodotto B" }]));
-const overhead = 10;
-const total = estInstr + estInput + overhead;
-assert(estInstr > 0, "Instruction tokens > 0");
-assert(estInput > 0, "Input tokens > 0");
-assert(total > estInstr + estInput, "Total includes overhead");
-console.log("✅ PASS - Instruction:", estInstr, "| Input:", estInput, "| Total ~", total, "\n");
-
-// --- Test 2: Limiti modelli Groq vs Gemini ---
-console.log("Test 2: TokenManager - Limiti Groq vs Gemini");
-const geminiCheck = TokenManager.checkLimit("", "gemini-flash-latest");
-const groqCheck = TokenManager.checkLimit("", "openai/gpt-oss-120b");
-const geminiLimit = geminiCheck.limit === Infinity 
-    ? (MODEL_LIMITS["gemini-flash-latest"]?.maxInputTokens || MODEL_LIMITS["gemini-flash-latest"]?.contextWindow || 0)
-    : geminiCheck.limit;
-const groqLimit = groqCheck.limit === Infinity 
-    ? (MODEL_LIMITS["openai/gpt-oss-120b"]?.maxInputTokens || MODEL_LIMITS["openai/gpt-oss-120b"]?.contextWindow || 0)
-    : groqCheck.limit;
-
-assert(geminiLimit > 100000, "Gemini limit > 100k (ha " + geminiLimit + ")");
-assert(groqLimit <= 8000, "Groq limit <= 8000 (ha " + groqLimit + ")");
-console.log("✅ PASS - Gemini:", geminiLimit, "| Groq:", groqLimit, "\n");
-
-// --- Test 3: Pre-flight blocca richiesta grande su Groq ---
-console.log("Test 3: Pre-flight - Blocco richiesta grande su Groq");
-const bigInput = new Array(1000).fill({ test: 1, data: "x".repeat(100) });
-const bigText = "Istruzione\n" + JSON.stringify(bigInput);
-const bigCheck = TokenManager.checkLimit(bigText, "openai/gpt-oss-120b");
-assert(bigCheck.exceeds === true, "Groq deve rifiutare (exceeds=true)");
-console.log("✅ PASS - Blocked, tokens:", bigCheck.tokens, "limit:", bigCheck.limit, "\n");
-
-// --- Test 4: Classificazione errore 413 ---
-console.log("Test 4: Error classification - 413 handling");
-const err413 = new Error("Payload Too Large");
-err413.status = 413;
-// Il tuo errors.js non ha classifyError, quindi verifichiamo manualmente
-assert(err413.status === 413, "Status 413 rilevato");
-console.log("✅ PASS - Errore 413 rilevato manualmente (classifyError non esiste nel codebase)\n");
-
-// --- Test 5: KeyPool compatibile ---
-console.log("Test 5: KeyPool - getNextKey, trackRequest, setCooldown");
-const { PROVIDERS } = require("../constants");
-const kp = new KeyPool(PROVIDERS);  // FIX: solo 1 argomento
-const k1 = kp.getNextKey("gemini");
-assert(k1 !== null, "getNextKey restituisce una key");
-kp.trackRequest(k1.id);
-kp.setCooldown(k1.id, 1000);
-const k2 = kp.getNextKey("gemini");
-assert(k2 !== null, "getNextKey restituisce un'altra key o la stessa se unica");
-console.log("✅ PASS - KeyPool methods work\n");
-
-// --- Test 6: ChunkManager divide array ---
-console.log("Test 6: ChunkManager - Divisione preventiva batch");
-const cm = new ChunkManager(silentLogger);
-const items = new Array(5000).fill({ sku: "ABC123", price: 99.99 });
-const chunks = cm.splitArrayIntoChunks(items, "Aggiungi campo toDeleted", "groq", "openai/gpt-oss-120b");
-assert(chunks.length > 1, "Più di 1 chunk");
-assert(chunks[0].length < items.length, "Primo chunk < input");
-console.log("✅ PASS - Created", chunks.length, "chunks (first:", chunks[0].length, "items)\n");
-
-// --- Test 7: Router route (test reale) ---
-console.log("Test 7: Router - Routing richiesta");
-(async () => {
-    const keyPool = new KeyPool(PROVIDERS);
-    const router = new Router(keyPool, registry, silentLogger);
-
-    // Richiesta piccola
-    try {
-        const smallRes = await router.route({
-            prompt: "Spiegami la relatività in una frase",
-            provider: "gemini",
-            model: "gemini-flash-latest"
-        });
-        assert(smallRes.text || smallRes.provider, "Richiesta piccola ha successo");
-        console.log("✅ PASS - Small request routed, provider:", smallRes.provider, "\n");
-    } catch (e) {
-        console.log("⚠️ SKIP - Small request failed (probabilmente key non valide):", e.message, "\n");
-    }
-
-    // Richiesta grande su Groq: deve essere rifiutata o skippata
-    try {
-        const bigRes = await router.route({
-            prompt: "Aggiungi campo toDeleted\n" + JSON.stringify(new Array(2000).fill({ test: 1 })),
-            provider: "groq",
-            model: "openai/gpt-oss-120b",
-            compress: false
-        });
-        console.log("⚠️ WARN - Large Groq request non bloccata (unexpected success)\n");
-    } catch (err) {
-        const is413 = err.status === 413 || err.message?.includes("too long") || err.message?.includes("Payload");
-        assert(is413, "Errore atteso per payload troppo grande");
-        console.log("✅ PASS - Large Groq request blocked:", err.message.substring(0, 80), "...\n");
-    }
-
-    console.log("========================================");
-    console.log("🎉 Tutti i test superati!");
-    console.log("========================================");
-})();
 
 =================================
 FILE: utils/errors.js
 =================================
 
 /**
- * utils/errors.js (FIXED v2)
- * FIX #5, #9: classificazione precisa con strategia di routing.
+ * utils/errors.js (FIXED v3)
+ * FIX: aggiunto INVALID_REQUEST per 400 generici (maxTokens, parametri errati).
+ *      Ora un 400 su maxOutputTokens troppo alto NON causa loop infinito.
  */
 
 class FreeAIAPIError extends Error {
@@ -2544,13 +2650,13 @@ class QuotaExhaustedError extends FreeAIAPIError {
     }
 }
 
-// --- ErrorTypes enum ---
 const ErrorTypes = {
     TIMEOUT: "TIMEOUT",
     RATE_LIMIT_RPM: "RATE_LIMIT_RPM",
     RATE_LIMIT_TPM: "RATE_LIMIT_TPM",
     QUOTA_EXHAUSTED: "QUOTA_EXHAUSTED",
     INVALID_KEY: "INVALID_KEY",
+    INVALID_REQUEST: "INVALID_REQUEST",
     MODEL_NOT_FOUND: "MODEL_NOT_FOUND",
     PROMPT_TOO_LARGE: "PROMPT_TOO_LARGE",
     PAYLOAD_TOO_LARGE: "PAYLOAD_TOO_LARGE",
@@ -2558,10 +2664,6 @@ const ErrorTypes = {
     UNKNOWN: "UNKNOWN"
 };
 
-/**
- * Classifica un errore raw del provider.
- * FIX #5: distingue Groq 413 TPM (rate_limit_exceeded) da vero payload too large.
- */
 function classifyError(rawError, provider) {
     const status = rawError.status || rawError.statusCode || 0;
     const message = rawError.message || "";
@@ -2570,12 +2672,11 @@ function classifyError(rawError, provider) {
     const bodyMsg = body.error?.message || "";
     const bodyCode = body.error?.code || "";
 
-    // --- GROQ SPECIFICO ---
     if (provider === "groq") {
         if (status === 413 && (bodyCode === "rate_limit_exceeded" || message.includes("rate_limit_exceeded"))) {
             if (bodyMsg.includes("tokens per minute") || message.includes("tokens per minute")) {
                 return new FreeAIAPIError(
-                    "Groq TPM limit exceeded (free tier). Not payload size, but account consumption limit.",
+                    "Groq TPM limit exceeded (free tier).",
                     { status: 413, provider, type: ErrorTypes.RATE_LIMIT_TPM, metadata: { retryable: false, cooldownMs: 60000, changeProvider: true } }
                 );
             }
@@ -2589,7 +2690,6 @@ function classifyError(rawError, provider) {
         }
     }
 
-    // --- GEMINI SPECIFICO ---
     if (provider === "gemini") {
         if (status === 429 || bodyMsg.includes("Quota exceeded")) {
             return new FreeAIAPIError("Gemini rate limit or quota exceeded", { status: 429, provider, type: ErrorTypes.RATE_LIMIT_RPM, metadata: { retryable: true, cooldownMs: 60000 } });
@@ -2599,7 +2699,12 @@ function classifyError(rawError, provider) {
         }
     }
 
-    // --- GENERICO ---
+    if (status === 400) {
+        if ((provider === "gemini" && message.includes("API key not valid")) || message.includes("invalid api key")) {
+            return new FreeAIAPIError("API Key invalid", { status: 400, provider, type: ErrorTypes.INVALID_KEY, metadata: { retryable: false, invalidateKey: true } });
+        }
+        return new FreeAIAPIError("Invalid request parameters", { status: 400, provider, type: ErrorTypes.INVALID_REQUEST, metadata: { retryable: false, skipModel: true } });
+    }
     if (status === 401 || status === 403) {
         return new FreeAIAPIError("API Key invalid or unauthorized", { status, provider, type: ErrorTypes.INVALID_KEY, metadata: { retryable: false, invalidateKey: true } });
     }

@@ -1,4 +1,6 @@
 const fs = require("fs");
+const path = require("path");
+
 const { freeCallApi } = require('../../lib/free_ai_api_v1');
 
 // ═══════════════════════════════════════════════════════════════
@@ -9,6 +11,7 @@ const FILE_NUM = 15;
 const PRODOTTI_PATH = __dirname + `/files/${FILE_NUM}_todo.json`;
 const OUTPUT_PATH = __dirname + `/files/${FILE_NUM}_done.json`;
 const PROGRESS_PATH = __dirname + `/files/${FILE_NUM}_progress.json`;
+const AI_RESPONSE_FILE = __dirname + 'api.txt';
 
 const BATCH_SIZE = 2;
 const DELAY_MS = 4000; // Delay consapevole tra batch per non stressare le API gratuite
@@ -271,10 +274,6 @@ async function callAI(batch) {
     const result = await freeCallApi({
         instruction: PROMPT_BASE,   // ← Template SEO fisso: ottimizzato 1 volta, riusato N volte
         input: batch,               // ← Dati dinamici: cambiano ad ogni batch
-        temperature: 0.1,
-        maxTokens: 65536,
-        logger: customLogger,
-        optimize: true              // ← Abilita ottimizzazione AI del template (default true)
     });
 
     // Log metadati di ottimizzazione (solo per debug/monitoraggio)
@@ -290,8 +289,70 @@ async function callAI(batch) {
     const text = result.text;
     console.log('text', text)
 
+    saveAIResponse({
+
+        request: PROMPT_BASE + batch,
+
+        response: text
+
+    });
+
     return parseAIJson(text);
 }
+
+function saveAIResponse(data) {
+
+    const folder = path.dirname(AI_RESPONSE_FILE);
+
+    // Creo cartella se non esiste
+    if (!fs.existsSync(folder)) {
+        fs.mkdirSync(folder, {
+            recursive: true
+        });
+    }
+
+
+    let history = [];
+
+    // Leggo storico precedente
+    if (fs.existsSync(AI_RESPONSE_FILE)) {
+
+        const content = fs.readFileSync(
+            AI_RESPONSE_FILE,
+            "utf8"
+        );
+
+        try {
+            history = JSON.parse(content);
+        } catch (e) {
+            history = [];
+        }
+    }
+
+
+    // Aggiungo nuova risposta
+    history.push({
+        date: new Date().toISOString(),
+
+        request: data.request,
+
+        response: data.response
+    });
+
+
+    // Riscrivo file
+    fs.writeFileSync(
+        AI_RESPONSE_FILE,
+        JSON.stringify(
+            history,
+            null,
+            2
+        ),
+        "utf8"
+    );
+}
+
+
 
 function parseAIJson(text) {
     if (typeof text === "object") {
