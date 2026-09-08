@@ -15,7 +15,8 @@
     "1024",
     "1025",
     "1029",
-    "1030"
+    "1030",
+    "1021"
   ],
   "results": {
     "0": {
@@ -65,6 +66,37 @@
         {
           "question": "Qual è il vantaggio di questa sella?",
           "answer": "Design ergonomico per maggiore comfort su lunghe uscite."
+        }
+      ]
+    },
+    "1021": {
+      "nome": "Sensore di movimento infrarossi V-TAC 5088 per lampadine – 12 m, luce crepuscolare",
+      "sommario": "<p>Il sensore di movimento V-TAC 5088 trasforma qualsiasi lampadina in un punto luce intelligente, rilevando il movimento fino a 12 m e regolando la luce di crepuscolo. Ideale per case, uffici e spazi commerciali, garantisce sicurezza e risparmio energetico fin dal primo utilizzo.</p>",
+      "descrizione": "<p>Stai cercando un modo semplice per automatizzare l'illuminazione e aumentare la sicurezza dei tuoi ambienti? Il sensore di movimento infrarossi V-TAC 5088 è la soluzione perfetta: si installa in pochi minuti, rileva il movimento con precisione e regola la luce di crepuscolo per una resa ottimale.</p>\n<h3>Caratteristiche Principali</h3>\n<ul>\n<li><strong>Raggio di rilevamento 180°:</strong> copre un'ampia zona per garantire che ogni movimento venga rilevato, ideale per ingressi e corridoi.</li>\n<li><strong>Distanza di rilevamento fino a 12 m:</strong> attiva la luce anche a distanza, perfetto per grandi stanze o aree esterne.</li>\n<li><strong>Tempo di ritardo regolabile (10 s – 10 min):</strong> scegli l'intervallo più adatto al tuo uso, evitando accensioni indesiderate.</li>\n<li><strong>Carico nominale max 800 W:</strong> compatibile con la maggior parte delle lampadine a LED e alogene, senza rischi di sovraccarico.</li>\n<li><strong>Luce ambiente <3‑2000 lux regolabile:</strong> la funzione crepuscolare adegua l'intensità luminosa al livello di luce naturale, riducendo i consumi.</li>\n</ul>\n<h3>Specifiche Tecniche</h3>\n<table>\n  <tbody>\n    <tr><td>Tipo sensore</td><td>Infrared</td></tr>\n    <tr><td>Raggio di rilevamento</td><td>180°</td></tr>\n    <tr><td>Distanza di rilevamento</td><td>Max. 12 m (&lt;24°C)</td></tr>\n    <tr><td>Velocità movimento rilevata</td><td>0.6 – 1.5 m/s</td></tr>\n    <tr><td>Tempo di ritardo</td><td>Min. 10 s ±3 s – Max. 10 min ±2 min</td></tr>\n    <tr><td>Carico nominale</td><td>Max. 800 W</td></tr>\n    <tr><td>Luce ambiente</td><td>&lt;3‑2000 lux regolabile</td></tr>\n    <tr><td>Materiale</td><td>Alluminio + PC</td></tr>\n    <tr><td>Colore</td><td>Bianco</td></tr>\n    <tr><td>Tensione</td><td>AC 220‑240 V</td></tr>\n    <tr><td>Frequenza</td><td>50/60 Hz</td></tr>\n    <tr><td>Vita media</td><td>&gt;20 000 h</td></tr>\n    <tr><td>Certificazioni</td><td>CE, EMC, ROHS</td></tr>\n    <tr><td>Dimensioni (L×P×H)</td><td>85 × 60 × 85 mm</td></tr>\n    <tr><td>Peso</td><td>0,13 kg</td></tr>\n  </tbody>\n</table>\n<h3>Perché Scegliere Questo Prodotto</h3>\n<p>Con V-TAC 5088 ottieni un sensore certificato CE, facile da installare e capace di ridurre i consumi grazie alla luce crepuscolare. La garanzia di 2 anni, spedizione rapida e assistenza dedicata ti assicurano tranquillità dall'acquisto al post‑vendita.</p>",
+      "meta_title": "Sensore movimento infrarossi V-TAC 5088 | Lampadine",
+      "meta_description": "Scopri il sensore V-TAC 5088 per lampadine: rilevamento 12 m, luce crepuscolare, facile installazione. Ordina ora e risparmia energia! 🌟",
+      "target_keywords": [
+        "sensore movimento infrarossi per lampadine",
+        "sensore movimento V-TAC 5088 crepuscolare",
+        "sensore infrarossi 12m per lampade indoor",
+        "sensore movimento a infrarossi con regolazione luminosità",
+        "V-TAC sensore 5088"
+      ],
+      "h1_suggestion": "Sensore di movimento V-TAC 5088 con rilevamento 12 m e luce crepuscolare per lampadine",
+      "url_handle_suggestion": "sensore-movimento-vtac-5088-lampadine",
+      "image_alt_text": "Sensore di movimento infrarossi V-TAC 5088 bianco per lampadine, rilevamento 12 m, luce crepuscolare",
+      "faq_schema": [
+        {
+          "question": "Qual è la distanza massima di rilevamento del sensore V-TAC 5088?",
+          "answer": "Il sensore rileva il movimento fino a 12 metri, entro un angolo di 180°."
+        },
+        {
+          "question": "Il sensore è compatibile con lampadine a LED?",
+          "answer": "Sì, supporta un carico nominale massimo di 800 W, adatto a LED, alogene e altre lampadine."
+        },
+        {
+          "question": "Come funziona la funzione di luce crepuscolare?",
+          "answer": "Regola l'intensità della lampada in base al livello di luce ambientale (<3‑2000 lux) per ottimizzare i consumi."
         }
       ]
     },

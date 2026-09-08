@@ -7,13 +7,13 @@ const { freeCallApi } = require('../../lib/free_ai_api_v1');
 // CONFIGURAZIONE
 // ═══════════════════════════════════════════════════════════════
 
-const FILE_NUM = 15;
+const FILE_NUM = 16;
 const PRODOTTI_PATH = __dirname + `/files/${FILE_NUM}_todo.json`;
 const OUTPUT_PATH = __dirname + `/files/${FILE_NUM}_done.json`;
 const PROGRESS_PATH = __dirname + `/files/${FILE_NUM}_progress.json`;
 const AI_RESPONSE_FILE = __dirname + 'api.txt';
 
-const BATCH_SIZE = 2;
+const BATCH_SIZE = 1;
 const DELAY_MS = 4000; // Delay consapevole tra batch per non stressare le API gratuite
 
 // ═══════════════════════════════════════════════════════════════

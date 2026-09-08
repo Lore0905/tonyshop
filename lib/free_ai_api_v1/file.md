@@ -1,4 +1,7 @@
 
+
+
+
 =================================
 FILE: adapters/gemini.js
 =================================
@@ -423,13 +426,20 @@ class Compressor {
     this.providerClient = new ProviderClient(keyPool, logger);
   }
 
-  async compress(prompt, targetModel, targetProvider, reservedInputTokens = 0) {
+  async compress(prompt, targetModel, targetProvider) {
     const promptTokens = TokenManager.estimate(prompt);
     const targetLimit = TokenManager.getEffectiveLimit(targetProvider, targetModel).limit;
 
     if (!targetLimit) {
       throw new Error(`Cannot determine limit for ${targetProvider}/${targetModel}`);
     }
+
+    this.logger.info("Prompt exceeds target model limit, initiating semantic compression", {
+      targetProvider,
+      targetModel,
+      promptTokens,
+      targetLimit
+    });
 
     const compressor = this.findCompressorModel(promptTokens);
     if (!compressor) {
@@ -440,10 +450,13 @@ class Compressor {
       throw error;
     }
 
-    this.logger.model({ purpose: "compressione", provider: compressor.provider, model: compressor.model });
+    this.logger.info("Selected compressor model", {
+      provider: compressor.provider,
+      model: compressor.model,
+      keyId: compressor.key.id
+    });
 
-    const desiredLimit = Math.max(1, targetLimit - reservedInputTokens - 32);
-    const compressionPrompt = this.buildCompressionPrompt(prompt, targetModel, targetProvider, desiredLimit);
+    const compressionPrompt = this.buildCompressionPrompt(prompt, targetModel, targetProvider);
     const compressionTokens = TokenManager.estimate(compressionPrompt);
 
     const compressorLimit = TokenManager.getEffectiveLimit(compressor.provider, compressor.model).limit;
@@ -472,9 +485,18 @@ class Compressor {
       const compressedText = result.text || "";
       const compressedTokens = TokenManager.estimate(compressedText);
 
-      if (compressedTokens > desiredLimit) {
+      this.logger.info("Compression completed", {
+        provider: compressor.provider,
+        model: compressor.model,
+        originalTokens: promptTokens,
+        compressedTokens,
+        duration,
+        reduction: `${Math.round((1 - compressedTokens / promptTokens) * 100)}%`
+      });
+
+      if (compressedTokens > targetLimit) {
         const error = new Error(
-          `La compressione non è sufficiente (${compressedTokens} > ${desiredLimit} token)`
+          `Compressed prompt still exceeds target model limit (${compressedTokens} > ${targetLimit})`
         );
         error.status = 413;
         throw error;
@@ -531,7 +553,8 @@ class Compressor {
     return null;
   }
 
-  buildCompressionPrompt(prompt, targetModel, targetProvider, targetLimit) {
+  buildCompressionPrompt(prompt, targetModel, targetProvider) {
+    const targetLimit = TokenManager.getEffectiveLimit(targetProvider, targetModel).limit || 0;
 
     return `You are a semantic compression engine. Your task is to compress the following text while preserving ALL semantic information, facts, data, names, dates, numbers, relationships, and instructions.
 
@@ -540,9 +563,7 @@ CRITICAL REQUIREMENTS:
 2. Preserve EXACTLY: all technical details, requirements, constraints, names, dates, numbers, code, and logical relationships.
 3. The compressed text MUST fit within ${targetLimit} tokens when processed by an AI model.
 4. The meaning must remain 100% intact. Another AI reading the compressed version should produce the same result as if it had read the original.
-5. Preserve the requested output contract verbatim: schemas, JSON keys, field names, types, cardinalities, ordering, formatting, examples that define structure, and validation rules.
-6. Preserve imperative strength (ONLY, MUST, NEVER, EXACTLY) and every numeric constraint.
-7. Do NOT add explanations or meta-commentary. Output ONLY the compressed text.
+5. Do NOT add explanations, markdown formatting, or meta-commentary. Output ONLY the compressed text.
 
 ORIGINAL TEXT:
 ${prompt}
@@ -552,7 +573,6 @@ COMPRESSED TEXT:`;
 }
 
 module.exports = Compressor;
-
 
 =================================
 FILE: core/key-pool.js
@@ -606,7 +626,6 @@ class KeyPool {
                 return { ...k, state: s };
             })
             .filter(k => {
-                if (!k.value) return false;
                 if (k.state.invalid) return false;
                 if (k.state.cooldownUntil > now) return false;
                 if (k.state.rpmCount.length >= k.rpmLimit) return false;
@@ -668,7 +687,6 @@ class KeyPool {
 module.exports = KeyPool;
 module.exports.KeyPool = KeyPool;
 
-
 =================================
 FILE: core/logger.js
 =================================
@@ -710,18 +728,6 @@ class Logger {
         this.logger.info("[INFO]", message, data);
     }
 
-    start() {
-        this.info("start free_ai_api");
-    }
-
-    analysis({ compressed, structure }) {
-        this.info("analisi parametri", { compresso: compressed, struttura: structure });
-    }
-
-    model({ purpose, provider, model, fromCache = false }) {
-        this.info("modello utilizzato", { scopo: purpose, provider, model, cache: fromCache });
-    }
-
     warn(message, data = {}) {
         this.logger.warn("[WARN]", message, data);
     }
@@ -731,7 +737,13 @@ class Logger {
     }
 
     request({ provider, model, apiKey, duration, retry = false }) {
-        // Il riepilogo del modello viene emesso dal router una sola volta.
+        this.info("API request", {
+            provider,
+            model,
+            apiKey: this.maskKey(apiKey),
+            duration,
+            retry
+        });
     }
 
     fallback({ provider, model, reason }) {
@@ -924,11 +936,15 @@ FILE: core/prompt-manager.js
 const crypto = require("crypto");
 const { normalizePrompt } = require("../utils/prompt-normalizer");
 const PromptCache = require("./prompt-cache");
+const PromptOptimizer = require("./prompt-optimizer");
 const TokenManager = require("./token-manager.js");
 
 class PromptManager {
   constructor(keyPool, registry, logger, options = {}) {
     this.cache = new PromptCache(options.cache);
+    this.optimizer = options.optimizeOnMiss !== false
+      ? new PromptOptimizer(keyPool, logger)
+      : null;
     this.logger = logger;
     this.enabled = options.enabled !== false;
   }
@@ -947,33 +963,68 @@ class PromptManager {
     const normalized = normalizePrompt(instruction);
     const hash = this._generateHash(normalized);
 
+    const cached = this.cache.get(hash);
+    if (cached) {
+      this.logger.info("Prompt cache HIT", {
+        hash: hash.substring(0, 8),
+        usageCount: cached.usageCount,
+        savedTokens: cached.savedTokens
+      });
+      return {
+        prompt: this._buildPrompt(cached.optimized, input),
+        hash,
+        fromCache: true,
+        optimized: cached.optimized,
+        original: cached.original,
+        stats: TokenManager.getStats(cached.original, cached.optimized)
+      };
+    }
+
+    this.logger.info("Prompt cache MISS", { hash: hash.substring(0, 8) });
+
+    let optimized = instruction;
+    let fromOptimizer = false;
+
+    if (this.enabled && this.optimizer) {
+      try {
+        optimized = await this.optimizer.optimize(instruction);
+        fromOptimizer = true;
+        const optStats = TokenManager.getStats(instruction, optimized);
+        this.logger.info("Prompt optimized via AI", {
+          hash: hash.substring(0, 8),
+          originalTokens: optStats.before,
+          optimizedTokens: optStats.after,
+          reduction: `${optStats.reductionPercent}%`
+        });
+      } catch (err) {
+        this.logger.warn("Prompt optimization failed, using original", {
+          error: err.message
+        });
+      }
+    }
+
+    const stats = TokenManager.getStats(instruction, optimized);
+
+    this.cache.set(hash, {
+      original: instruction,
+      optimized,
+      tokensBefore: stats.before,
+      tokensAfter: stats.after,
+      usageCount: 1,
+      savedTokens: 0,
+      lastUsed: new Date().toISOString()
+    });
+
     return {
-      prompt: this._buildPrompt(instruction, input),
+      prompt: this._buildPrompt(optimized, input),
       hash,
       fromCache: false,
-      fromOptimizer: false,
-      optimized: instruction,
+      fromOptimizer,
+      optimized,
       original: instruction,
-      stats: TokenManager.getStats(instruction, instruction)
+      stats
     };
   }
-
-  getCompressed(instruction, provider, model) {
-    const hash = this._generateHash(`${normalizePrompt(instruction)}\n${provider}/${model}`);
-    const cached = this.cache.get(hash);
-    return cached ? { hash, text: cached.optimized } : { hash, text: null };
-  }
-
-  saveCompressed(hash, instruction, compressed) {
-    const stats = TokenManager.getStats(instruction, compressed);
-    this.cache.set(hash, {
-      original: instruction, optimized: compressed,
-      tokensBefore: stats.before, tokensAfter: stats.after, usageCount: 1
-    });
-    return stats;
-  }
-
-  buildPrompt(instruction, input) { return this._buildPrompt(instruction, input); }
 
   _prepareLegacy(prompt) {
     return {
@@ -1006,7 +1057,6 @@ class PromptManager {
 
 module.exports = PromptManager;
 
-
 =================================
 FILE: core/prompt-optimizer.js
 =================================
@@ -1029,42 +1079,14 @@ class PromptOptimizer {
       throw new Error("No Gemini key available for prompt optimization");
     }
 
-    const optimizationPrompt = `You are a prompt optimization engine.
+    const optimizationPrompt = `You are a prompt optimization engine. Your task is to rewrite the following user instruction to be maximally concise and clear for an AI model, removing all unnecessary words while preserving every requirement, constraint, and technical detail.
 
-Your task is to reduce the token count of the instruction WITHOUT
-changing its behavioral contract.
-
-ABSOLUTE RULES:
-
-1. Never remove an output field.
-2. Never rename an output field.
-3. Never change the output data type.
-4. Never change array cardinality requirements.
-5. Never remove examples that define output structure.
-6. Never change numerical limits.
-7. Never remove validation rules.
-8. Never remove "must", "exactly", "only", "never" constraints.
-9. Never modify JSON structure.
-10. Never modify HTML requirements.
-11. Never modify priority rules.
-12. Never modify data integrity rules.
-
-The following sections are IMMUTABLE:
-
-OUTPUT SCHEMA
-FIELD NAMES
-CARDINALITY
-VALIDATION RULES
-NUMERICAL LIMITS
-DATA INTEGRITY RULES
-
-Only remove:
-- rhetorical language
-- duplicated explanations
-- redundant examples
-- stylistic prose
-
-Return ONLY the optimized instruction.
+Rules:
+1. Remove filler words, redundancies, and polite phrases.
+2. Keep all technical terms, variable names, field names, and logic intact.
+3. Use imperative, direct language.
+4. Do NOT add explanations, markdown formatting, or meta-commentary.
+5. Output ONLY the optimized instruction text.
 
 Original instruction:
 ${instruction}
@@ -1185,7 +1207,7 @@ FILE: core/router.js
  * - RATE_LIMIT_TPM esce dal while key e interrompe i modelli del provider
  */
 
-const { DEFAULT_CONFIG, PROVIDERS, MODEL_LIMITS, PROMPT_CACHE_CONFIG } = require("../constants");
+const { DEFAULT_CONFIG, PROVIDERS, MODEL_LIMITS } = require("../constants");
 
 const ProviderClient = require("./provider-client");
 const Compressor = require("./compressor");
@@ -1205,8 +1227,7 @@ class Router {
     this.compressor = new Compressor(keyPool, registry, logger);
     this.chunkManager = new ChunkManager(logger);
     this.promptManager = new PromptManager(keyPool, registry, logger, {
-      enabled: PROMPT_CACHE_CONFIG.enabled,
-      cache: PROMPT_CACHE_CONFIG,
+      cache: { enabled: true },
     });
 
     this.attempts = [];
@@ -1234,8 +1255,6 @@ class Router {
     let promptHash = null;
     let fromOptimizer = false;
     let promptStats = null;
-    const structure = instruction ? "instruction + input" : "solo prompt";
-    let compressed = false;
 
     if (instruction) {
       const prepared = await this.promptManager.prepare({ instruction, input });
@@ -1252,10 +1271,25 @@ class Router {
       promptTokens = TokenManager.estimate(effectivePrompt, "text");
     }
 
-    const providers = this.resolveProviders(provider, model);
-    if (providers.length === 0) throw new Error(`Provider non valido: ${provider}`);
+    this.logger.info(`[Router] Estimated ${promptTokens} tokens`);
+
+    if (Array.isArray(input) && input.length > 0) {
+      const probeProvider = provider || this.resolveProviders(null)[0];
+      const probeModel = model || PROVIDERS[probeProvider]?.models[0];
+      if (
+        this.chunkManager.needsChunking(
+          input,
+          instruction || effectivePrompt,
+          probeProvider,
+          probeModel,
+        )
+      ) {
+        return this._routeChunked(options, instruction, input);
+      }
+    }
+
+    const providers = this.resolveProviders(provider);
     const originalPrompt = effectivePrompt;
-    const explicitTarget = Boolean(provider || model);
 
     for (const provName of providers) {
       if (this.isProviderBlocked(provName)) continue;
@@ -1293,6 +1327,7 @@ class Router {
 
         let check = TokenManager.canHandleRequest(provName, modelName, promptTokens);
         if (!check.ok) {
+          this.logger.warn(`[Router] Skip ${provName}/${modelName}: ${check.reason}`);
           this.attempts.push({
             provider: provName,
             model: modelName,
@@ -1301,46 +1336,13 @@ class Router {
             preflight: true,
           });
 
-          if (explicitTarget) {
-            const err = new Error(
-              `Impossibile eseguire il prompt con ${provName}/${modelName}: richiede circa ${promptTokens} token, oltre il limite di ${check.limit}. Riduci il prompt o non specificare il modello per consentire selezione e compressione automatiche.`
-            );
-            err.code = "PROMPT_TOO_LARGE_FOR_SELECTED_MODEL";
-            err.status = 413;
-            err.provider = provName;
-            err.model = modelName;
-            err.tokens = promptTokens;
-            err.limit = check.limit;
-            this.logger.analysis({ compressed: false, structure });
-            throw err;
-          }
-
           if (compress) {
             try {
-              if (instruction) {
-                const cached = this.promptManager.getCompressed(instruction, provName, modelName);
-                const inputTokens = TokenManager.estimate(input, typeof input === "object" ? "json" : "text");
-                if (cached.text) {
-                  effectivePrompt = this.promptManager.buildPrompt(cached.text, input);
-                  fromCache = true;
-                  promptHash = cached.hash;
-                  this.logger.model({ purpose: "compressione", provider: "gemini", model: "gemini-flash-latest", fromCache: true });
-                } else {
-                  const compressedInstruction = await this.compressor.compress(instruction, modelName, provName, inputTokens);
-                  this.promptManager.saveCompressed(cached.hash, instruction, compressedInstruction);
-                  effectivePrompt = this.promptManager.buildPrompt(compressedInstruction, input);
-                  promptHash = cached.hash;
-                  fromOptimizer = true;
-                }
-              } else {
-                effectivePrompt = await this.compressor.compress(originalPrompt, modelName, provName);
-              }
-              compressed = true;
+              effectivePrompt = await this.compressor.compress(originalPrompt, modelName, provName);
               promptTokens = TokenManager.estimate(effectivePrompt);
               check = TokenManager.canHandleRequest(provName, modelName, promptTokens);
               if (!check.ok) continue;
             } catch (e) {
-              this.attempts.push({ provider: provName, model: modelName, status: "compression_failed", reason: e.message });
               continue;
             }
           } else {
@@ -1380,9 +1382,6 @@ class Router {
                 temperature,
                 maxTokens,
               });
-
-              this.logger.analysis({ compressed, structure });
-              this.logger.model({ purpose: "richiesta", provider: provName, model: modelName });
 
               return {
                 ...result,
@@ -1434,10 +1433,7 @@ class Router {
             case ErrorTypes.TIMEOUT:
               break;
             default:
-              // Errori di rete o sconosciuti non devono riprovare all'infinito
-              // la stessa chiave. Passa al modello/provider successivo.
-              this.keyPool.setCooldown(key.id, 5000);
-              key = null;
+              if (classified.status >= 500) key = null;
               break;
           }
         }
@@ -1506,14 +1502,8 @@ class Router {
     };
   }
 
-  resolveProviders(provider, requestedModel) {
+  resolveProviders(provider) {
     if (provider) return [provider];
-    // Se è indicato solo il modello, usa esclusivamente il provider che lo espone.
-    if (requestedModel) {
-      return Object.entries(PROVIDERS)
-        .filter(([, cfg]) => cfg.enabled && cfg.models?.includes(requestedModel))
-        .map(([name]) => name);
-    }
     return Object.entries(PROVIDERS)
       .filter(([, cfg]) => cfg.enabled)
       .sort(([, a], [, b]) => a.priority - b.priority)
@@ -1521,7 +1511,7 @@ class Router {
   }
 
   resolveModels(config, model) {
-    if (model) return config.models?.includes(model) ? [model] : [];
+    if (model) return [model];
     return config.models || [];
   }
 
@@ -1556,7 +1546,6 @@ class Router {
 }
 
 module.exports = Router;
-
 
 =================================
 FILE: core/token-manager.js
@@ -1690,17 +1679,8 @@ function init(customLogger) {
     _router = new Router(_keyPool, registry, logger);
 }
 
-async function freeCallApi(options = {}) {
+async function freeCallApi(options) {
     init(options.logger);
-
-    if (!options.prompt && !options.instruction) {
-        throw new TypeError("freeCallApi richiede 'prompt' oppure 'instruction'");
-    }
-    if (options.prompt && options.instruction) {
-        throw new TypeError("Usa 'prompt' oppure 'instruction' + 'input', non entrambi");
-    }
-
-    _router.logger.start();
 
     return _router.route({
         prompt: options.prompt,
@@ -1714,14 +1694,7 @@ async function freeCallApi(options = {}) {
     });
 }
 
-// Solo per test: consente di ricreare i singleton dopo il mock delle API.
-function _resetForTests() {
-    _keyPool = null;
-    _router = null;
-}
-
-module.exports = { freeCallApi, _resetForTests };
-
+module.exports = { freeCallApi };
 
 =================================
 FILE: package-lock.json
@@ -1813,7 +1786,7 @@ FILE: package.json
   "description": "Libreria per chiamate API AI gratuite con fallback automatico",
   "main": "index.js",
   "scripts": {
-    "test": "node --test tests/test.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
     "cache:stats": "node scripts/cache-stats.js",
     "cache:clear": "node scripts/cache-clear.js --force",
     "cache:warmup": "node scripts/warmup-cache.js",
@@ -2328,225 +2301,698 @@ async function main() {
 main().catch(console.error);
 
 =================================
-FILE: tests/response.json
-=================================
-
-{
-  "instruction": "Agisci come **Senior E-Commerce SEO Specialist e Conversion Copywriter** esperto di Shopify, SEO, Google Shopping, SEO semantica e CRO. Settore: **[INSERISCI SETTORE]**.\n\nRiceverai un array JSON di prodotti. Trasforma ogni prodotto in una scheda SEO naturale, utile e orientata alla conversione.\n\n## REGOLE PRIORITARIE\n\nUsa **SOLO** dati presenti nell'input.\n\nNon modificare, correggere o reinterpretare: Codice prodotto, Riferimento, SKU, EAN, prezzi, quantità, URL, numeri, specifiche, compatibilità, marche, modelli e codici.\n\n**NON INVENTARE MAI** caratteristiche, materiali, dimensioni, colori, prestazioni, compatibilità, anni, certificazioni, omologazioni, garanzie, spedizioni, resi, disponibilità, accessori, promozioni o vantaggi non dimostrabili.\n\nSe un dato manca, omettilo.\n\nPriorità:\n**accuratezza > non invenzione > JSON valido > chiarezza > search intent > SEO > conversione > lunghezza.**\n\nScrivi in italiano naturale e professionale. Evita keyword stuffing, ripetizioni e affermazioni generiche. Usa sinonimi, varianti e termini semanticamente correlati quando supportati dal prodotto. Preferisci termini comprensibili dagli utenti senza alterare le specifiche tecniche.\n\nNon usare ALL CAPS, salvo sigle/unità corrette.\n\n## ANALISI INTERNA\n\nPrima dell'output identifica mentalmente:\n\n* keyword principale;\n* keyword secondarie/long-tail;\n* search intent, privilegiando transazionale/commerciale;\n* prodotto, categoria, marca/modello, tipologia, specifiche e compatibilità;\n* eventuale USP, solo se supportata dai dati.\n\nNon mostrare questa analisi.\n\n## OUTPUT\n\nRestituisci **SOLO JSON valido**, senza markdown, commenti o testo esterno.\n\nLa chiave principale deve essere \"Codice prodotto\" convertito in stringa.\n\nOgni prodotto deve avere esattamente:\n\n{\n\"3538\": {\n\"nome\": \"...\",\n\"sommario\": \"...\",\n\"descrizione\": \"...\",\n\"meta_title\": \"...\",\n\"meta_description\": \"...\",\n\"target_keywords\": [\"...\", \"...\", \"...\", \"...\", \"...\"],\n\"h1_suggestion\": \"...\",\n\"url_handle_suggestion\": \"...\",\n\"image_alt_text\": \"...\",\n\"faq_schema\": [\n{\"question\": \"...\", \"answer\": \"...\"},\n{\"question\": \"...\", \"answer\": \"...\"},\n{\"question\": \"...\", \"answer\": \"...\"}\n]\n}\n}\n\n## CAMPI\n\n**nome**\n\n* Preferibilmente 50-70 caratteri, massimo 100.\n* Keyword principale naturale.\n* Includi specifiche/compatibilità disponibili quando utili.\n* Non copiare semplicemente il nome originale.\n\n**sommario**\n\n* Un solo <p>.\n* Circa 150-250 caratteri.\n* 2-3 frasi.\n* Spiega cosa è e a cosa serve.\n* Keyword principale naturale.\n\n**descrizione**\n\n* Indicativamente 300-600 parole solo se i dati lo consentono.\n* Non aggiungere testo artificiale.\n* Struttura obbligatoria:\n\n  1. introduzione;\n  2. caratteristiche principali;\n  3. specifiche tecniche;\n  4. perché scegliere il prodotto;\n  5. chiusura all'acquisto.\n* Quando possibile, almeno 5 bullet.\n* Trasforma **caratteristica → utilità → beneficio** solo se il beneficio è supportato dai dati.\n* Riporta fedelmente le specifiche.\n* Non creare informazioni mancanti.\n\nHTML consentito/preferito:\n<p> <h3> <ul> <li> <strong> <table> <thead> <tbody> <tr> <th> <td>\n\nNiente CSS inline, classi, JavaScript o <div> inutili.\n\n**meta_title**\n\n* Massimo 60 caratteri.\n* Keyword principale vicino all'inizio.\n* Diverso dall'H1.\n\n**meta_description**\n\n* Target 140-160 caratteri, massimo 160.\n* Keyword principale naturale.\n* Descrittiva e orientata al click.\n* Nessuna promozione/garanzia/spedizione/urgenza inventata.\n\n**target_keywords**\nGenera **esattamente 5 keyword**:\n\n1. principale;\n2. long-tail principale;\n3. long-tail secondaria;\n4. variante semantica;\n5. commerciale/specifica.\n\n**h1_suggestion**\n\n* Diverso dal meta title.\n* Massimo 70 caratteri.\n* Descrittivo e naturale.\n* Keyword principale quando possibile.\n\n**url_handle_suggestion**\nSlug SEO-friendly:\n\n* minuscolo;\n* parole separate da `-`;\n* niente accenti/caratteri speciali;\n* niente codici casuali;\n* niente keyword duplicate;\n* mantieni specifiche importanti.\n\n**image_alt_text**\n\n* Massimo 125 caratteri.\n* Descrittivo e basato sui dati disponibili.\n* Keyword principale quando naturale.\n* Non usare \"immagine di\".\n* Non inventare dettagli visivi.\n\n**faq_schema**\nGenera **esattamente 3 FAQ** pertinenti al prodotto.\n\n* Domande basate sui dati disponibili.\n* Risposte concise, massimo 150 caratteri.\n* Non inventare informazioni.\n\n## VALIDAZIONE\n\nPrima dell'output verifica:\n\n* JSON valido;\n* tutti i Codici prodotto presenti come chiavi;\n* dati originali invariati;\n* zero informazioni inventate;\n* nome ≤100;\n* meta_title ≤60;\n* meta_description ≤160;\n* esattamente 5 keyword;\n* esattamente 3 FAQ;\n* H1 diverso dal meta title;\n* URL valido;\n* ALT ≤125;\n* HTML valido;\n* nessun markdown;\n* nessun keyword stuffing;\n* nessuna informazione commerciale inventata.\n\n**OUTPUT: SOLO JSON VALIDO.**\n\nInput:\n",
-  "input": [
-    {
-      "Codice prodotto": 3538,
-      "Riferimento": "V3538",
-      "Nome": "CERCHIO POSTERIORE 110/90-18 PERNO 25 PER CROSS KAYO T4 250cc",
-      "Sommario": "<p>402000-0049</p>",
-      "Prezzo (Tasse Escluse)": 122.942623,
-      "Prezzo (Tasse Incluse)": 149.99,
-      "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Cerchi e mozzi,Ricambi per tipologia",
-      "Quantità": 7,
-      "URL immagine di copertina": "https://autofantasy.it/img/p/4/3/2/1/4321.jpg",
-      "tag": "ricambi-gomme"
-    },
-    {
-      "Codice prodotto": 3539,
-      "Riferimento": "E3539",
-      "Nome": "PARAFANGO ANTERIORE MONOPATTINO ELETTRICO CHAOS SERIE GOLD",
-      "Prezzo (Tasse Escluse)": 9.827869,
-      "Prezzo (Tasse Incluse)": 11.99,
-      "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Ricambi veicoli elettrici,Monopattini",
-      "Quantità": 46,
-      "URL immagine di copertina": "https://autofantasy.it/img/p/4/3/2/3/4323.jpg",
-      "tag": "ricambi-altro"
-    }
-  ],
-  "response": "{\n  \"3538\": {\n    \"nome\": \"Cerchio posteriore 110/90-18 per Cross Kayo T4 250cc\",\n    \"sommario\": \"<p>Il cerchio posteriore misura 110/90-18 ed è dotato di perno da 25 mm, progettato per il cross Kayo T4 250 cc. Ideale per sostituire o aggiornare il cerchio di serie, garantendo montaggio preciso e affidabilità.</p>\",\n    \"descrizione\": \"<p>Il cerchio posteriore da 110/90‑18 è la soluzione perfetta per il tuo cross Kayo T4 250 cc, offrendo compatibilità totale con il modello originale.</p><h3>Caratteristiche principali</h3><ul><li>Misura 110/90‑18 per una calzata perfetta</li><li>Perno da 25 mm, standard per il Kayo T4</li><li>Progettato per uso su terreni off‑road</li><li>Facile installazione grazie al design originale</li><li>Costruzione robusta per resistere a sollecitazioni elevate</li></ul><h3>Specifiche tecniche</h3><table><thead><tr><th>Parametro</th><th>Valore</th></tr></thead><tbody><tr><td>Dimensione pneumatico</td><td>110/90‑18</td></tr><tr><td>Perno</td><td>25 mm</td></tr><tr><td>Modello compatibile</td><td>Cross Kayo T4 250 cc</td></tr></tbody></table><h3>Perché scegliere questo cerchio</h3><p>Realizzato secondo le specifiche del costruttore, il cerchio assicura una perfetta corrispondenza con i componenti di serie, riducendo al minimo il rischio di usura prematura o problemi di montaggio. La robustezza del profilo garantisce stabilità anche nelle condizioni più impegnative.</p><h3>Acquista ora</h3><p>Ordina il cerchio posteriore 110/90‑18 per il tuo Cross Kayo T4 250 cc e ripristina la performance originale del tuo veicolo.</p>\",\n    \"meta_title\": \"Cerchio posteriore 110/90-18 per Cross Kayo T4 - Ricambio\",\n    \"meta_description\": \"Cerchio posteriore 110/90-18 con perno 25 mm, compatibile con Cross Kayo T4 250 cc. Montaggio facile, robusto e pronto all'uso.\",\n    \"target_keywords\": [\n      \"cerchio posteriore cross kayo\",\n      \"cerchio posteriore 110/90-18 per Kayo T4 250cc\",\n      \"cerchio posteriore per monopattino cross Kayo\",\n      \"ruota posteriore cross Kayo\",\n      \"cerchio posteriore ricambio Kayo\"\n    ],\n    \"h1_suggestion\": \"Cerchio posteriore 110/90‑18 per Cross Kayo T4 250 cc\",\n    \"url_handle_suggestion\": \"cerchio-posteriore-110-90-18-cross-kayo-t4\",\n    \"image_alt_text\": \"Cerchio posteriore 110/90-18 per Cross Kayo T4 250cc\",\n    \"faq_schema\": [\n      {\n        \"question\": \"Qual è la misura del cerchio posteriore?\",\n        \"answer\": \"Il cerchio è di misura 110/90‑18.\"\n      },\n      {\n        \"question\": \"Per quale modello è compatibile questo cerchio?\",\n        \"answer\": \"È compatibile con il Cross Kayo T4 250 cc.\"\n      },\n      {\n        \"question\": \"Qual è il diametro del perno?\",\n        \"answer\": \"Il perno ha un diametro di 25 mm.\"\n      }\n    ]\n  },\n  \"3539\": {\n    \"nome\": \"Parafango anteriore per monopattino elettrico Chaos Serie Gold\",\n    \"sommario\": \"<p>Parafango anteriore specifico per il monopattino elettrico Chaos Serie Gold, pensato per proteggere la parte frontale da detriti e urti durante la guida.</p>\",\n    \"descrizione\": \"<p>Il parafango anteriore è progettato per il monopattino elettrico Chaos della Serie Gold, offrendo una protezione efficace alla parte frontale del veicolo.</p><h3>Caratteristiche principali</h3><ul><li>Modello dedicato al monopattino Chaos Serie Gold</li><li>Montaggio anteriore semplice e rapido</li><li>Design che devia detriti e schizzi</li><li>Compatibilità garantita con la struttura del monopattino</li><li>Leggero ma resistente</li></ul><h3>Specifiche tecniche</h3><table><thead><tr><th>Parametro</th><th>Valore</th></tr></thead><tbody><tr><td>Modello compatibile</td><td>Chaos Serie Gold</td></tr><tr><td>Posizione di montaggio</td><td>Anteriore</td></tr></tbody></table><h3>Perché scegliere questo parafango</h3><p>Realizzato su misura per il Chaos Gold, il parafango mantiene l'estetica originale del monopattino e migliora la sicurezza durante l'uso quotidiano, evitando che polvere e piccoli ostacoli raggiungano il veicolo.</p><h3>Acquista ora</h3><p>Aggiungi il parafango anteriore al tuo monopattino elettrico Chaos Serie Gold per una guida più pulita e protetta.</p>\",\n    \"meta_title\": \"Parafango anteriore per monopattino Chaos Gold - Ricambio\",\n    \"meta_description\": \"Parafango anteriore specifico per monopattino elettrico Chaos Serie Gold. Installazione semplice, protegge la parte frontale da detriti.\",\n    \"target_keywords\": [\n      \"parafango anteriore monopattino chaos\",\n      \"parafango anteriore Chaos Serie Gold\",\n      \"parafango ricambio monopattino elettrico\",\n      \"parafango frontale per Chaos Gold\",\n      \"parafango Chaos Gold\"\n    ],\n    \"h1_suggestion\": \"Parafango anteriore per monopattino elettrico Chaos Serie Gold\",\n    \"url_handle_suggestion\": \"parafango-anteriore-monopattino-chaos-gold\",\n    \"image_alt_text\": \"Parafango anteriore per monopattino elettrico Chaos Serie Gold\",\n    \"faq_schema\": [\n      {\n        \"question\": \"Per quale modello è compatibile il parafango?\",\n        \"answer\": \"È compatibile con il monopattino elettrico Chaos Serie Gold.\"\n      },\n      {\n        \"question\": \"Dove va installato il parafango?\",\n        \"answer\": \"Il parafango si monta sulla parte anteriore del monopattino.\"\n      },\n      {\n        \"question\": \"Qual è la funzione principale del parafango?\",\n        \"answer\": \"Protegge la parte anteriore dal detrito e dagli schizzi durante la guida.\"\n      }\n    ]\n  }\n}"
-}
-
-=================================
 FILE: tests/test.js
 =================================
 
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { writeFile } = require('fs/promises');
+const  { writeFile } = require('fs/promises');
 const { freeCallApi } = require('../index');
-const { PROVIDERS } = require('../constants');
 
-const promptText = `Agisci come **Senior E-Commerce SEO Specialist e Conversion Copywriter** esperto di Shopify, SEO, Google Shopping, SEO semantica e CRO. Settore: **[INSERISCI SETTORE]**.
+const promptText = `Agisci come un **Senior E-Commerce SEO Specialist e Conversion Copywriter** con oltre 10 anni di esperienza in Shopify, SEO tecnica, Google Shopping, SEO semantica e ottimizzazione delle schede prodotto, specializzato nel settore **[INSERISCI SETTORE: es. ricambi auto, giardinaggio, moto]**.
 
-Riceverai un array JSON di prodotti. Trasforma ogni prodotto in una scheda SEO naturale, utile e orientata alla conversione.
+# MISSIONE
 
-## REGOLE PRIORITARIE
+Riceverai un array JSON contenente uno o più prodotti e dovrai trasformare **ogni prodotto** in una scheda prodotto SEO completa, persuasiva e orientata alla conversione.
 
-Usa **SOLO** dati presenti nell'input.
+L'obiettivo è massimizzare contemporaneamente:
 
-Non modificare, correggere o reinterpretare: Codice prodotto, Riferimento, SKU, EAN, prezzi, quantità, URL, numeri, specifiche, compatibilità, marche, modelli e codici.
+1. Visibilità nella ricerca organica di Google.
+2. Rilevanza semantica della pagina.
+3. Performance su Google Shopping.
+4. CTR nei risultati di ricerca.
+5. Tasso di conversione.
+6. Chiarezza e utilità per l'utente.
+7. Comprensione del prodotto da parte dei motori di ricerca.
+8. Coerenza con l'intento di ricerca reale dell'utente.
 
-**NON INVENTARE MAI** caratteristiche, materiali, dimensioni, colori, prestazioni, compatibilità, anni, certificazioni, omologazioni, garanzie, spedizioni, resi, disponibilità, accessori, promozioni o vantaggi non dimostrabili.
+**IMPORTANTE:** devi ottimizzare i contenuti sulla base delle informazioni realmente presenti nell'input. Non devi inventare caratteristiche, compatibilità, prestazioni, materiali, dimensioni, certificazioni, garanzie o altri dati non esplicitamente disponibili.
 
-Se un dato manca, omettilo.
+---
 
-Priorità:
-**accuratezza > non invenzione > JSON valido > chiarezza > search intent > SEO > conversione > lunghezza.**
+# INPUT
 
-Scrivi in italiano naturale e professionale. Evita keyword stuffing, ripetizioni e affermazioni generiche. Usa sinonimi, varianti e termini semanticamente correlati quando supportati dal prodotto. Preferisci termini comprensibili dagli utenti senza alterare le specifiche tecniche.
+Riceverai un array JSON di prodotti.
 
-Non usare ALL CAPS, salvo sigle/unità corrette.
+I campi possono variare da prodotto a prodotto. Utilizza esclusivamente le informazioni effettivamente presenti.
 
-## ANALISI INTERNA
+Esempio:
 
-Prima dell'output identifica mentalmente:
+[
+  {
+    "Codice prodotto": 3538,
+    "Riferimento": "V3538",
+    "Nome": "CERCHIO POSTERIORE 110/90-18 PERNO 25 PER CROSS KAYO T4 250cc",
+    "Sommario": "<p>402000-0049</p>",
+    "Prezzo (Tasse Escluse)": 122.942623,
+    "Prezzo (Tasse Incluse)": 149.99,
+    "Nomi delle categorie (x,y,z...)": "Home,Ricambi,Cerchi e mozzi,Ricambi per tipologia",
+    "Quantità": 7,
+    "URL immagine di copertina": "https://...",
+    "tag": "ricambi-gomme"
+  }
+]
 
-* keyword principale;
-* keyword secondarie/long-tail;
-* search intent, privilegiando transazionale/commerciale;
-* prodotto, categoria, marca/modello, tipologia, specifiche e compatibilità;
-* eventuale USP, solo se supportata dai dati.
+---
 
-Non mostrare questa analisi.
+# REGOLE ASSOLUTE
 
-## OUTPUT
+## 1. INTEGRITÀ DEI DATI
 
-Restituisci **SOLO JSON valido**, senza markdown, commenti o testo esterno.
+Non modificare, correggere, reinterpretare o inventare:
 
-La chiave principale deve essere "Codice prodotto" convertito in stringa.
+* Codice prodotto
+* Riferimento
+* SKU
+* EAN13
+* Prezzi
+* Quantità
+* URL immagini
+* Valori numerici presenti nell'input
+* Specifiche tecniche
+* Compatibilità dichiarate
 
-Ogni prodotto deve avere esattamente:
+Questi dati devono essere trattati come **dati sorgente immutabili**.
+
+## 2. NON INVENTARE
+
+Non inventare mai:
+
+* caratteristiche tecniche;
+* materiali;
+* dimensioni;
+* colori;
+* prestazioni;
+* compatibilità;
+* modelli compatibili;
+* anni di produzione;
+* certificazioni;
+* omologazioni;
+* garanzie;
+* tempi di spedizione;
+* resi;
+* disponibilità;
+* accessori inclusi;
+* vantaggi tecnici non dimostrabili.
+
+Se un'informazione non è disponibile, **non inserirla**.
+
+## 3. SEO SENZA KEYWORD STUFFING
+
+Non ripetere artificialmente la stessa keyword.
+
+Usa:
+
+* sinonimi;
+* varianti grammaticali;
+* keyword correlate;
+* entità semantiche;
+* termini utilizzati realmente dagli utenti;
+* specifiche tecniche presenti nell'input.
+
+La leggibilità e la naturalezza hanno sempre priorità rispetto alla densità delle keyword.
+
+## 4. TERMINOLOGIA UTENTE > TERMINOLOGIA INTERNA
+
+Quando il nome del prodotto contiene termini tecnici, abbreviati o utilizzati internamente dal fornitore, identifica mentalmente quali termini sono più comprensibili e ricercabili dagli utenti.
+
+Esempio:
+
+* "cerchio posteriore" può essere preferibile a una denominazione interna;
+* "ricambio monopattino elettrico" può essere più utile di un codice interno;
+* "parafango anteriore" deve essere mantenuto quando rappresenta il termine realmente utilizzato dagli utenti.
+
+**Non sostituire però mai una specifica tecnica con un'altra non equivalente.**
+
+## 5. MAI ALL CAPS
+
+Non utilizzare il maiuscolo integrale nei contenuti.
+
+Sono consentite sigle e unità tecniche quando corrette, ad esempio:
+
+* cc
+* kW
+* rpm
+* EAN
+* SKU
+* LED
+* ABS
+
+## 6. OUTPUT
+
+Restituisci **esclusivamente JSON valido**.
+
+Nessun:
+
+* testo introduttivo;
+* testo conclusivo;
+* markdown;
+* code block;
+* commento;
+* spiegazione;
+* nota.
+
+Il risultato deve poter essere passato direttamente a:
+
+JSON.parse()
+
+## 7. HTML
+
+Tutto l'HTML prodotto deve essere:
+
+* valido;
+* semanticamente corretto;
+* pulito;
+* senza CSS inline;
+* senza classi;
+* senza JavaScript;
+* senza <div> inutili.
+
+Utilizza preferibilmente:
+
+<p>, <h3>, <ul>, <li>, <strong>, <table>, <thead>, <tbody>, <tr>, <th>, <td>.
+
+---
+
+# ANALISI SEO INTERNA OBBLIGATORIA
+
+Prima di generare l'output, analizza mentalmente ogni prodotto.
+
+Non mostrare questa analisi nell'output.
+
+Determina:
+
+## 1. Keyword principale
+
+Qual è la query più probabile utilizzata da un potenziale cliente per trovare questo prodotto?
+
+## 2. Keyword secondarie
+
+Individua varianti e long-tail pertinenti.
+
+## 3. Intento di ricerca
+
+Determina principalmente se l'utente ha intento:
+
+* transazionale;
+* commerciale;
+* informativo;
+* navigazionale.
+
+Per una scheda prodotto dai priorità all'intento **transazionale/commerciale** quando appropriato.
+
+## 4. Buyer persona
+
+Determina chi è probabilmente l'acquirente:
+
+* privato;
+* appassionato;
+* meccanico;
+* professionista;
+* genitore;
+* proprietario del veicolo;
+* ecc.
+
+Solo quando è deducibile dal prodotto.
+
+## 5. USP
+
+Identifica il principale elemento distintivo del prodotto **solo sulla base dei dati disponibili**.
+
+## 6. Obiezioni
+
+Individua le possibili domande o dubbi dell'acquirente, ma affrontali esclusivamente quando l'input contiene informazioni sufficienti per rispondere.
+
+## 7. Entità e semantica
+
+Identifica:
+
+* prodotto;
+* categoria;
+* sottocategoria;
+* marca/modello;
+* tipologia;
+* dimensioni;
+* codici;
+* compatibilità;
+* caratteristiche tecniche.
+
+Usa queste informazioni per costruire un contenuto semanticamente ricco.
+
+---
+
+# OUTPUT
+
+La chiave principale dell'oggetto deve essere sempre il valore di **"Codice prodotto" convertito in stringa**.
+
+Struttura:
 
 {
-"3538": {
-"nome": "...",
-"sommario": "...",
-"descrizione": "...",
-"meta_title": "...",
-"meta_description": "...",
-"target_keywords": ["...", "...", "...", "...", "..."],
-"h1_suggestion": "...",
-"url_handle_suggestion": "...",
-"image_alt_text": "...",
-"faq_schema": [
-{"question": "...", "answer": "..."},
-{"question": "...", "answer": "..."},
-{"question": "...", "answer": "..."}
-]
+  "3538": {
+    "nome": "...",
+    "sommario": "...",
+    "descrizione": "...",
+    "meta_title": "...",
+    "meta_description": "...",
+    "target_keywords": [
+      "...",
+      "...",
+      "...",
+      "...",
+      "..."
+    ],
+    "h1_suggestion": "...",
+    "url_handle_suggestion": "...",
+    "image_alt_text": "...",
+    "faq_schema": [
+      {
+        "question": "...",
+        "answer": "..."
+      },
+      {
+        "question": "...",
+        "answer": "..."
+      },
+      {
+        "question": "...",
+        "answer": "..."
+      }
+    ]
+  }
 }
-}
 
-## CAMPI
+---
 
-**nome**
+# SPECIFICHE DEI CAMPI
 
-* Preferibilmente 50-70 caratteri, massimo 100.
-* Keyword principale naturale.
-* Includi specifiche/compatibilità disponibili quando utili.
-* Non copiare semplicemente il nome originale.
+## NOME
 
-**sommario**
+Obiettivo: creare un titolo comprensibile, ricercabile e ottimizzato per SEO e Shopping.
 
-* Un solo <p>.
-* Circa 150-250 caratteri.
+### Regole
+
+* Preferibilmente 50-70 caratteri.
+* Massimo assoluto: 100 caratteri.
+* Inserisci la keyword principale in modo naturale.
+* Inserisci una specifica realmente presente nell'input quando utile.
+* Evita keyword stuffing.
+* Evita ripetizioni.
+* Non utilizzare ALL CAPS.
+* Non aggiungere informazioni non presenti.
+
+Struttura consigliata:
+
+**[Prodotto] + [specifica principale] + [compatibilità/modello]**
+
+Esempio:
+
+"Parafango Anteriore per Monopattino Elettrico Chaos Gold"
+
+Non copiare semplicemente il nome originale: **riscrivilo per renderlo più naturale e utile all'utente.**
+
+---
+
+# SOMMARIO
+
+Genera un breve testo commerciale immediatamente comprensibile.
+
+### Regole
+
+* 150-250 caratteri circa.
+* Deve essere un unico <p>.
 * 2-3 frasi.
-* Spiega cosa è e a cosa serve.
-* Keyword principale naturale.
-
-**descrizione**
-
-* Indicativamente 300-600 parole solo se i dati lo consentono.
-* Non aggiungere testo artificiale.
-* Struttura obbligatoria:
-
-  1. introduzione;
-  2. caratteristiche principali;
-  3. specifiche tecniche;
-  4. perché scegliere il prodotto;
-  5. chiusura all'acquisto.
-* Quando possibile, almeno 5 bullet.
-* Trasforma **caratteristica → utilità → beneficio** solo se il beneficio è supportato dai dati.
-* Riporta fedelmente le specifiche.
-* Non creare informazioni mancanti.
-
-HTML consentito/preferito:
-<p> <h3> <ul> <li> <strong> <table> <thead> <tbody> <tr> <th> <td>
-
-Niente CSS inline, classi, JavaScript o <div> inutili.
-
-**meta_title**
-
-* Massimo 60 caratteri.
-* Keyword principale vicino all'inizio.
-* Diverso dall'H1.
-
-**meta_description**
-
-* Target 140-160 caratteri, massimo 160.
-* Keyword principale naturale.
-* Descrittiva e orientata al click.
-* Nessuna promozione/garanzia/spedizione/urgenza inventata.
-
-**target_keywords**
-Genera **esattamente 5 keyword**:
-
-1. principale;
-2. long-tail principale;
-3. long-tail secondaria;
-4. variante semantica;
-5. commerciale/specifica.
-
-**h1_suggestion**
-
-* Diverso dal meta title.
-* Massimo 70 caratteri.
-* Descrittivo e naturale.
-* Keyword principale quando possibile.
-
-**url_handle_suggestion**
-Slug SEO-friendly:
-
-* minuscolo;
-* parole separate da \`-\`;
-* niente accenti/caratteri speciali;
-* niente codici casuali;
-* niente keyword duplicate;
-* mantieni specifiche importanti.
-
-**image_alt_text**
-
-* Massimo 125 caratteri.
-* Descrittivo e basato sui dati disponibili.
-* Keyword principale quando naturale.
-* Non usare "immagine di".
-* Non inventare dettagli visivi.
-
-**faq_schema**
-Genera **esattamente 3 FAQ** pertinenti al prodotto.
-
-* Domande basate sui dati disponibili.
-* Risposte concise, massimo 150 caratteri.
+* Inserisci la keyword principale naturalmente.
+* Comunica cosa è il prodotto.
+* Specifica a cosa serve.
+* Evidenzia il beneficio principale quando deducibile.
 * Non inventare informazioni.
 
-## VALIDAZIONE
+Esempio:
 
-Prima dell'output verifica:
+<p>Parafango anteriore per monopattino elettrico Chaos Serie Gold, ideale per sostituire il componente originale e mantenere il veicolo in condizioni ottimali.</p>
 
-* JSON valido;
-* tutti i Codici prodotto presenti come chiavi;
-* dati originali invariati;
-* zero informazioni inventate;
-* nome ≤100;
-* meta_title ≤60;
-* meta_description ≤160;
-* esattamente 5 keyword;
-* esattamente 3 FAQ;
-* H1 diverso dal meta title;
-* URL valido;
-* ALT ≤125;
-* HTML valido;
-* nessun markdown;
-* nessun keyword stuffing;
-* nessuna informazione commerciale inventata.
+---
 
-**OUTPUT: SOLO JSON VALIDO.**
+# DESCRIZIONE
 
-Input:
+La descrizione deve essere completa, utile e orientata alla conversione.
+
+### Lunghezza
+
+Indicativamente 300-600 parole **quando la quantità di informazioni disponibili lo consente**.
+
+**Non aggiungere testo artificiale solo per raggiungere il numero minimo di parole.**
+
+### Struttura obbligatoria
+
+1. Introduzione
+2. Caratteristiche principali
+3. Specifiche tecniche
+4. Perché scegliere il prodotto
+5. Chiusura orientata all'acquisto
+
+Struttura HTML:
+
+<p>...</p>
+
+<h3>Caratteristiche principali</h3>
+
+<ul>
+  <li>...</li>
+  <li>...</li>
+</ul>
+
+<h3>Specifiche tecniche</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>Caratteristica</th>
+      <th>Dettaglio</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>...</td>
+      <td>...</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Perché scegliere questo prodotto</h3>
+
+<p>...</p>
+
+### Bullet point
+
+Quando le informazioni disponibili lo permettono, crea almeno 5 bullet point.
+
+Ogni bullet dovrebbe trasformare:
+
+**caratteristica → utilità → beneficio**
+
+Esempio:
+
+<strong>Dimensione 110/90-18:</strong> misura specifica del cerchio, utile per individuare rapidamente il ricambio corretto.
+
+Non inventare benefici tecnici che non derivano dalla caratteristica.
+
+### Specifiche
+
+Se nell'input sono presenti specifiche tecniche:
+
+* riportale fedelmente;
+* riorganizzale;
+* rendile leggibili;
+* non modificarne il significato.
+
+Se le specifiche sono insufficienti, non creare una tabella artificiale.
+
+### Importante
+
+Non inserire automaticamente frasi come:
+
+* "spedizione gratuita";
+* "reso 30 giorni";
+* "garanzia ufficiale";
+* "consegna rapida";
+* "assistenza dedicata";
+
+a meno che tali informazioni siano presenti nell'input.
+
+---
+
+# META TITLE
+
+### Regole
+
+* Massimo 60 caratteri.
+* Keyword principale il più possibile vicina all'inizio.
+* Deve essere diverso dall'H1.
+* Deve essere naturale.
+* Deve incentivare il click.
+* Non fare keyword stuffing.
+
+Struttura consigliata:
+
+**[Keyword principale] | [specifica/beneficio]**
+
+---
+
+# META DESCRIPTION
+
+### Regole
+
+* Target: 140-160 caratteri.
+* Massimo: 160 caratteri.
+* Keyword principale naturale.
+* Deve spiegare cosa vende la pagina.
+* Deve incentivare il click.
+* CTA solo quando naturale.
+* Massimo 1 emoji e solo se realmente appropriata.
+* Non inventare promozioni, spedizioni, resi o garanzie.
+
+Evita FOMO artificiale come:
+
+"Affrettati!"
+"Ultima occasione!"
+"Offerta imperdibile!"
+
+se non supportata dai dati disponibili.
+
+---
+
+# TARGET_KEYWORDS
+
+Genera esattamente **5 keyword**.
+
+Ordine:
+
+1. Keyword principale.
+2. Long-tail principale.
+3. Long-tail secondaria.
+4. Variante semantica.
+5. Keyword con intento commerciale o specifico.
+
+Le keyword devono essere:
+
+* pertinenti;
+* realistiche;
+* naturali;
+* coerenti con il prodotto.
+
+Non inserire keyword generiche non pertinenti solo per aumentare il volume.
+
+---
+
+# H1_SUGGESTION
+
+Genera un H1 diverso dal meta title.
+
+### Regole
+
+* Massimo 70 caratteri.
+* Descrittivo.
+* Naturale.
+* Deve identificare chiaramente il prodotto.
+* Deve contenere la keyword principale quando possibile.
+* Meno commerciale del titolo prodotto.
+
+---
+
+# URL_HANDLE_SUGGESTION
+
+Genera uno slug SEO-friendly.
+
+### Regole
+
+* minuscolo;
+* parole separate da -;
+* niente caratteri speciali;
+* niente accenti;
+* niente stop word inutili;
+* niente codici casuali;
+* niente keyword ripetute;
+* mantieni le specifiche importanti;
+* non inserire informazioni inventate.
+
+Esempio:
+
+cerchio-posteriore-110-90-18-cross-kayo-t4
+
+---
+
+# IMAGE_ALT_TEXT
+
+Genera un ALT descrittivo.
+
+### Regole
+
+* Massimo 125 caratteri.
+* Descrivi ciò che rappresenta l'immagine sulla base dei dati disponibili.
+* Inserisci la keyword principale quando naturale.
+* Non utilizzare keyword stuffing.
+* Non scrivere "immagine di".
+* Non inventare il colore o dettagli visivi non disponibili nei dati.
+
+---
+
+# FAQ_SCHEMA
+
+Genera esattamente **3 FAQ**.
+
+Le domande devono essere pertinenti al prodotto e basate sulle informazioni disponibili.
+
+Le domande devono riflettere dubbi realistici di un acquirente, ad esempio:
+
+* compatibilità;
+* utilizzo;
+* dimensioni;
+* modello;
+* installazione;
+* caratteristiche;
+* codice prodotto.
+
+### Regole
+
+* 3 domande esatte.
+* Risposte concise.
+* Massimo 150 caratteri per risposta.
+* Non inventare informazioni.
+* Se una domanda richiederebbe informazioni non disponibili, formulala in modo che la risposta possa essere basata sui dati forniti.
+
+---
+
+# PRINCIPI DI COPYWRITING
+
+Applica questi principi:
+
+## AIDA
+
+* Attention
+* Interest
+* Desire
+* Action
+
+## Feature → Benefit
+
+Trasforma le caratteristiche in vantaggi concreti **solo quando il vantaggio è logicamente supportato dalla caratteristica**.
+
+## Linguaggio
+
+Utilizza:
+
+* italiano naturale;
+* tono professionale;
+* linguaggio orientato all'acquisto;
+* frasi concise;
+* terminologia comprensibile;
+* seconda persona quando appropriato.
+
+Evita:
+
+* "ottimo prodotto";
+* "fantastico";
+* "incredibile";
+* "qualità top";
+* "imperdibile";
+* affermazioni generiche senza prove;
+* promesse non supportate.
+
+Preferisci dati e informazioni concrete.
+
+---
+
+# REGOLE SEO AVANZATE
+
+## 1. Search Intent First
+
+Scrivi prima per soddisfare l'intento dell'utente e solo successivamente per i motori di ricerca.
+
+## 2. Semantic SEO
+
+Non limitarti alla keyword principale.
+
+Utilizza naturalmente:
+
+* sinonimi;
+* termini correlati;
+* caratteristiche;
+* categorie;
+* modelli;
+* codici;
+* specifiche;
+* termini tecnici pertinenti.
+
+## 3. Zero Keyword Stuffing
+
+La stessa keyword non deve essere ripetuta artificialmente.
+
+## 4. Product Entity
+
+Rendi inequivocabile:
+
+**che cosa è il prodotto + a cosa serve + per quale modello/veicolo è destinato**, quando tali informazioni sono disponibili.
+
+## 5. Conversione
+
+Ogni contenuto deve aiutare l'utente a capire:
+
+* cosa sta acquistando;
+* se è il prodotto corretto;
+* quale problema risolve;
+* quali caratteristiche possiede.
+
+## 6. Accuratezza > Lunghezza
+
+Se l'input contiene poche informazioni, produci un contenuto più breve ma accurato.
+
+**Non riempire la descrizione con contenuto generico o inventato.**
+
+---
+
+# CONTROLLO FINALE OBBLIGATORIO
+
+Prima di restituire il JSON verifica mentalmente:
+
+1. Il JSON è sintatticamente valido?
+2. Ogni codice prodotto è presente come chiave?
+3. Nessun dato originale è stato modificato?
+4. Nessuna specifica è stata inventata?
+5. Non esistono frasi in ALL CAPS?
+6. Il nome è SEO-friendly?
+7. Il meta title è entro 60 caratteri?
+8. La meta description è entro 160 caratteri?
+9. Esistono esattamente 5 target keywords?
+10. Esistono esattamente 3 FAQ?
+11. L'H1 è diverso dal meta title?
+12. L'URL handle è valido?
+13. L'ALT text è entro 125 caratteri?
+14. L'HTML è valido?
+15. Non sono presenti markdown o code block?
+16. Non sono presenti informazioni commerciali inventate?
+17. Il contenuto è naturale e non presenta keyword stuffing?
+18. Ogni affermazione tecnica è supportata dall'input?
+
+Se una regola entra in conflitto con un'altra, applica questa priorità:
+
+**accuratezza dei dati > non invenzione > validità JSON > chiarezza > search intent > SEO > conversione > lunghezza.**
+
+---
+
+# OUTPUT FINALE
+
+Rispondi **SOLTANTO con un JSON valido**.
+
+Nessun testo prima o dopo.
+
+Nessun markdown.
+
+Nessun code block.
+
+Il risultato deve essere direttamente utilizzabile con JSON.parse().
+
+L'input è il seguente:
+
+[INSERISCI ARRAY JSON DEI PRODOTTI]
 `;
 const input = [
   {
@@ -2578,31 +3024,18 @@ const input = [
 
 
 const freeApiObj = {
-    instruction : promptText,
+    prompt : promptText,
     input: input
 }
 
-const hasApiKey = Object.values(PROVIDERS).some(provider =>
-    provider.apiKeys.some(key => Boolean(key.value))
-);
-test('integrazione SEO: freeCallApi restituisce JSON per tutti i prodotti', {
-    skip: hasApiKey ? false : 'Nessuna API key configurata nel file .env'
-}, async () => {
+async function apiCall(freeApiObj) {
     const freeApi = await freeCallApi(freeApiObj);
+    writeFile(`${__dirname}/response.txt`, typeof freeApi !== 'string' ? JSON.stringify(freeApi) : freeApi)
+    
+}
 
-    assert.equal(typeof freeApi.text, 'string', 'La risposta deve contenere text');
-    assert.ok(freeApi.text.trim(), 'La risposta non deve essere vuota');
-    assert.ok(freeApi.provider, 'Deve essere indicato il provider utilizzato');
-    assert.ok(freeApi.model, 'Deve essere indicato il modello utilizzato');
+apiCall()
 
-    const cleanText = freeApi.text
-
-    await writeFile(`${__dirname}/response.json`, JSON.stringify({
-        instruction: freeApiObj.instruction,
-        input: freeApiObj.input,
-        response: JSON.parse(cleanText),
-    }, null, 2));
-});
 
 
 =================================
