@@ -14,17 +14,33 @@
     <main>
       <section id="notice" class="notice">Configura <code>.env</code>, poi sincronizza il catalogo Shopify.</section>
       <section id="queue-summary" class="queue-summary"></section>
+      <section class="filters" aria-label="Filtri prodotti">
+        <label>Stato Shopify
+          <select id="status-filter">
+            <option value="">Tutti gli stati</option>
+            <option value="active">Attivo</option>
+            <option value="draft">Bozza</option>
+            <option value="archived">Archiviato</option>
+          </select>
+        </label>
+        <label class="check-filter"><input id="processed-filter" type="checkbox"> Almeno una foto processata</label>
+        <fieldset><legend>Upload Shopify</legend>
+          <label class="check-filter"><input id="uploaded-filter" type="checkbox"> Almeno una foto caricata</label>
+          <label class="check-filter"><input id="not-uploaded-filter" type="checkbox"> Nessuna foto caricata</label>
+        </fieldset>
+        <p id="filter-count" class="filter-count"></p>
+      </section>
       <section id="product-grid" class="product-grid" aria-live="polite"></section>
     </main>
     <dialog id="photo-modal"><div class="modal-heading"><div><p class="eyebrow">FOTO PRODOTTO</p><h2 id="modal-title"></h2></div><button class="icon-button" id="close-modal" aria-label="Chiudi">×</button></div><div id="modal-grid" class="photo-grid"></div></dialog>
     <template id="product-template">
       <article class="product-card">
-        <div class="image-comparison"><img class="product-image" alt=""><span class="empty-image">Nessuna foto</span><span class="comparison-hint">Passa il mouse per l'originale</span></div>
-        <div class="card-content"><div class="title-line"><h2></h2><span class="status-badge"></span></div><p class="counter"></p><div class="actions"><button class="secondary view-button">Visualizza foto</button><button class="secondary process-all">Processa tutte</button><button class="primary upload-all">Carica tutte</button></div></div>
+        <div class="image-comparison"><img class="original-image" alt="Foto originale"><img class="processed-image" alt="Foto elaborata"><span class="empty-image">Nessuna foto</span><span class="comparison-hint">Passa il mouse per l'originale</span></div>
+        <div class="card-content"><div class="title-line"><h2></h2><div class="badges"><span class="status-badge"></span><span class="upload-badge">1+ caricata</span></div></div><p class="counter"></p><div class="actions"><button class="secondary view-button">Visualizza foto</button><button class="secondary process-all">Processa tutte</button><button class="primary upload-all">Carica tutte</button></div></div>
       </article>
     </template>
     <template id="photo-template">
-      <article class="photo-card"><div class="image-comparison"><img class="photo-image" alt=""><span class="empty-image">Nessuna anteprima</span><span class="photo-state"></span></div><p class="photo-error"></p><div class="actions"><button class="secondary process-button">Processa</button><button class="primary upload-button">Carica</button></div></article>
+      <article class="photo-card"><div class="image-comparison"><img class="original-image" alt="Foto originale"><img class="processed-image" alt="Foto elaborata"><span class="empty-image">Nessuna anteprima</span><span class="photo-state"></span><span class="photo-upload-badge">Caricata su Shopify</span><span class="comparison-hint">Passa il mouse per l'originale</span></div><p class="photo-error"></p><div class="actions"><button class="secondary process-button">Processa</button><button class="primary upload-button">Carica</button></div></article>
     </template>
     <script src="/static/app.js"></script>
   </body>

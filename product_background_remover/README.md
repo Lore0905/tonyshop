@@ -22,6 +22,6 @@ L'app usa le REST Admin API perché richiesto. La custom app deve avere almeno g
 
 ## Dati locali
 
-`data/database.sqlite` conserva prodotti, immagini, URL originali e upload. `data/queue.json` è la coda persistente. Gli originali e le elaborazioni sono in `data/originals/<product_id>/` e `data/processed/<product_id>/`; gli originali non vengono mai eliminati. Le immagini elaborate sono PNG per mantenere la trasparenza prodotta da `rembg`.
+`data/database.sqlite` conserva prodotti, immagini, URL originali e upload. `data/queue.json` è la coda persistente. Gli originali e le elaborazioni sono in `data/originals/<product_id>/` e `data/processed/<product_id>/`; gli originali non vengono mai eliminati. `rembg` crea prima un ritaglio con alpha e l'app lo compone su bianco puro (`#FFFFFF`), salvando un JPEG pronto per Shopify.
 
 Nel caricamento viene prima creata l'immagine elaborata su Shopify e soltanto dopo viene eliminata quella precedente. L'URL originale, filename e ID della nuova immagine restano nel database locale per eventuale ripristino manuale. Tutte le operazioni sono registrate in `data/app.log`.

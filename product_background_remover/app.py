@@ -8,7 +8,6 @@ import os
 import shutil
 import sqlite3
 import subprocess
-import tempfile
 import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
@@ -21,6 +20,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from PIL import Image
 
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
@@ -71,6 +71,18 @@ def initialize_storage() -> None:
             );
             """
         )
+        # A restart must never leave a job stranded in "processing" forever.
+        connection.execute("UPDATE images SET processing_status = 'queued' WHERE processing_status = 'processing'")
+    queue = load_queue()
+    changed = False
+    for job in queue:
+        if job.get("status") == "processing":
+            job["status"] = "queued"
+            job.pop("started_at", None)
+            changed = True
+    if changed:
+        save_queue(queue)
+        logger.info("Recovered interrupted processing jobs back into the queue")
 
 
 def load_queue() -> list[dict[str, Any]]:
@@ -104,40 +116,55 @@ def queue_job(product_id: str, image_id: str) -> bool:
     return True
 
 
-async def process_one_job() -> None:
+def update_job(job_id: str, **updates: Any) -> None:
+    """Update a job from a fresh queue snapshot, preserving items added mid-run."""
+    queue = load_queue()
+    job = next((item for item in queue if item["id"] == job_id), None)
+    if not job:
+        raise RuntimeError(f"Queue job {job_id} disappeared")
+    job.update(updates)
+    save_queue(queue)
+
+
+async def process_one_job() -> bool:
     queue = load_queue()
     job = next((item for item in queue if item["status"] == "queued"), None)
     if not job:
-        return
-    job["status"] = "processing"
-    job["started_at"] = now()
-    save_queue(queue)
+        return False
+    update_job(job["id"], status="processing", started_at=now())
     with db() as connection:
         connection.execute("UPDATE images SET processing_status = 'processing' WHERE id = ?", (job["image_id"],))
     try:
         await download_and_remove_background(job["product_id"], job["image_id"])
-        job["status"] = "completed"
-        job["finished_at"] = now()
+        update_job(job["id"], status="completed", finished_at=now(), error=None)
         with db() as connection:
             connection.execute("UPDATE images SET processing_status = 'completed', processing_error = NULL WHERE id = ?", (job["image_id"],))
         logger.info("Processed image %s", job["image_id"])
     except Exception as exc:  # Worker must continue with the next item.
         logger.exception("Processing failed for image %s", job["image_id"])
-        job["status"] = "error"
-        job["error"] = str(exc)
-        job["finished_at"] = now()
+        update_job(job["id"], status="error", error=str(exc), finished_at=now())
         with db() as connection:
             connection.execute("UPDATE images SET processing_status = 'error', processing_error = ? WHERE id = ?", (str(exc), job["image_id"]))
-    save_queue(queue)
+    return True
 
 
 async def worker() -> None:
     while True:
         try:
-            await process_one_job()
+            processed = await process_one_job()
         except Exception:
             logger.exception("Unexpected worker failure")
-        await asyncio.sleep(1)
+            processed = False
+        # Immediately claim the next waiting image. Sleep only while the queue is empty.
+        await asyncio.sleep(0 if processed else 0.5)
+
+
+def flatten_on_white(transparent_path: Path, output_path: Path) -> None:
+    """Turn rembg's transparent cut-out into a Shopify-ready white JPEG."""
+    with Image.open(transparent_path).convert("RGBA") as cutout:
+        white_background = Image.new("RGB", cutout.size, "white")
+        white_background.paste(cutout, mask=cutout.getchannel("A"))
+        white_background.save(output_path, "JPEG", quality=95, subsampling=0)
 
 
 async def download_and_remove_background(product_id: str, image_id: str) -> None:
@@ -151,15 +178,20 @@ async def download_and_remove_background(product_id: str, image_id: str) -> None
     output_directory.mkdir(parents=True, exist_ok=True)
     suffix = Path(urlparse(image["original_url"]).path).suffix.lower() or ".jpg"
     input_path = original_directory / f"{image_id}{suffix}"
-    output_path = output_directory / f"{image_id}.png"  # PNG preserves rembg transparency.
+    transparent_path = output_directory / f"{image_id}.transparent.png"
+    output_path = output_directory / f"{image_id}.jpg"
     if not input_path.exists():
         async with httpx.AsyncClient(follow_redirects=True, timeout=90) as client:
             response = await client.get(image["original_url"])
             response.raise_for_status()
             input_path.write_bytes(response.content)
-    result = await asyncio.to_thread(subprocess.run, ["rembg", "i", str(input_path), str(output_path)], capture_output=True, text=True, timeout=600)
-    if result.returncode != 0 or not output_path.exists():
+    result = await asyncio.to_thread(subprocess.run, ["rembg", "i", str(input_path), str(transparent_path)], capture_output=True, text=True, timeout=600)
+    if result.returncode != 0 or not transparent_path.exists():
         raise RuntimeError(result.stderr.strip() or "rembg did not create an output file")
+    # rembg produces an alpha cut-out. Composite it over an opaque white canvas
+    # so the exported Shopify image has a real #FFFFFF background.
+    flatten_on_white(transparent_path, output_path)
+    transparent_path.unlink(missing_ok=True)
     with db() as connection:
         connection.execute("UPDATE images SET local_original_path = ?, processed_path = ? WHERE id = ?", (str(input_path), str(output_path), image_id))
 
@@ -188,28 +220,55 @@ def shopify_url(path: str) -> str:
 
 
 async def synchronize_products() -> int:
-    count, page_info = 0, None
+    """Synchronize through GraphQL.
+
+    This shop returns an empty list from the legacy REST products endpoint despite
+    having products.  GraphQL is also the API already used by ../commons.js.
+    Image IDs are converted back to their numeric REST IDs because uploads still
+    use the REST image endpoint.
+    """
+    count, after = 0, None
+    query = """
+      query productsForBackgroundRemoval($after: String) {
+        products(first: 250, after: $after) {
+          edges {
+            node {
+              legacyResourceId
+              title
+              status
+              images(first: 250) { edges { node { id originalSrc } } }
+              variants(first: 250) { edges { node { legacyResourceId title sku } } }
+            }
+          }
+          pageInfo { hasNextPage endCursor }
+        }
+      }
+    """
     async with httpx.AsyncClient(timeout=90) as client:
         token = await shopify_token(client)
         headers = {"X-Shopify-Access-Token": token}
         while True:
-            params = {"limit": 250, "status": "any"}
-            if page_info:
-                params["page_info"] = page_info
-            response = await client.get(shopify_url("products.json"), headers=headers, params=params)
+            response = await client.post(shopify_url("graphql.json"), headers=headers, json={"query": query, "variables": {"after": after}})
             response.raise_for_status()
-            products = response.json().get("products", [])
+            body = response.json()
+            if body.get("errors"):
+                raise RuntimeError(" | ".join(error["message"] for error in body["errors"]))
+            connection_data = body["data"]["products"]
             with db() as connection:
-                for product in products:
-                    connection.execute("INSERT INTO products(id,title,status,variants_json,updated_at) VALUES(?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET title=excluded.title,status=excluded.status,variants_json=excluded.variants_json,updated_at=excluded.updated_at", (str(product["id"]), product["title"], product["status"], json.dumps(product.get("variants", [])), now()))
-                    for image in product.get("images", []):
-                        original_url = image["src"]
-                        connection.execute("INSERT INTO images(id,product_id,position,original_url,original_filename,original_shopify_url) VALUES(?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET product_id=excluded.product_id,position=excluded.position,original_url=CASE WHEN images.uploaded_at IS NULL THEN excluded.original_url ELSE images.original_url END", (str(image["id"]), str(product["id"]), image.get("position", 0), original_url, Path(urlparse(original_url).path).name, original_url))
+                for edge in connection_data["edges"]:
+                    product = edge["node"]
+                    product_id = str(product["legacyResourceId"])
+                    variants = [{"id": str(item["node"]["legacyResourceId"]), "title": item["node"]["title"], "sku": item["node"]["sku"]} for item in product["variants"]["edges"]]
+                    connection.execute("INSERT INTO products(id,title,status,variants_json,updated_at) VALUES(?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET title=excluded.title,status=excluded.status,variants_json=excluded.variants_json,updated_at=excluded.updated_at", (product_id, product["title"], product["status"].lower(), json.dumps(variants), now()))
+                    for position, image_edge in enumerate(product["images"]["edges"], start=1):
+                        image = image_edge["node"]
+                        image_id = image["id"].rsplit("/", 1)[-1]
+                        original_url = image["originalSrc"]
+                        connection.execute("INSERT INTO images(id,product_id,position,original_url,original_filename,original_shopify_url) VALUES(?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET product_id=excluded.product_id,position=excluded.position,original_url=CASE WHEN images.uploaded_at IS NULL THEN excluded.original_url ELSE images.original_url END", (image_id, product_id, position, original_url, Path(urlparse(original_url).path).name, original_url))
                     count += 1
-            link = response.headers.get("link", "")
-            if 'rel="next"' not in link:
+            if not connection_data["pageInfo"]["hasNextPage"]:
                 break
-            page_info = link.split("page_info=")[1].split(">")[0].split("&")[0]
+            after = connection_data["pageInfo"]["endCursor"]
     logger.info("Synchronized %s Shopify products", count)
     return count
 
