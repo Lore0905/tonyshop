@@ -28,6 +28,7 @@ ORIGINALS_DIR = DATA_DIR / "originals"
 PROCESSED_DIR = DATA_DIR / "processed"
 DATABASE_PATH = DATA_DIR / "database.sqlite"
 QUEUE_PATH = DATA_DIR / "queue.json"
+UPLOAD_QUEUE_PATH = DATA_DIR / "upload_queue.json"
 LOG_PATH = DATA_DIR / "app.log"
 load_dotenv(BASE_DIR / ".env")
 DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -55,6 +56,8 @@ def initialize_storage() -> None:
         directory.mkdir(parents=True, exist_ok=True)
     if not QUEUE_PATH.exists():
         save_queue([])
+    if not UPLOAD_QUEUE_PATH.exists():
+        save_upload_queue([])
     with db() as connection:
         connection.executescript(
             """
@@ -67,10 +70,16 @@ def initialize_storage() -> None:
               original_url TEXT NOT NULL, original_filename TEXT,
               local_original_path TEXT, processed_path TEXT, processing_status TEXT NOT NULL DEFAULT 'new',
               processing_error TEXT, uploaded_at TEXT, shopify_replacement_id TEXT,
-              original_shopify_url TEXT, FOREIGN KEY(product_id) REFERENCES products(id)
+              original_shopify_url TEXT, upload_status TEXT NOT NULL DEFAULT 'new',
+              upload_error TEXT, FOREIGN KEY(product_id) REFERENCES products(id)
             );
             """
         )
+        image_columns = {row["name"] for row in connection.execute("PRAGMA table_info(images)")}
+        if "upload_status" not in image_columns:
+            connection.execute("ALTER TABLE images ADD COLUMN upload_status TEXT NOT NULL DEFAULT 'new'")
+        if "upload_error" not in image_columns:
+            connection.execute("ALTER TABLE images ADD COLUMN upload_error TEXT")
         # A restart must never leave a job stranded in "processing" forever.
         connection.execute("UPDATE images SET processing_status = 'queued' WHERE processing_status = 'processing'")
     queue = load_queue()
@@ -83,6 +92,18 @@ def initialize_storage() -> None:
     if changed:
         save_queue(queue)
         logger.info("Recovered interrupted processing jobs back into the queue")
+    upload_queue = load_upload_queue()
+    changed = False
+    for job in upload_queue:
+        if job.get("status") == "uploading":
+            job["status"] = "queued"
+            job.pop("started_at", None)
+            changed = True
+    if changed:
+        save_upload_queue(upload_queue)
+        with db() as connection:
+            connection.execute("UPDATE images SET upload_status = 'queued' WHERE upload_status = 'uploading'")
+        logger.info("Recovered interrupted Shopify upload jobs back into the queue")
 
 
 def load_queue() -> list[dict[str, Any]]:
@@ -97,6 +118,20 @@ def save_queue(queue: list[dict[str, Any]]) -> None:
     temporary = QUEUE_PATH.with_suffix(".tmp")
     temporary.write_text(json.dumps(queue, indent=2))
     temporary.replace(QUEUE_PATH)
+
+
+def load_upload_queue() -> list[dict[str, Any]]:
+    try:
+        return json.loads(UPLOAD_QUEUE_PATH.read_text())
+    except (OSError, json.JSONDecodeError):
+        logger.exception("Unable to read upload queue; starting from an empty queue")
+        return []
+
+
+def save_upload_queue(queue: list[dict[str, Any]]) -> None:
+    temporary = UPLOAD_QUEUE_PATH.with_suffix(".tmp")
+    temporary.write_text(json.dumps(queue, indent=2))
+    temporary.replace(UPLOAD_QUEUE_PATH)
 
 
 def queue_job(product_id: str, image_id: str) -> bool:
@@ -157,6 +192,79 @@ async def worker() -> None:
             processed = False
         # Immediately claim the next waiting image. Sleep only while the queue is empty.
         await asyncio.sleep(0 if processed else 0.5)
+
+
+def queue_upload_job(product_id: str, image_id: str) -> bool:
+    """Persist one Shopify upload request; only the upload worker sends it."""
+    with db() as connection:
+        image = connection.execute("SELECT processed_path, uploaded_at, upload_status FROM images WHERE id = ? AND product_id = ?", (image_id, product_id)).fetchone()
+        if not image:
+            raise HTTPException(404, "Image not found")
+        if not image["processed_path"] or not Path(image["processed_path"]).is_file():
+            return False
+        if image["uploaded_at"]:
+            return False
+        queue = load_upload_queue()
+        if any(job["image_id"] == image_id and job["status"] in {"queued", "uploading"} for job in queue):
+            return False
+        connection.execute("UPDATE images SET upload_status = 'queued', upload_error = NULL WHERE id = ?", (image_id,))
+        queue.append({"id": str(uuid.uuid4()), "product_id": product_id, "image_id": image_id, "status": "queued", "created_at": now(), "attempts": 0})
+        save_upload_queue(queue)
+    logger.info("Queued Shopify upload for image %s", image_id)
+    return True
+
+
+def update_upload_job(job_id: str, **updates: Any) -> None:
+    queue = load_upload_queue()
+    job = next((item for item in queue if item["id"] == job_id), None)
+    if not job:
+        raise RuntimeError(f"Upload job {job_id} disappeared")
+    job.update(updates)
+    save_upload_queue(queue)
+
+
+async def process_one_upload_job() -> bool:
+    queue = load_upload_queue()
+    job = next((item for item in queue if item["status"] == "queued"), None)
+    if not job:
+        return False
+    update_upload_job(job["id"], status="uploading", started_at=now(), attempts=job.get("attempts", 0) + 1)
+    with db() as connection:
+        connection.execute("UPDATE images SET upload_status = 'uploading', upload_error = NULL WHERE id = ?", (job["image_id"],))
+    try:
+        await upload_image(job["product_id"], job["image_id"])
+        update_upload_job(job["id"], status="completed", finished_at=now(), error=None)
+        return True
+    except httpx.HTTPStatusError as exc:
+        # Shopify tells us exactly when a throttled request may be retried.
+        retry_after = int(exc.response.headers.get("Retry-After", "2")) if exc.response.status_code == 429 else 0
+        if exc.response.status_code == 429 and job.get("attempts", 0) < 5:
+            update_upload_job(job["id"], status="queued", error="Rate limited by Shopify; retry scheduled")
+            with db() as connection:
+                connection.execute("UPDATE images SET upload_status = 'queued', upload_error = ? WHERE id = ?", ("Rate limited by Shopify; retry scheduled", job["image_id"]))
+            await asyncio.sleep(max(1, retry_after))
+            return True
+        error = f"Shopify HTTP {exc.response.status_code}: {exc.response.text[:300]}"
+    except Exception as exc:
+        error = str(exc)
+    logger.exception("Shopify upload failed for image %s", job["image_id"])
+    update_upload_job(job["id"], status="error", error=error, finished_at=now())
+    with db() as connection:
+        connection.execute("UPDATE images SET upload_status = 'error', upload_error = ? WHERE id = ?", (error, job["image_id"]))
+    return True
+
+
+async def upload_worker() -> None:
+    """One upload at a time: no burst, no manual 60-item chunk can hit the API."""
+    while True:
+        try:
+            uploaded = await process_one_upload_job()
+        except Exception:
+            logger.exception("Unexpected Shopify upload worker failure")
+            uploaded = False
+        # Each image replacement performs a POST and a DELETE. This pause keeps
+        # the request rate deliberately below Shopify's REST leaky-bucket limit.
+        await asyncio.sleep(1 if uploaded else 0.5)
 
 
 def flatten_on_white(transparent_path: Path, output_path: Path) -> None:
@@ -302,22 +410,24 @@ async def upload_image(product_id: str, image_id: str) -> None:
     async with httpx.AsyncClient(timeout=120) as client:
         token = await shopify_token(client)
         headers = {"X-Shopify-Access-Token": token, "Content-Type": "application/json"}
-        create = await client.post(shopify_url(f"products/{product_id}/images.json"), headers=headers, json={"image": {"attachment": attachment, "filename": f"{image_id}_background_removed.png", "position": image["position"]}})
+        create = await client.post(shopify_url(f"products/{product_id}/images.json"), headers=headers, json={"image": {"attachment": attachment, "filename": f"{image_id}_background_removed.jpg", "position": image["position"]}})
         create.raise_for_status()
         replacement_id = str(create.json()["image"]["id"])
         delete = await client.delete(shopify_url(f"products/{product_id}/images/{image_id}.json"), headers=headers)
         delete.raise_for_status()
     with db() as connection:
-        connection.execute("UPDATE images SET uploaded_at = ?, shopify_replacement_id = ? WHERE id = ?", (now(), replacement_id, image_id))
+        connection.execute("UPDATE images SET uploaded_at = ?, shopify_replacement_id = ?, upload_status = 'completed', upload_error = NULL WHERE id = ?", (now(), replacement_id, image_id))
     logger.info("Uploaded processed image %s for product %s", image_id, product_id)
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     initialize_storage()
-    task = asyncio.create_task(worker())
+    processing_task = asyncio.create_task(worker())
+    upload_task = asyncio.create_task(upload_worker())
     yield
-    task.cancel()
+    processing_task.cancel()
+    upload_task.cancel()
 
 
 app = FastAPI(title="Product Background Remover", lifespan=lifespan)
@@ -348,6 +458,11 @@ async def queue() -> list[dict[str, Any]]:
     return load_queue()
 
 
+@app.get("/api/upload_queue")
+async def upload_queue() -> list[dict[str, Any]]:
+    return load_upload_queue()
+
+
 @app.post("/api/products/{product_id}/images/{image_id}/process")
 async def process_image(product_id: str, image_id: str) -> dict[str, bool]:
     return {"queued": queue_job(product_id, image_id)}
@@ -360,25 +475,31 @@ async def process_all(product_id: str) -> dict[str, int]:
     return {"queued": sum(queue_job(product_id, image_id) for image_id in image_ids)}
 
 
+@app.post("/api/process_unprocessed_products")
+async def process_unprocessed_products() -> dict[str, int]:
+    """Queue every image of products that have no completed photo yet."""
+    with db() as connection:
+        product_ids = [row["id"] for row in connection.execute("""
+          SELECT products.id FROM products
+          WHERE EXISTS (SELECT 1 FROM images WHERE images.product_id = products.id)
+            AND NOT EXISTS (SELECT 1 FROM images WHERE images.product_id = products.id AND images.processing_status = 'completed')
+        """)]
+        image_rows = connection.execute(f"SELECT id, product_id FROM images WHERE product_id IN ({','.join('?' for _ in product_ids)})", product_ids).fetchall() if product_ids else []
+    queued = sum(queue_job(row["product_id"], row["id"]) for row in image_rows)
+    logger.info("Queued %s images from %s entirely unprocessed products", queued, len(product_ids))
+    return {"queued": queued, "products": len(product_ids)}
+
+
 @app.post("/api/products/{product_id}/images/{image_id}/upload")
 async def upload(product_id: str, image_id: str) -> dict[str, bool]:
-    try:
-        await upload_image(product_id, image_id)
-        return {"uploaded": True}
-    except httpx.HTTPError as exc:
-        logger.exception("Shopify upload failed")
-        raise HTTPException(502, f"Shopify upload failed: {exc}") from exc
+    return {"queued": queue_upload_job(product_id, image_id)}
 
 
 @app.post("/api/products/{product_id}/upload_all")
 async def upload_all(product_id: str) -> dict[str, int]:
     with db() as connection:
         image_ids = [row["id"] for row in connection.execute("SELECT id FROM images WHERE product_id = ? AND processed_path IS NOT NULL AND uploaded_at IS NULL", (product_id,))]
-    uploaded = 0
-    for image_id in image_ids:
-        await upload_image(product_id, image_id)
-        uploaded += 1
-    return {"uploaded": uploaded}
+    return {"queued": sum(queue_upload_job(product_id, image_id) for image_id in image_ids)}
 
 
 @app.get("/files/{kind}/{image_id}")

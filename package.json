@@ -4,7 +4,9 @@
   "description": "",
   "main": "commons.js",
   "scripts": {
-    "sync": "node updateInventory.js"
+    "sync": "node inventory-sync/index.js",
+    "sync:dry-run": "node inventory-sync/index.js --dry-run",
+    "test:inventory": "node --test inventory-sync/index.test.js"
   },
   "repository": {
     "type": "git",
