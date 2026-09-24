@@ -30,7 +30,6 @@ jobs:
         run: npm run sync -- ${{ inputs.dry_run && '--dry-run' || '' }}
         env:
           AUTOFANTASY_WEBSERVICE_KEY: ${{ secrets.AUTOFANTASY_WEBSERVICE_KEY }}
-          AUTOFANTASY_SHOP_ID: ${{ vars.AUTOFANTASY_SHOP_ID }}
           SHOPIFY_SHOP_DOMAIN: ${{ secrets.SHOPIFY_SHOP_DOMAIN }}
           SHOPIFY_CLIENT_ID: ${{ secrets.SHOPIFY_CLIENT_ID }}
           SHOPIFY_CLIENT_SECRET: ${{ secrets.SHOPIFY_CLIENT_SECRET }}
