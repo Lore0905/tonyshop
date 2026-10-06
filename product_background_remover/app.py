@@ -63,7 +63,8 @@ def initialize_storage() -> None:
             """
             CREATE TABLE IF NOT EXISTS products (
               id TEXT PRIMARY KEY, title TEXT NOT NULL, status TEXT NOT NULL,
-              variants_json TEXT NOT NULL, updated_at TEXT NOT NULL
+              variants_json TEXT NOT NULL, updated_at TEXT NOT NULL,
+              local_status TEXT
             );
             CREATE TABLE IF NOT EXISTS images (
               id TEXT PRIMARY KEY, product_id TEXT NOT NULL, position INTEGER,
@@ -76,6 +77,9 @@ def initialize_storage() -> None:
             """
         )
         image_columns = {row["name"] for row in connection.execute("PRAGMA table_info(images)")}
+        product_columns = {row["name"] for row in connection.execute("PRAGMA table_info(products)")}
+        if "local_status" not in product_columns:
+            connection.execute("ALTER TABLE products ADD COLUMN local_status TEXT")
         if "upload_status" not in image_columns:
             connection.execute("ALTER TABLE images ADD COLUMN upload_status TEXT NOT NULL DEFAULT 'new'")
         if "upload_error" not in image_columns:
@@ -136,9 +140,11 @@ def save_upload_queue(queue: list[dict[str, Any]]) -> None:
 
 def queue_job(product_id: str, image_id: str) -> bool:
     with db() as connection:
-        image = connection.execute("SELECT processing_status FROM images WHERE id = ?", (image_id,)).fetchone()
+        image = connection.execute("SELECT images.processing_status, products.local_status FROM images JOIN products ON products.id = images.product_id WHERE images.id = ? AND images.product_id = ?", (image_id, product_id)).fetchone()
         if not image:
             raise HTTPException(404, "Image not found")
+        if image["local_status"] == "ok":
+            return False
         if image["processing_status"] == "completed":
             return False
         queue = load_queue()
@@ -197,9 +203,11 @@ async def worker() -> None:
 def queue_upload_job(product_id: str, image_id: str) -> bool:
     """Persist one Shopify upload request; only the upload worker sends it."""
     with db() as connection:
-        image = connection.execute("SELECT processed_path, uploaded_at, upload_status FROM images WHERE id = ? AND product_id = ?", (image_id, product_id)).fetchone()
+        image = connection.execute("SELECT images.processed_path, images.uploaded_at, images.upload_status, products.local_status FROM images JOIN products ON products.id = images.product_id WHERE images.id = ? AND images.product_id = ?", (image_id, product_id)).fetchone()
         if not image:
             raise HTTPException(404, "Image not found")
+        if image["local_status"] == "ok":
+            return False
         if not image["processed_path"] or not Path(image["processed_path"]).is_file():
             return False
         if image["uploaded_at"]:
@@ -395,7 +403,10 @@ def product_payloads() -> list[dict[str, Any]]:
         for product in products:
             images = connection.execute("SELECT * FROM images WHERE product_id = ? ORDER BY position", (product["id"],)).fetchall()
             serialized_images = [image_payload(image) for image in images]
-            result.append({**dict(product), "variants": json.loads(product["variants_json"]), "images": serialized_images, "processed_count": sum(image["processing_status"] == "completed" for image in images), "total_images": len(images)})
+            uploaded_count = sum(bool(image["uploaded_at"]) for image in images)
+            processed_count = sum(image["processing_status"] == "completed" for image in images)
+            calculated_status = "uploaded" if uploaded_count else "modified" if processed_count else "to_modify"
+            result.append({**dict(product), "variants": json.loads(product["variants_json"]), "images": serialized_images, "processed_count": processed_count, "uploaded_count": uploaded_count, "total_images": len(images), "effective_status": product["local_status"] or calculated_status})
         return result
 
 
@@ -444,6 +455,56 @@ async def products() -> list[dict[str, Any]]:
     return product_payloads()
 
 
+@app.put("/api/products/{product_id}/local_status")
+async def update_local_status(product_id: str, payload: dict[str, str]) -> dict[str, str]:
+    status = payload.get("status", "")
+    valid_statuses = {"to_modify", "modified", "uploaded", "ok"}
+    if status not in valid_statuses:
+        raise HTTPException(400, "Invalid local status")
+    with db() as connection:
+        product = connection.execute("SELECT id FROM products WHERE id = ?", (product_id,)).fetchone()
+        if not product:
+            raise HTTPException(404, "Product not found")
+        connection.execute("UPDATE products SET local_status = ? WHERE id = ?", (status, product_id))
+    logger.info("Updated local status for product %s to %s", product_id, status)
+    return {"status": status}
+
+
+@app.put("/api/products/{product_id}/shopify_status")
+async def update_shopify_status(product_id: str, payload: dict[str, str]) -> dict[str, str]:
+    """Change the real product status on Shopify, then mirror it locally."""
+    status = payload.get("status", "").lower()
+    if status not in {"active", "draft", "archived"}:
+        raise HTTPException(400, "Invalid Shopify product status")
+    mutation = """
+      mutation updateProductStatus($input: ProductInput!) {
+        productUpdate(input: $input) {
+          product { legacyResourceId status }
+          userErrors { field message }
+        }
+      }
+    """
+    variables = {"input": {"id": f"gid://shopify/Product/{product_id}", "status": status.upper()}}
+    try:
+        async with httpx.AsyncClient(timeout=60) as client:
+            token = await shopify_token(client)
+            response = await client.post(shopify_url("graphql.json"), headers={"X-Shopify-Access-Token": token}, json={"query": mutation, "variables": variables})
+            response.raise_for_status()
+        body = response.json()
+        if body.get("errors"):
+            raise HTTPException(502, " | ".join(error["message"] for error in body["errors"]))
+        result = body["data"]["productUpdate"]
+        if result["userErrors"]:
+            raise HTTPException(400, " | ".join(error["message"] for error in result["userErrors"]))
+    except httpx.HTTPError as exc:
+        logger.exception("Shopify product status update failed")
+        raise HTTPException(502, f"Shopify product status update failed: {exc}") from exc
+    with db() as connection:
+        connection.execute("UPDATE products SET status = ?, updated_at = ? WHERE id = ?", (status, now(), product_id))
+    logger.info("Updated Shopify status for product %s to %s", product_id, status)
+    return {"status": status}
+
+
 @app.post("/api/sync")
 async def sync() -> dict[str, Any]:
     try:
@@ -482,6 +543,7 @@ async def process_unprocessed_products() -> dict[str, int]:
         product_ids = [row["id"] for row in connection.execute("""
           SELECT products.id FROM products
           WHERE EXISTS (SELECT 1 FROM images WHERE images.product_id = products.id)
+            AND COALESCE(products.local_status, '') != 'ok'
             AND NOT EXISTS (SELECT 1 FROM images WHERE images.product_id = products.id AND images.processing_status = 'completed')
         """)]
         image_rows = connection.execute(f"SELECT id, product_id FROM images WHERE product_id IN ({','.join('?' for _ in product_ids)})", product_ids).fetchall() if product_ids else []
@@ -497,6 +559,12 @@ async def upload(product_id: str, image_id: str) -> dict[str, bool]:
 
 @app.post("/api/products/{product_id}/upload_all")
 async def upload_all(product_id: str) -> dict[str, int]:
+    with db() as connection:
+        product = connection.execute("SELECT local_status FROM products WHERE id = ?", (product_id,)).fetchone()
+    if not product:
+        raise HTTPException(404, "Product not found")
+    if product["local_status"] == "ok":
+        return {"queued": 0}
     with db() as connection:
         image_ids = [row["id"] for row in connection.execute("SELECT id FROM images WHERE product_id = ? AND processed_path IS NOT NULL AND uploaded_at IS NULL", (product_id,))]
     return {"queued": sum(queue_upload_job(product_id, image_id) for image_id in image_ids)}
