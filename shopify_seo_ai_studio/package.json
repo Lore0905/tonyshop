@@ -1,0 +1,11 @@
+{
+  "name": "shopify-seo-ai-studio-ui",
+  "private": true,
+  "scripts": {
+    "build:css": "tailwindcss -i ./static/input.css -o ./static/styles.css --minify",
+    "watch:css": "tailwindcss -i ./static/input.css -o ./static/styles.css --watch"
+  },
+  "devDependencies": {
+    "tailwindcss": "3.4.17"
+  }
+}

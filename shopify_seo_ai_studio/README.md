@@ -15,6 +15,17 @@ python run_server.py
 
 Apri <http://127.0.0.1:8770>. Configura Ollama dall'interfaccia. L'elaborazione non parte automaticamente: sincronizza, seleziona i prodotti e scegli **Analizza SEO** o **Genera miglioramenti**.
 
+## Layout Tailwind
+
+Il CSS dell'interfaccia viene compilato localmente con Tailwind CSS. Dopo una modifica a `static/input.css`, `static/index.html` o alle classi presenti in `static/app.js`:
+
+```bash
+npm install
+npm run build:css
+```
+
+Durante lo sviluppo è disponibile anche `npm run watch:css`. Il browser carica soltanto `static/styles.css`: non è richiesta alcuna CDN o runtime Tailwind.
+
 ## Variabili d'ambiente
 
 - `SHOPIFY_SHOP_DOMAIN`: dominio `*.myshopify.com`.

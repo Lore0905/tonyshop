@@ -1,0 +1,110 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { @apply border-slate-200; }
+  html { @apply scroll-smooth bg-slate-50; }
+  body { @apply min-h-screen bg-slate-50 font-sans text-slate-900 antialiased; }
+  button, input, select, textarea { @apply outline-none; }
+  button { @apply cursor-pointer; }
+  button:disabled { @apply cursor-not-allowed opacity-45; }
+  input:not([type="checkbox"]), select, textarea { @apply w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 hover:border-blue-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100; }
+  input[type="number"] { @apply tabular-nums; }
+  input[type="checkbox"] { @apply size-4 cursor-pointer appearance-none rounded border border-slate-300 bg-white align-middle shadow-sm transition checked:border-blue-600 checked:bg-blue-600 focus:ring-4 focus:ring-blue-100; background-position:center; background-repeat:no-repeat; }
+  input[type="checkbox"]:checked { background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='m4 8 2.5 2.5L12 5' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+  select[multiple] { @apply min-h-24 py-2; }
+  select[multiple] option { @apply rounded-md px-2 py-1.5; }
+  textarea { @apply min-h-32 resize-y leading-6; }
+  textarea[readonly] { @apply cursor-default bg-slate-100 text-slate-500; }
+  dialog { @apply m-auto max-h-[92vh] w-[min(1180px,calc(100vw-2rem))] overflow-auto rounded-3xl border border-slate-200 bg-white p-0 shadow-2xl; }
+  dialog::backdrop { background:rgb(15 23 42 / .68); backdrop-filter:blur(5px); }
+}
+
+@layer components {
+  .app-shell { @apply mx-auto w-full max-w-[1600px] px-4 py-6 sm:px-6 lg:px-10 lg:py-8; }
+  .topbar { @apply relative overflow-hidden border-b border-blue-800 bg-gradient-to-br from-slate-950 via-blue-950 to-blue-800 text-white shadow-xl; }
+  .topbar::after { content:""; @apply pointer-events-none absolute -right-24 -top-32 size-96 rounded-full bg-sky-400/15 blur-3xl; }
+  .topbar-inner { @apply relative z-10 mx-auto flex max-w-[1600px] flex-col gap-6 px-4 py-7 sm:px-6 md:flex-row md:items-center md:justify-between lg:px-10 lg:py-9; }
+  .eyebrow { @apply mb-2 text-[11px] font-extrabold uppercase tracking-[.2em] text-sky-300; }
+  .subtitle { @apply mt-2 max-w-2xl text-sm text-blue-100/75 sm:text-base; }
+  .head-actions, .action-row, .form-inline, .result-head, .modal-head, .form-actions { @apply flex items-center gap-2.5; }
+  .btn { @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 hover:shadow-md active:translate-y-0 focus-visible:ring-4 focus-visible:ring-blue-200; }
+  .btn.primary { @apply border-blue-600 bg-blue-600 text-white shadow-blue-900/15 hover:border-blue-700 hover:bg-blue-700 hover:text-white; }
+  .btn.accent { @apply border-sky-400 bg-sky-400 text-blue-950 shadow-sky-900/10 hover:border-sky-300 hover:bg-sky-300 hover:text-blue-950; }
+  .btn.subtle { @apply border-blue-100 bg-blue-50 text-blue-700 hover:bg-blue-100; }
+  .icon, .page { @apply inline-grid size-10 place-items-center rounded-xl border border-slate-300 bg-white text-lg font-bold text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 focus-visible:ring-4 focus-visible:ring-blue-200; }
+  .topbar .icon { @apply border-white/15 bg-white/10 text-white backdrop-blur hover:border-white/30 hover:bg-white/20 hover:text-white; }
+  .notice { @apply mb-4 flex min-h-12 items-center rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-800 shadow-sm; }
+  .notice::before { content:""; @apply mr-3 size-2 shrink-0 rounded-full bg-blue-500 ring-4 ring-blue-100; }
+  .notice.error { @apply border-red-200 bg-red-50 text-red-700; }
+  .notice.error::before { @apply bg-red-500 ring-red-100; }
+  .queuebar { @apply mb-5 flex min-h-14 flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm; }
+  .queuebar strong { @apply text-slate-950; }
+  .toolbar { @apply overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm; }
+  .action-row { @apply flex-wrap border-b border-slate-200 bg-gradient-to-r from-slate-50 to-blue-50/60 p-4; }
+  .action-row > span { @apply ml-auto rounded-full bg-white px-3 py-1.5 text-xs font-bold text-slate-500 shadow-sm ring-1 ring-slate-200; }
+  .filters { @apply grid grid-cols-1 items-start gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6; }
+  .filters > * { @apply min-w-0; }
+  .filters > input:first-child { @apply self-start sm:col-span-2; }
+  .filters > label { @apply flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-bold text-slate-600 transition hover:border-blue-200 hover:bg-blue-50/50; }
+  .filters > label input[type="number"] { @apply w-12 min-w-0 border-0 bg-transparent px-0 py-0 text-center shadow-none focus:ring-0; }
+  .filters > label input[type="checkbox"] { @apply shrink-0; }
+  .result-head { @apply my-5 justify-between text-sm text-slate-500; }
+  .result-head strong { @apply text-slate-800; }
+  .grid { display:grid; @apply grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5; }
+  .card { @apply relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition duration-200 hover:-translate-y-1 hover:border-blue-200 hover:shadow-xl hover:shadow-blue-900/10; }
+  .card.selected { @apply border-blue-500 ring-4 ring-blue-100; }
+  .card-select { @apply absolute left-3 top-3 z-20 !size-5; }
+  .image { @apply relative grid aspect-[5/4] place-items-center overflow-hidden bg-white; }
+  .image::after { content:""; @apply pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-slate-950/10 to-transparent; }
+  .image img { @apply absolute inset-0 size-full object-contain object-center transition duration-300; }
+  .card:hover .image img { @apply scale-[1.04]; }
+  .placeholder { @apply relative z-10 text-5xl font-light text-blue-200; }
+  .updated { @apply absolute right-3 top-3 z-10 rounded-full bg-blue-600 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-white shadow-lg shadow-blue-900/20; }
+  .card-body { @apply relative p-4 pt-10; }
+  .card h2 { @apply my-2 line-clamp-2 min-h-10 text-[15px] font-extrabold leading-5 text-slate-900; }
+  .meta { @apply truncate text-xs text-slate-500; }
+  .badges { @apply flex flex-wrap justify-center gap-1.5; }
+  .badge { @apply rounded-full bg-slate-100 px-2 py-1 text-[9px] font-extrabold uppercase tracking-wide text-slate-600 ring-1 ring-inset ring-slate-200; }
+  .badge.error { @apply bg-red-50 text-red-700 ring-red-200; }
+  .score { display:flex; @apply absolute -top-8 left-1/2 size-16 -translate-x-1/2 items-center justify-center rounded-full border-[5px] border-slate-300 bg-white text-center text-lg font-black tabular-nums text-slate-700 shadow-lg shadow-slate-900/10; }
+  .score.low { @apply border-red-500 text-red-700; }
+  .score.mid { @apply border-amber-400 text-amber-700; }
+  .score.high { @apply border-blue-500 text-blue-700; }
+  .card-footer { @apply mt-4 flex items-center justify-between gap-2 border-t border-slate-100 pt-3; }
+  .link { @apply shrink-0 rounded-lg px-2 py-1 text-xs font-extrabold text-blue-600 transition hover:bg-blue-50 hover:text-blue-800; }
+  .modal-head { @apply sticky top-0 z-30 justify-between border-b border-slate-200 bg-white/95 px-5 py-4 backdrop-blur sm:px-7; }
+  .modal-head h2 { @apply max-w-3xl text-xl font-black tracking-tight text-slate-950 sm:text-2xl; }
+  .modal-head .eyebrow { @apply mb-1 text-blue-600; }
+  .compare { @apply grid grid-cols-1 gap-5 p-5 lg:grid-cols-2 lg:p-7; }
+  .column { @apply rounded-2xl border border-slate-200 bg-white p-4 sm:p-5; }
+  .column.ai { @apply border-blue-200 bg-gradient-to-br from-blue-50/80 to-white; }
+  .column h3, .history h3 { @apply text-base font-black text-slate-950; }
+  .field { @apply my-4; }
+  .field-head { @apply flex items-center justify-between gap-3; }
+  .field-head > label { @apply text-[10px] font-extrabold uppercase tracking-wider text-slate-500; }
+  .field-head > label:has(input) { @apply flex items-center gap-2 rounded-full bg-white px-2.5 py-1 text-[10px] text-blue-700 ring-1 ring-blue-200; }
+  .value { @apply mt-1.5 max-h-48 overflow-auto whitespace-pre-wrap rounded-xl border border-slate-200 bg-white p-3 text-sm leading-6 text-slate-700 shadow-sm; }
+  .value.changed { @apply border-l-4 border-l-blue-500 bg-blue-50/40; }
+  .history { @apply mx-5 mb-6 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 lg:mx-7 lg:mb-7; }
+  .history details { @apply border-t border-slate-200 py-3 first:border-0; }
+  .history summary { @apply cursor-pointer rounded-lg px-2 py-2 text-sm font-bold text-slate-700 transition hover:bg-white hover:text-blue-700; }
+  .history details p { @apply px-2 text-sm leading-6 text-slate-600; }
+  .history-actions { @apply mt-3 flex flex-wrap gap-2 px-2; }
+  .settings-grid { @apply grid grid-cols-1 gap-4 p-5 sm:grid-cols-2 lg:p-7; }
+  .settings-grid > label { @apply grid content-start gap-1.5 text-xs font-extrabold text-slate-600; }
+  .settings-grid .wide { @apply sm:col-span-2; }
+  .weights { @apply grid grid-cols-2 gap-3 rounded-2xl border border-blue-200 bg-blue-50/60 p-4 sm:grid-cols-3; }
+  .weights legend { @apply px-2 text-xs font-black uppercase tracking-wide text-blue-800; }
+  .weights label { @apply grid gap-1 text-xs font-bold text-slate-600; }
+  .form-actions { @apply flex-col justify-between rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:flex-row; }
+  #ollamaState.error { @apply text-red-600; }
+  .spinner { @apply inline-block size-4 animate-spin rounded-full border-2 border-blue-200 border-t-blue-600; }
+}
+
+@media (max-width:640px) {
+  .head-actions { @apply w-full; }
+  .head-actions .btn, .action-row .btn { @apply flex-1; }
+  .action-row > span { @apply order-first mb-1 ml-0 w-full text-center; }
+}
