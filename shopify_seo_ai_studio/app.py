@@ -1,5 +1,5 @@
 from __future__ import annotations
-import asyncio, hashlib, json, logging, os, sqlite3, time, uuid
+import asyncio, hashlib, json, logging, os, re, sqlite3, time, uuid
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -10,13 +10,15 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, ValidationError, field_validator
-from seo import DEFAULT_WEIGHTS, score_content
+from seo import DEFAULT_WEIGHTS, plain, score_content
 
 BASE = Path(__file__).resolve().parent; DATA = BASE / "data"; DB = DATA / "seo.sqlite"; LOG = DATA / "app.log"
 DATA.mkdir(exist_ok=True); load_dotenv(BASE / ".env")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", handlers=[logging.FileHandler(LOG), logging.StreamHandler()])
 logger = logging.getLogger("shopify_seo_ai_studio")
-SYSTEM_PROMPT = """Sei il motore strutturato di Shopify SEO AI Studio. Rispondi esclusivamente con JSON valido conforme allo schema ricevuto. Usa come unica chiave il GID Shopify fornito. Non aggiungere Markdown o commenti. Non inventare compatibilità, marche, modelli, misure, materiali, codici, EAN o dati tecnici. Conserva il significato tecnico. Il campo voto è una valutazione consultiva: il punteggio finale viene ricalcolato dal backend."""
+SYSTEM_PROMPT = """Sei il motore strutturato di Shopify SEO AI Studio. Rispondi esclusivamente con JSON valido conforme allo schema ricevuto. Usa come unica chiave il GID Shopify fornito. Non aggiungere Markdown o commenti. Non inventare compatibilità, marche, modelli, misure, materiali, codici, EAN o dati tecnici. Conserva il significato tecnico. Il campo voto è una valutazione consultiva: il punteggio finale viene ricalcolato dal backend.
+
+REGOLA OBBLIGATORIA SULLA MARCA: inserisci una marca nel titolo o nel meta title soltanto se è documentata nei dati sorgente del prodotto: nel campo vendor oppure già presente nel titolo, nella descrizione o nello SKU di una variante. Se la marca è assente o dubbia, non dedurla e non inventarla; segnalalo nel campo criticita. Restituisci inoltre la marca documentata nel campo marca, oppure una stringa vuota se non può essere determinata in sicurezza."""
 DEFAULT_SEO_PROMPT = """Agisci come un esperto SEO specializzato nell'e-commerce italiano di ricambi per minimoto, Pit Bike, quad, scooter elettrici e componenti meccanici. Migliora titolo, descrizione, meta title e meta description usando solo dati documentati. Evita keyword stuffing, ripetizioni e promesse ingannevoli. Scrivi in italiano con tono professionale, privilegiando accuratezza, chiarezza e intento di ricerca."""
 
 def now(): return datetime.now(timezone.utc).isoformat()
@@ -32,7 +34,7 @@ class Proposal(BaseModel):
     model_config=ConfigDict(extra="forbid")
     voto:int=Field(ge=0,le=100); title:str=Field(min_length=1,max_length=255); descriptionHtml:str=Field(min_length=1)
     metaTitle:str=Field(max_length=255); metaDescription:str=Field(max_length=500); keywords:list[str]=Field(default_factory=list,max_length=20)
-    criticita:list[str]=Field(default_factory=list); modificheSuggerite:list[str]=Field(default_factory=list)
+    marca:str=Field(default="",max_length=100); criticita:list[str]=Field(default_factory=list); modificheSuggerite:list[str]=Field(default_factory=list)
 
 class Settings(BaseModel):
     ollama_url:HttpUrl|str="http://127.0.0.1:11434"; model:str="llama3.2"; timeout:int=Field(180,ge=10,le=1800)
@@ -134,7 +136,7 @@ async def sync_shopify():
     return count
 
 def schema_for(gid):
-    fields={"voto":{"type":"integer","minimum":0,"maximum":100},"title":{"type":"string"},"descriptionHtml":{"type":"string"},"metaTitle":{"type":"string"},"metaDescription":{"type":"string"},"keywords":{"type":"array","items":{"type":"string"}},"criticita":{"type":"array","items":{"type":"string"}},"modificheSuggerite":{"type":"array","items":{"type":"string"}}}
+    fields={"voto":{"type":"integer","minimum":0,"maximum":100},"title":{"type":"string"},"descriptionHtml":{"type":"string"},"metaTitle":{"type":"string"},"metaDescription":{"type":"string"},"keywords":{"type":"array","items":{"type":"string"}},"marca":{"type":"string"},"criticita":{"type":"array","items":{"type":"string"}},"modificheSuggerite":{"type":"array","items":{"type":"string"}}}
     return {"type":"object","properties":{gid:{"type":"object","properties":fields,"required":list(fields),"additionalProperties":False}},"required":[gid],"additionalProperties":False}
 
 async def ollama_models(s: Settings) -> list[str]:
@@ -170,6 +172,31 @@ async def call_ollama(row,s):
     except (json.JSONDecodeError,KeyError,ValidationError) as exc: raise RuntimeError(f"Risposta Ollama non valida: {exc}") from exc
     return proposal.model_dump()
 
+_BRAND_WHITELIST={"pit bike","pitbike","minimoto","mini moto","quad","atv","scooter","cross","enduro","motard","racing","race","kit","set","originale","original","professionale","professional","ricambi","ricambio","parts","parti","sport","evo","new","pro","italia","italy","off road","omologato","omologata","omologati","cc","kw","hp","2t","4t"}
+_BRAND_CANDIDATE=re.compile(r"\b[A-ZÀ-ÖØ-Þ][\wÀ-öø-ÿ-]*\b")
+
+def _brand_candidates(text):
+    return [t.strip(" -") for t in _BRAND_CANDIDATE.findall(text or "") if len(t.strip(" -"))>=3 and t.strip(" -").lower() not in _BRAND_WHITELIST]
+
+def brand_guard(row,proposal):
+    variants=jload(row["variants_json"],[])
+    variant_text=" ".join(f'{v.get("sku","")} {v.get("title","")}' for v in variants)
+    source=plain(" ".join([row["title"],row["description_html"],row["meta_title"],row["meta_description"],row["vendor"],row["product_type"],variant_text])).lower()
+    removed=[]
+    for field in ("title","metaTitle"):
+        for tok in _brand_candidates(proposal.get(field,"")):
+            if tok.lower() in source: continue
+            proposal[field]=re.sub(rf"(?<!\w){re.escape(tok)}(?!\w)","",proposal[field])
+            proposal[field]=re.sub(r"\s{2,}"," ",proposal[field]).strip(" \t-–—|·,;")
+            removed.append(tok)
+    marca=(proposal.get("marca") or "").strip()
+    proposal.setdefault("criticita",[])
+    if marca and marca.lower() not in source:
+        proposal["criticita"].append(f"Marca '{marca}' non documentata nei dati sorgente; campo marca svuotato.")
+        proposal["marca"]=""
+    for tok in dict.fromkeys(removed):
+        proposal["criticita"].append(f"Possibile marca/modello non documentato rimosso dal testo: {tok}")
+
 async def process_job(job):
     start=time.monotonic(); s=get_settings()
     with connect() as c: row=c.execute("SELECT * FROM products WHERE id=?",(job["product_id"],)).fetchone()
@@ -179,7 +206,7 @@ async def process_job(job):
         with connect() as c:
             c.execute("INSERT INTO analyses VALUES(?,?,?,?,?,?)",(str(uuid.uuid4()),row["id"],result["score"],jdump(result),"deterministic",now()));c.execute("UPDATE products SET current_score=?,score_details_json=?,processing_status='completed',last_error=NULL WHERE id=?",(result["score"],jdump(result),row["id"]))
     else:
-        proposal=await call_ollama(row,s); ai_factor=proposal["voto"]/100; final=score_content(proposal,s.weights,{"keywords":ai_factor,"accuracy":ai_factor}); proposal["voto"]=final["score"]; proposal["criticita"]=list(dict.fromkeys(proposal["criticita"]+final["issues"])); gen_id=str(uuid.uuid4())
+        proposal=await call_ollama(row,s); brand_guard(row,proposal); ai_factor=proposal["voto"]/100; final=score_content(proposal,s.weights,{"keywords":ai_factor,"accuracy":ai_factor}); proposal["voto"]=final["score"]; proposal["criticita"]=list(dict.fromkeys(proposal["criticita"]+final["issues"])); gen_id=str(uuid.uuid4())
         with connect() as c:
             c.execute("INSERT INTO generations(id,product_id,prompt_version,model,output_json,score,status,source_hash,created_at) VALUES(?,?,?,?,?,?,?,?,?)",(gen_id,row["id"],ensure_prompt_version(),s.model,jdump(proposal),final["score"],"generated",row["content_hash"],now()));c.execute("UPDATE products SET processing_status='completed',last_error=NULL WHERE id=?",(row["id"],))
     return time.monotonic()-start

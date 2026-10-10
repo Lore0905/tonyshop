@@ -17,8 +17,34 @@ def test_weights_must_sum_to_100():
 def test_ollama_contract_rejects_extra_and_bad_score():
     good={"voto":80,"title":"Titolo","descriptionHtml":"<p>Testo</p>","metaTitle":"Meta","metaDescription":"Desc","keywords":[],"criticita":[],"modificheSuggerite":[]}
     assert Proposal.model_validate(good).voto==80
+    assert Proposal.model_validate(good).marca==""
     with pytest.raises(Exception): Proposal.model_validate({**good,"extra":"no"})
     with pytest.raises(Exception): Proposal.model_validate({**good,"voto":101})
+
+def test_ollama_schema_requires_marca():
+    gid="gid://shopify/Product/1"
+    product_schema=app.schema_for(gid)["properties"][gid]
+    assert product_schema["properties"]["marca"]=={"type":"string"}
+    assert "marca" in product_schema["required"]
+
+def test_brand_guard_keeps_documented_brand():
+    row={"title":"Carburatore KAYO 125 cc","description_html":"","meta_title":"","meta_description":"","vendor":"KAYO","product_type":"Ricambi","variants_json":'[{"sku":"KAYO-CARB-125","title":"Default"}]'}
+    proposal={"title":"Carburatore KAYO 125 cc","metaTitle":"Carburatore KAYO","marca":"KAYO","criticita":[]}
+    app.brand_guard(row,proposal)
+    assert proposal["title"]=="Carburatore KAYO 125 cc"
+    assert proposal["metaTitle"]=="Carburatore KAYO"
+    assert proposal["marca"]=="KAYO"
+    assert proposal["criticita"]==[]
+
+def test_brand_guard_removes_undocumented_brand_and_reports_it():
+    row={"title":"Carburatore 125 cc","description_html":"<p>Ricambio per pit bike.</p>","meta_title":"","meta_description":"","vendor":"","product_type":"Ricambi","variants_json":'[{"sku":"CARB-125","title":"Default"}]'}
+    proposal={"title":"Carburatore KAYO 125 cc","metaTitle":"Carburatore KAYO per Pit Bike","marca":"KAYO","criticita":[]}
+    app.brand_guard(row,proposal)
+    assert "KAYO" not in proposal["title"]
+    assert "KAYO" not in proposal["metaTitle"]
+    assert proposal["marca"]==""
+    assert any("Marca 'KAYO' non documentata" in issue for issue in proposal["criticita"])
+    assert any("rimosso dal testo: KAYO" in issue for issue in proposal["criticita"])
 
 @pytest.mark.asyncio
 async def test_queue_is_strictly_sequential(monkeypatch,tmp_path):
