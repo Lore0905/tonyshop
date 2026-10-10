@@ -52,6 +52,9 @@ class Settings(BaseModel):
         if set(v)!=set(DEFAULT_WEIGHTS) or sum(v.values())!=100: raise ValueError("I pesi devono contenere le sei categorie e sommare a 100")
         return v
 
+class OllamaConfigurationError(RuntimeError):
+    """Permanent configuration error: retrying the same job cannot fix it."""
+
 def init_db():
     with connect() as c:
         c.executescript("""
@@ -133,13 +136,39 @@ async def sync_shopify():
 def schema_for(gid):
     fields={"voto":{"type":"integer","minimum":0,"maximum":100},"title":{"type":"string"},"descriptionHtml":{"type":"string"},"metaTitle":{"type":"string"},"metaDescription":{"type":"string"},"keywords":{"type":"array","items":{"type":"string"}},"criticita":{"type":"array","items":{"type":"string"}},"modificheSuggerite":{"type":"array","items":{"type":"string"}}}
     return {"type":"object","properties":{gid:{"type":"object","properties":fields,"required":list(fields),"additionalProperties":False}},"required":[gid],"additionalProperties":False}
+
+async def ollama_models(s: Settings) -> list[str]:
+    async with httpx.AsyncClient(timeout=min(s.timeout,15)) as client:
+        response=await client.get(f"{str(s.ollama_url).rstrip('/')}/api/tags")
+        response.raise_for_status()
+    return [item.get("name") or item.get("model") for item in response.json().get("models",[]) if item.get("name") or item.get("model")]
+
+async def validate_ollama_configuration(s: Settings) -> list[str]:
+    try: models=await ollama_models(s)
+    except httpx.HTTPError as exc: raise OllamaConfigurationError(f"Ollama non raggiungibile su {s.ollama_url}: {exc}") from exc
+    if not models:
+        raise OllamaConfigurationError("Ollama è raggiungibile ma non ha modelli installati. Installa un modello con 'ollama pull NOME_MODELLO', poi selezionalo nelle impostazioni.")
+    if s.model not in models:
+        raise OllamaConfigurationError(f"Il modello configurato '{s.model}' non è installato. Modelli disponibili: {', '.join(models)}")
+    return models
+
 async def call_ollama(row,s):
     gid=row["id"]; source={**content_of(row),"productType":row["product_type"],"vendor":row["vendor"],"variants":jload(row["variants_json"],[])}
     prompt=f"{s.seo_prompt}\nLingua: {s.language}. Stile: {s.description_style}. Negozio: {s.shop_name}. Keyword prioritarie: {s.priority_keywords}.\nProdotto, unica fonte ammessa:\n{jdump({gid:source})}"
     payload={"model":s.model,"stream":False,"format":schema_for(gid),"messages":[{"role":"system","content":SYSTEM_PROMPT},{"role":"user","content":prompt}],"options":{"temperature":s.temperature,"num_predict":s.num_predict}}
+    await validate_ollama_configuration(s)
     async with httpx.AsyncClient(timeout=s.timeout) as client:
-        r=await client.post(f"{str(s.ollama_url).rstrip('/')}/api/chat",json=payload);r.raise_for_status(); body=r.json()
-    raw=body.get("message",{}).get("content",""); parsed=json.loads(raw); proposal=Proposal.model_validate(parsed[gid]); return proposal.model_dump()
+        r=await client.post(f"{str(s.ollama_url).rstrip('/')}/api/chat",json=payload)
+        if r.status_code>=400:
+            try: detail=r.json().get("error") or r.text
+            except (ValueError,AttributeError): detail=r.text
+            if r.status_code==404: raise OllamaConfigurationError(f"Ollama ha rifiutato il modello '{s.model}': {detail or 'endpoint /api/chat non disponibile'}")
+            r.raise_for_status()
+        body=r.json()
+    raw=body.get("message",{}).get("content","")
+    try: parsed=json.loads(raw); proposal=Proposal.model_validate(parsed[gid])
+    except (json.JSONDecodeError,KeyError,ValidationError) as exc: raise RuntimeError(f"Risposta Ollama non valida: {exc}") from exc
+    return proposal.model_dump()
 
 async def process_job(job):
     start=time.monotonic(); s=get_settings()
@@ -171,7 +200,7 @@ async def worker():
             except Exception as exc:
                 logger.exception("Job %s failed",job["id"]); attempts=job["attempts"]+1; max_attempts=get_settings().max_retries+1
                 with connect() as c:
-                    if attempts<max_attempts:c.execute("UPDATE jobs SET status='queued',error=?,next_attempt_at=? WHERE id=?",(str(exc),time.time()+min(60,2**attempts),job["id"]));c.execute("UPDATE products SET processing_status='queued',last_error=? WHERE id=?",(str(exc),job["product_id"]))
+                    if attempts<max_attempts and not isinstance(exc,OllamaConfigurationError):c.execute("UPDATE jobs SET status='queued',error=?,next_attempt_at=? WHERE id=?",(str(exc),time.time()+min(60,2**attempts),job["id"]));c.execute("UPDATE products SET processing_status='queued',last_error=? WHERE id=?",(str(exc),job["product_id"]))
                     else:c.execute("UPDATE jobs SET status='error',finished_at=?,error=? WHERE id=?",(now(),str(exc),job["id"]));c.execute("UPDATE products SET processing_status='error',last_error=? WHERE id=?",(str(exc),job["product_id"]));c.execute("INSERT INTO error_logs VALUES(?,?,?,?,?)",(str(uuid.uuid4()),"queue",job["id"],str(exc),now()))
         except asyncio.CancelledError:raise
         except Exception:logger.exception("Worker loop failure");await asyncio.sleep(1)
@@ -201,6 +230,13 @@ async def product_detail(product_id:str):
         row=c.execute("SELECT * FROM products WHERE id=?",(product_id,)).fetchone();history=c.execute("SELECT * FROM generations WHERE product_id=? ORDER BY created_at DESC",(product_id,)).fetchall()
     if not row:raise HTTPException(404,"Prodotto non trovato")
     return {"product":product_payload(row),"current":content_of(row),"history":[generation_payload(x) for x in history]}
+@app.get("/api/products/{product_id:path}")
+async def product_detail_legacy_path(product_id:str):
+    """Accept cached clients that still place a Shopify GID in the URL path."""
+    return await product_detail(product_id)
+@app.get("/api/product-detail")
+async def product_detail_by_query(id:str=Query(...)):
+    return await product_detail(id)
 @app.get("/api/facets")
 async def facets():
     with connect() as c:
@@ -215,6 +251,9 @@ async def sync():
 async def enqueue(payload:dict):
     kind=payload.get("kind");ids=payload.get("product_ids",[]);limit=int(payload.get("limit") or 500)
     if kind not in {"analyze","generate"}:raise HTTPException(400,"Tipo job non valido")
+    if kind=="generate":
+        try: await validate_ollama_configuration(get_settings())
+        except OllamaConfigurationError as exc: raise HTTPException(409,str(exc)) from exc
     added=0
     with connect() as c:
         for pid in ids[:limit]:
@@ -246,8 +285,9 @@ async def settings_put(payload:dict):
 async def ollama_test():
     s=get_settings()
     try:
-        async with httpx.AsyncClient(timeout=10) as client:r=await client.get(f"{str(s.ollama_url).rstrip('/')}/api/tags");r.raise_for_status();models=[m["name"] for m in r.json().get("models",[])]
-        return {"connected":True,"models":models}
+        models=await ollama_models(s)
+        message=("Connessione riuscita, ma non è installato alcun modello." if not models else f"Modello '{s.model}' disponibile." if s.model in models else f"Il modello '{s.model}' non è installato.")
+        return {"connected":True,"models":models,"model_available":s.model in models,"message":message}
     except Exception as e:raise HTTPException(502,f"Ollama non raggiungibile: {e}")
 @app.post("/api/generations/{generation_id}/approve")
 async def approve(generation_id:str,payload:dict):

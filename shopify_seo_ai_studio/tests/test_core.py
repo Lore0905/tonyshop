@@ -4,6 +4,7 @@ import pytest
 import app
 from app import Proposal
 from seo import score_content
+from fastapi.testclient import TestClient
 
 def test_seo_score_is_repeatable_and_bounded():
     content={"title":"Carburatore racing per Pit Bike 125 cc","descriptionHtml":"<p>Carburatore documentato per Pit Bike. "+"Descrizione tecnica chiara e completa. "*8+"</p>","metaTitle":"Carburatore Pit Bike 125 cc | Ricambi","metaDescription":"Carburatore per Pit Bike 125 cc con descrizione tecnica chiara. Verifica misure e compatibilità indicate nella scheda prima dell'acquisto online."}
@@ -91,3 +92,20 @@ def test_prompt_changes_create_versions_and_mark_products(monkeypatch,tmp_path):
     with app.connect() as c:
         assert version==2
         assert c.execute("SELECT processing_status FROM products WHERE id='p'").fetchone()[0]=='reevaluate'
+
+def test_product_detail_accepts_full_shopify_gid(monkeypatch,tmp_path):
+    monkeypatch.setattr(app,"DB",tmp_path/"detail.sqlite");app.init_db();gid="gid://shopify/Product/9865470443848"
+    with app.connect() as c:c.execute("INSERT INTO products(id,title,status,content_hash,last_synced_at) VALUES(?,?,?,?,?)",(gid,"Prodotto","ACTIVE","x",app.now()))
+    with TestClient(app.app) as client:response=client.get("/api/product-detail",params={"id":gid})
+    assert response.status_code==200
+    assert response.json()["product"]["id"]==gid
+
+@pytest.mark.asyncio
+async def test_generate_is_rejected_before_queue_when_no_ollama_models(monkeypatch,tmp_path):
+    monkeypatch.setattr(app,"DB",tmp_path/"ollama.sqlite");app.init_db()
+    async def none(_):return []
+    monkeypatch.setattr(app,"ollama_models",none)
+    with pytest.raises(app.HTTPException) as exc:await app.enqueue({"kind":"generate","product_ids":["p"]})
+    assert exc.value.status_code==409
+    assert "non ha modelli installati" in exc.value.detail
+    with app.connect() as c:assert c.execute("SELECT COUNT(*) FROM jobs").fetchone()[0]==0

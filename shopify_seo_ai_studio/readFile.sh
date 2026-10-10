@@ -1,0 +1,2 @@
+#!/bin/bash
+/usr/local/bin/node /Users/lorenzocastelli/projects/readFolder.js /Users/lorenzocastelli/projects/tonyshop/shopify_seo_ai_studio > /Users/lorenzocastelli/projects/tonyshop/shopify_seo_ai_studio/files.md
