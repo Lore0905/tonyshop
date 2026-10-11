@@ -36,7 +36,7 @@
         <label class="field"><span>Categoria</span><select id="category" class="control"><option value="">Tutte</option></select></label>
         <label class="field"><span>Sottocategoria</span><select id="subcategory" class="control" disabled><option value="">Tutte</option></select></label>
         <label class="field"><span>Vendor</span><select id="vendor" class="control"><option value="">Tutti</option></select></label>
-        <label class="field"><span>Stato</span><select id="processing" class="control"><option value="">Tutti</option><option value="to_analyze">Da analizzare</option><option value="queued">In coda</option><option value="processing">In elaborazione</option><option value="completed">Elaborato</option><option value="published">Pubblicato</option><option value="reevaluate">Da rivalutare</option><option value="error">Errore</option></select></label>
+        <label class="field"><span>Stato</span><select id="processing" class="control"><option value="">Tutti</option><option value="to_analyze">Da analizzare</option><option value="queued">In coda</option><option value="processing">In elaborazione</option><option value="completed">Elaborato</option><option value="approved">Categorie approvate</option><option value="rejected">Categorie rifiutate</option><option value="published">Pubblicato</option><option value="error">Errore</option></select></label>
       </div>
       <div class="mt-4 flex flex-wrap gap-5">
         <label class="check"><input id="uncategorized" type="checkbox"> Senza categoria</label>
@@ -96,7 +96,7 @@
       <div class="grid max-h-[72vh] gap-4 overflow-y-auto p-5 sm:grid-cols-2">
         <label class="field sm:col-span-2"><span>Endpoint Ollama</span><input class="control" name="ollama_url" required></label>
         <label class="field"><span>Modello</span><input class="control" name="model" list="ollamaModels" required><datalist id="ollamaModels"></datalist></label>
-        <label class="field"><span>Profondità massima</span><input class="control" name="max_depth" type="number" min="1" max="8"></label>
+        <label class="field"><span>Livelli massimi</span><input class="control" name="max_depth" type="number" min="1" max="3" readonly><small class="font-normal text-slate-500">Massimo 3, categoria principale inclusa.</small></label>
         <label class="field"><span>Timeout (secondi)</span><input class="control" name="timeout" type="number" min="10"></label>
         <label class="field"><span>Pausa tra job</span><input class="control" name="pause_seconds" type="number" min="0" step="0.5"></label>
         <label class="field"><span>Retry</span><input class="control" name="max_retries" type="number" min="0"></label>

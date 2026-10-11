@@ -31,8 +31,8 @@ load_dotenv(BASE / ".env")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", handlers=[logging.FileHandler(LOG), logging.StreamHandler()])
 logger = logging.getLogger("shopify_collections_ai_studio")
 
-SYSTEM_PROMPT = """Sei il motore di categorizzazione di Shopify Collections AI Studio. Rispondi soltanto con JSON valido conforme allo schema. Usa esclusivamente i dati sorgente ricevuti. Preferisci sempre percorsi di collection esistenti; proponi una nuova categoria solo quando nessuna esistente è adatta. Non inventare caratteristiche, compatibilità, marche o modelli. Ogni percorso deve avere una confidence tra 0 e 1 e una motivazione breve. Se il caso è dubbio, aggiungi una criticità invece di forzare una scelta."""
-DEFAULT_PROMPT = """Classifica il prodotto in uno o più percorsi utili e specifici. Riusa i percorsi esistenti quando semanticamente corretti. Mantieni nomi concisi, coerenti e in italiano."""
+SYSTEM_PROMPT = """Sei il motore di categorizzazione di Shopify Collections AI Studio. Rispondi soltanto con JSON valido conforme allo schema. Usa esclusivamente i dati sorgente ricevuti. Valuta il prodotto in modo indipendente: l'elenco delle collection esistenti è un riferimento, non un vincolo. Riusa un percorso esistente soltanto quando è semanticamente preciso; proponi un percorso nuovo quando descrive meglio il prodotto. Ogni percorso può contenere al massimo 3 livelli totali, categoria principale inclusa. Non inventare caratteristiche, compatibilità, marche o modelli. Ogni percorso deve avere una confidence tra 0 e 1 e una motivazione breve. Se il caso è dubbio, aggiungi una criticità invece di forzare una scelta."""
+DEFAULT_PROMPT = """Classifica il prodotto in uno o più percorsi chiari, specifici e utili alla navigazione. Non forzare il riuso delle categorie esistenti: usale solo se descrivono con precisione il prodotto, altrimenti proponi una nuova categoria coerente. Ogni percorso deve avere da 1 a 3 livelli complessivi. Mantieni nomi concisi, coerenti e in italiano."""
 
 
 def now() -> str:
@@ -80,7 +80,7 @@ class Settings(BaseModel):
     max_retries: int = Field(2, ge=0, le=10)
     temperature: float = Field(0.2, ge=0, le=2)
     num_predict: int = Field(1200, ge=128, le=16384)
-    max_depth: int = Field(3, ge=1, le=8)
+    max_depth: int = Field(3, ge=1, le=3)
     ai_prompt: str = DEFAULT_PROMPT
 
     @field_validator("ollama_url")
@@ -119,6 +119,24 @@ def init_db() -> None:
         db.execute("INSERT OR IGNORE INTO queue_state VALUES(1,0,?)", (now(),))
         db.execute("UPDATE jobs SET status='queued',started_at=NULL WHERE status='processing'")
         db.execute("UPDATE products SET processing_status='queued' WHERE processing_status='processing'")
+        db.execute("UPDATE products SET processing_status='completed' WHERE processing_status='reevaluate'")
+        # Align records created before the explicit approval/rejection product states
+        # were introduced.  The most recent proposal is the source of truth here.
+        db.execute("""
+            UPDATE products
+            SET processing_status = CASE (
+                SELECT g.status
+                FROM generations g
+                WHERE g.product_id = products.id
+                ORDER BY g.created_at DESC
+                LIMIT 1
+            )
+                WHEN 'rejected' THEN 'rejected'
+                WHEN 'approved' THEN 'approved'
+                ELSE processing_status
+            END
+            WHERE EXISTS (SELECT 1 FROM generations g WHERE g.product_id = products.id)
+        """)
     ensure_prompt_version()
 
 
@@ -137,7 +155,6 @@ def ensure_prompt_version() -> int:
             return row[0]
         version = db.execute("SELECT COALESCE(MAX(version),0)+1 FROM prompt_versions").fetchone()[0]
         db.execute("INSERT INTO prompt_versions(version,system_prompt,ai_prompt,settings_hash,created_at) VALUES(?,?,?,?,?)", (version, SYSTEM_PROMPT, settings.ai_prompt, digest, now()))
-        db.execute("UPDATE products SET processing_status='reevaluate' WHERE processing_status IN ('completed','published')")
         return version
 
 
@@ -298,7 +315,8 @@ async def call_ollama(row: sqlite3.Row, settings: Settings) -> dict[str, Any]:
     with connect() as db:
         current = product_paths(db, row["id"])
         categories = [{"percorso": loads(item["path_json"], []), "tipo": item["kind"]} for item in db.execute("SELECT path_json,kind FROM collections WHERE removed=0 ORDER BY title")]
-    source = {"titolo": row["title"], "descrizione": plain(row["description_html"]), "vendor": row["vendor"], "product_type": row["product_type"], "varianti": loads(row["variants_json"], []), "percorsi_attuali": [item["path"] for item in current], "categorie_esistenti": categories, "massimo_livelli": settings.max_depth}
+    depth_limit = min(settings.max_depth, 3)
+    source = {"titolo": row["title"], "descrizione": plain(row["description_html"]), "vendor": row["vendor"], "product_type": row["product_type"], "varianti": loads(row["variants_json"], []), "percorsi_attuali": [item["path"] for item in current], "categorie_esistenti": categories, "massimo_livelli": depth_limit}
     prompt = f"{settings.ai_prompt}\nProdotto e tassonomia, unica fonte ammessa:\n{dumps({row['id']: source})}"
     payload = {"model": settings.model, "stream": False, "format": proposal_schema(row["id"]), "messages": [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": prompt}], "options": {"temperature": settings.temperature, "num_predict": settings.num_predict}}
     await validate_ollama(settings)
@@ -312,7 +330,7 @@ async def call_ollama(row: sqlite3.Row, settings: Settings) -> dict[str, Any]:
         validated = AIProposal.model_validate(parsed[row["id"]]).model_dump()
     except (KeyError, json.JSONDecodeError, ValidationError) as exc:
         raise RuntimeError(f"Risposta Ollama non valida: {exc}") from exc
-    return normalize_ai_output(validated, settings.max_depth)
+    return normalize_ai_output(validated, depth_limit)
 
 
 async def process_job(job: sqlite3.Row) -> float:
@@ -522,19 +540,26 @@ async def approve(generation_id: str, payload: dict[str, Any]):
             raise HTTPException(404, "Proposta non trovata")
         output = loads(row["output_json"], {})
         approved = [item["livelli"] for index, item in enumerate(output.get("percorsi", [])) if index in indexes]
-        db.execute("UPDATE generations SET approved_paths_json=?,status='approved',approved_at=? WHERE id=?", (dumps(approved), now(), generation_id))
-        before = product_paths(db, row["product_id"])
-        db.execute("INSERT INTO history VALUES(?,?,?,?,?,?,?,?,?,?)", (str(uuid.uuid4()), row["product_id"], "manuale", dumps(before), dumps(approved), row["model"], row["prompt_version"], "approved", None, now()))
-    return {"approved_paths": approved}
+        approved.sort(key=path_key)
+        previous = loads(row["approved_paths_json"], [])
+        changed = sorted(previous, key=path_key) != approved
+        if changed or row["status"] != "approved":
+            db.execute("UPDATE generations SET approved_paths_json=?,status='approved',approved_at=? WHERE id=?", (dumps(approved), now(), generation_id))
+            if changed:
+                before = product_paths(db, row["product_id"])
+                db.execute("INSERT INTO history VALUES(?,?,?,?,?,?,?,?,?,?)", (str(uuid.uuid4()), row["product_id"], "manuale", dumps(before), dumps(approved), row["model"], row["prompt_version"], "approved", None, now()))
+        db.execute("UPDATE products SET processing_status='approved',last_error=NULL WHERE id=?", (row["product_id"],))
+    return {"approved_paths": approved, "changed": changed}
 
 
 @app.post("/api/generations/{generation_id}/reject")
 async def reject(generation_id: str):
     with connect() as db:
-        row = db.execute("SELECT product_id FROM generations WHERE id=?", (generation_id,)).fetchone()
+        row = db.execute("SELECT product_id,status FROM generations WHERE id=?", (generation_id,)).fetchone()
         if not row:
             raise HTTPException(404, "Proposta non trovata")
         db.execute("UPDATE generations SET status='rejected',rejected_at=? WHERE id=?", (now(), generation_id))
+        db.execute("UPDATE products SET processing_status='rejected',last_error=NULL WHERE id=?", (row["product_id"],))
     return {"ok": True}
 
 
@@ -599,7 +624,20 @@ async def mutation(query: str, variables: dict[str, Any], field: str) -> dict[st
 
 CREATE_COLLECTION = """mutation CreateCollection($collection:CollectionCreateInput!){collectionCreate(collection:$collection){collection{id title sources{__typename id}}userErrors{field message}}}"""
 UPDATE_SELECTIONS = """mutation UpdateCollectionSelections($collection:CollectionUpdateInput!){collectionUpdate(collection:$collection){collection{id}job{id done}userErrors{field message}}}"""
+METAFIELDS_SET = """mutation SetCollectionPath($metafields:[MetafieldsSetInput!]!){metafieldsSet(metafields:$metafields){metafields{ownerType key value}userErrors{field message code}}}"""
+JOB_QUERY = """query JobStatus($id:ID!){job(id:$id){id done}}"""
 DELETE_COLLECTION = """mutation DeleteCollection($input:CollectionDeleteInput!){collectionDelete(input:$input){deletedCollectionId userErrors{field message}}}"""
+
+
+async def wait_for_job(job: dict[str, Any] | None) -> None:
+    if not job or job.get("done"):
+        return
+    for _ in range(60):
+        await asyncio.sleep(0.5)
+        current = (await graphql(JOB_QUERY, {"id": job["id"]})).get("job")
+        if current and current.get("done"):
+            return
+    raise RuntimeError("Shopify non ha completato l'aggiornamento della collection entro 30 secondi.")
 
 
 @app.post("/api/publish/execute")
@@ -622,21 +660,31 @@ async def publish_execute(payload: dict[str, Any]):
         if fresh_hash != source_hashes.get(product_id):
             raise HTTPException(409, f"Le categorie di {product_id} sono cambiate su Shopify: risincronizza e rigenera.")
     created: dict[str, dict[str, str]] = {}
+    pending_adds: dict[str, list[str]] = {}
+    for item in operations["add_products"]:
+        if item["collection_id"] is None:
+            pending_adds[path_key(item["path"])] = item["product_ids"]
     for item in operations["create_collections"]:
-        metafield = {"namespace": "custom", "key": "category_path", "type": "single_line_text_field", "value": path_label(item["path"])}
-        source = {"source": {"title": "Selezione manuale", "targetType": "PRODUCTS", "inclusion": {"selections": []}}}
-        result = await mutation(CREATE_COLLECTION, {"collection": {"title": item["title"], "metafields": [metafield], "sources": [source]}}, "collectionCreate")
+        product_ids = pending_adds.get(path_key(item["path"]), [])
+        source = {"source": {"title": "Selezione manuale", "targetType": "PRODUCTS", "inclusion": {"selections": [{"productId": product_id} for product_id in product_ids[:250]]}}}
+        result = await mutation(CREATE_COLLECTION, {"collection": {"title": item["title"], "sources": [source]}}, "collectionCreate")
         condition_source = next(source for source in result["collection"]["sources"] if source["__typename"] == "CollectionConditionsSource")
-        created[path_key(item["path"])] = {"collection_id": result["collection"]["id"], "source_id": condition_source["id"]}
+        collection_id = result["collection"]["id"]
+        created[path_key(item["path"])] = {"collection_id": collection_id, "source_id": condition_source["id"]}
+        metafield = {"ownerId": collection_id, "namespace": "custom", "key": "category_path", "type": "single_line_text_field", "value": path_label(item["path"])}
+        await mutation(METAFIELDS_SET, {"metafields": [metafield]}, "metafieldsSet")
     for item in operations["add_products"]:
         target = {"collection_id": item["collection_id"], "source_id": item["source_id"]} if item["collection_id"] else created[path_key(item["path"])]
-        for batch in chunks(item["product_ids"]):
+        already_created = 250 if item["collection_id"] is None else 0
+        for batch in chunks(item["product_ids"][already_created:]):
             update = {"id": target["collection_id"], "sourcesToUpdate": [{"condition": {"id": target["source_id"], "inclusion": {"selectionsToAdd": [{"productId": product_id} for product_id in batch]}}}]}
-            await mutation(UPDATE_SELECTIONS, {"collection": update}, "collectionUpdate")
+            result = await mutation(UPDATE_SELECTIONS, {"collection": update}, "collectionUpdate")
+            await wait_for_job(result.get("job"))
     for item in operations["remove_products"]:
         for batch in chunks(item["product_ids"]):
             update = {"id": item["collection_id"], "sourcesToUpdate": [{"condition": {"id": item["source_id"], "inclusion": {"selectionsToRemove": [{"productId": product_id} for product_id in batch]}}}]}
-            await mutation(UPDATE_SELECTIONS, {"collection": update}, "collectionUpdate")
+            result = await mutation(UPDATE_SELECTIONS, {"collection": update}, "collectionUpdate")
+            await wait_for_job(result.get("job"))
     with connect() as db:
         db.execute("UPDATE publish_previews SET used=1 WHERE id=?", (preview_id,))
         for product_id in product_ids:

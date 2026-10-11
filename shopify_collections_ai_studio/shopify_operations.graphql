@@ -87,6 +87,17 @@ mutation UpdateCollectionSelections($collection: CollectionUpdateInput!) {
   }
 }
 
+mutation SetCollectionPath($metafields: [MetafieldsSetInput!]!) {
+  metafieldsSet(metafields: $metafields) {
+    metafields { ownerType key value }
+    userErrors { field message code }
+  }
+}
+
+query JobStatus($id: ID!) {
+  job(id: $id) { id done }
+}
+
 mutation DeleteCollection($input: CollectionDeleteInput!) {
   collectionDelete(input: $input) {
     deletedCollectionId

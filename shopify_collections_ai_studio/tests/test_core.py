@@ -4,7 +4,7 @@ import json
 import pytest
 
 import app
-from core import build_dry_run, collection_path, empty_manual_collections, normalize_ai_output
+from core import build_dry_run, collection_path, empty_manual_collections, normalize_ai_output, stable_hash
 
 
 def product_fixture():
@@ -51,6 +51,11 @@ def test_ai_output_is_normalized_deduplicated_and_depth_limited():
     assert len(result["percorsi"]) == 1
     assert result["percorsi"][0]["confidence"] == 1
     assert "supera 3 livelli" in result["criticita"][0]
+
+
+def test_settings_never_allow_more_than_three_levels():
+    with pytest.raises(ValueError):
+        app.Settings(max_depth=4)
 
 
 @pytest.mark.asyncio
@@ -111,6 +116,61 @@ async def test_publish_conflict_stops_before_mutations(monkeypatch, tmp_path):
         await app.publish_execute({"preview_id": "preview", "confirm": True})
     assert exc.value.status_code == 409
     assert not called
+
+
+@pytest.mark.asyncio
+async def test_approval_is_idempotent_and_rejection_sets_product_status(monkeypatch, tmp_path):
+    monkeypatch.setattr(app, "DB", tmp_path / "approval.sqlite")
+    app.init_db()
+    output = {"percorsi": [{"livelli": ["Motore", "Carburatori"], "confidence": .9, "motivazione": "Coerente"}], "nuove_categorie": [], "criticita": []}
+    with app.connect() as db:
+        db.execute("INSERT INTO products(id,title,content_hash,last_synced_at) VALUES('p','P','x',?)", (app.now(),))
+        db.execute("INSERT INTO generations(id,product_id,prompt_version,model,output_json,status,source_hash,created_at) VALUES('g','p',1,'m',?,'generated','x',?)", (json.dumps(output), app.now()))
+    first = await app.approve("g", {"indexes": [0]})
+    second = await app.approve("g", {"indexes": [0]})
+    assert first["changed"] is True
+    assert second["changed"] is False
+    with app.connect() as db:
+        assert db.execute("SELECT COUNT(*) FROM history WHERE outcome='approved'").fetchone()[0] == 1
+        assert db.execute("SELECT processing_status FROM products WHERE id='p'").fetchone()[0] == "approved"
+    await app.reject("g")
+    with app.connect() as db:
+        assert db.execute("SELECT processing_status FROM products WHERE id='p'").fetchone()[0] == "rejected"
+
+
+@pytest.mark.asyncio
+async def test_new_collection_is_created_with_initial_membership_and_path_metafield(monkeypatch, tmp_path):
+    monkeypatch.setattr(app, "DB", tmp_path / "create.sqlite")
+    app.init_db()
+    product_id = "gid://shopify/Product/1"
+    source_hash = "expected"
+    operations = {"create_collections": [{"path": ["Motore", "Carburatori"], "title": "Carburatori"}], "add_products": [{"collection_id": None, "source_id": None, "path": ["Motore", "Carburatori"], "product_ids": [product_id]}], "remove_products": [], "blocked": []}
+    with app.connect() as db:
+        db.execute("INSERT INTO products(id,title,content_hash,last_synced_at) VALUES(?,?,?,?)", (product_id, "P", "x", app.now()))
+        db.execute("INSERT INTO product_snapshots VALUES(?,?,?,?,?,?,?)", ("s", product_id, "{}", "[]", source_hash, app.now(), "sync"))
+        db.execute("INSERT INTO generations(id,product_id,prompt_version,model,output_json,approved_paths_json,status,source_hash,created_at) VALUES('g',?,1,'m','{}',?,'approved',?,?)", (product_id, json.dumps([["Motore", "Carburatori"]]), source_hash, app.now()))
+        db.execute("INSERT INTO publish_previews VALUES(?,?,?,?,?,0)", ("preview", json.dumps([product_id]), json.dumps(operations), json.dumps({product_id: source_hash}), app.now()))
+
+    mutations = []
+    async def fresh(_):
+        return [], source_hash
+    async def fake_mutation(query, variables, field):
+        mutations.append((field, variables))
+        if field == "collectionCreate":
+            return {"collection": {"id": "gid://shopify/Collection/new", "sources": [{"__typename": "CollectionConditionsSource", "id": "gid://shopify/CollectionConditionsSource/new"}]}}
+        return {"metafields": [], "userErrors": []}
+    async def no_sync(*_):
+        return {}
+    monkeypatch.setattr(app, "fresh_product_state", fresh)
+    monkeypatch.setattr(app, "mutation", fake_mutation)
+    monkeypatch.setattr(app, "sync_shopify", no_sync)
+    result = await app.publish_execute({"preview_id": "preview", "confirm": True})
+    assert result["created_collections"] == 1
+    create = next(variables for field, variables in mutations if field == "collectionCreate")
+    selection = create["collection"]["sources"][0]["source"]["inclusion"]["selections"]
+    assert selection == [{"productId": product_id}]
+    metafield = next(variables for field, variables in mutations if field == "metafieldsSet")
+    assert metafield["metafields"][0]["value"] == "Motore > Carburatori"
 
 
 def test_cleanup_excludes_smart_and_nonempty_collections():
