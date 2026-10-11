@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Shopify Collections AI Studio</title>
+  <meta name="description" content="Categorizzazione assistita con Shopify e Ollama locale">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-900 antialiased">
+  <header class="border-b border-blue-100 bg-white/95 shadow-sm backdrop-blur">
+    <div class="mx-auto flex max-w-screen-2xl flex-col gap-5 px-4 py-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+      <div>
+        <div class="mb-1 flex items-center gap-2 text-sm font-semibold uppercase tracking-[.2em] text-blue-600"><span class="h-2 w-2 rounded-full bg-blue-600"></span>Catalog intelligence</div>
+        <h1 class="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">Shopify Collections <span class="text-blue-600">AI Studio</span></h1>
+        <p class="mt-1 text-sm text-slate-500">Organizza il catalogo con categorie controllate e Ollama locale.</p>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <button id="syncBtn" class="btn-secondary">Sincronizza</button>
+        <button id="settingsBtn" class="btn-secondary">Impostazioni</button>
+        <button id="cleanupBtn" class="btn-danger-soft">Pulisci vuote</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-screen-2xl px-4 py-6 lg:px-8">
+    <div id="notice" role="status" aria-live="polite" class="mb-5 hidden rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-900"></div>
+
+    <section class="panel mb-5" aria-labelledby="filtersTitle">
+      <div class="mb-4 flex items-center justify-between">
+        <h2 id="filtersTitle" class="text-base font-bold text-slate-900">Filtra il catalogo</h2>
+        <button id="resetFilters" class="text-sm font-semibold text-blue-600 hover:text-blue-800">Azzera filtri</button>
+      </div>
+      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
+        <label class="field xl:col-span-2"><span>Cerca</span><input id="search" class="control" type="search" placeholder="Titolo, SKU o ID"></label>
+        <label class="field"><span>Categoria</span><select id="category" class="control"><option value="">Tutte</option></select></label>
+        <label class="field"><span>Sottocategoria</span><select id="subcategory" class="control" disabled><option value="">Tutte</option></select></label>
+        <label class="field"><span>Vendor</span><select id="vendor" class="control"><option value="">Tutti</option></select></label>
+        <label class="field"><span>Stato</span><select id="processing" class="control"><option value="">Tutti</option><option value="to_analyze">Da analizzare</option><option value="queued">In coda</option><option value="processing">In elaborazione</option><option value="completed">Elaborato</option><option value="published">Pubblicato</option><option value="reevaluate">Da rivalutare</option><option value="error">Errore</option></select></label>
+      </div>
+      <div class="mt-4 flex flex-wrap gap-5">
+        <label class="check"><input id="uncategorized" type="checkbox"> Senza categoria</label>
+        <label class="check"><input id="withProposal" type="checkbox"> Con proposta aperta</label>
+      </div>
+    </section>
+
+    <section class="sticky top-3 z-20 mb-5 rounded-2xl border border-blue-200 bg-white/95 p-3 shadow-lg shadow-blue-950/5 backdrop-blur" aria-label="Azioni catalogo">
+      <div class="flex flex-col gap-3 lg:flex-row lg:items-center">
+        <div class="flex flex-wrap items-center gap-2">
+          <button id="selectFiltered" class="btn-secondary">Seleziona filtrati</button>
+          <button id="clearSelection" class="btn-ghost">Deseleziona tutti</button>
+          <span id="selectedCount" class="rounded-full bg-blue-100 px-3 py-1 text-sm font-bold text-blue-700">0 selezionati</span>
+        </div>
+        <div class="flex flex-wrap gap-2 lg:ml-auto">
+          <button id="generateBtn" class="btn-primary">Genera categorie</button>
+          <button id="publishBtn" class="btn-dark">Applica su Shopify</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="queue" class="mb-5 flex min-h-14 flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm"></section>
+
+    <div class="mb-4 flex items-end justify-between gap-4">
+      <div><h2 class="text-xl font-bold">Prodotti</h2><p id="resultCount" class="text-sm text-slate-500"></p></div>
+      <div class="flex gap-2"><button id="prev" class="btn-secondary" aria-label="Pagina precedente">←</button><button id="next" class="btn-secondary" aria-label="Pagina successiva">→</button></div>
+    </div>
+    <section id="grid" class="grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4" aria-live="polite"></section>
+  </main>
+
+  <dialog id="detailDialog" class="dialog-shell">
+    <div class="dialog-card max-w-6xl">
+      <div class="dialog-head"><div><p class="eyebrow">Scheda prodotto</p><h2 id="detailTitle" class="text-xl font-bold"></h2></div><button class="close-btn" aria-label="Chiudi">×</button></div>
+      <div id="detailBody" class="max-h-[78vh] overflow-y-auto p-5"></div>
+    </div>
+  </dialog>
+
+  <dialog id="previewDialog" class="dialog-shell">
+    <div class="dialog-card max-w-3xl">
+      <div class="dialog-head"><div><p class="eyebrow">Dry-run</p><h2 class="text-xl font-bold">Anteprima modifiche Shopify</h2></div><button class="close-btn" aria-label="Chiudi">×</button></div>
+      <div id="previewBody" class="max-h-[70vh] overflow-y-auto p-5"></div>
+      <div class="dialog-actions"><button class="btn-secondary close-action">Annulla</button><button id="confirmPublish" class="btn-primary">Conferma e applica</button></div>
+    </div>
+  </dialog>
+
+  <dialog id="cleanupDialog" class="dialog-shell">
+    <div class="dialog-card max-w-3xl">
+      <div class="dialog-head"><div><p class="eyebrow text-rose-600">Operazione distruttiva</p><h2 class="text-xl font-bold">Collection manuali vuote</h2></div><button class="close-btn" aria-label="Chiudi">×</button></div>
+      <div id="cleanupBody" class="max-h-[70vh] overflow-y-auto p-5"></div>
+      <div class="dialog-actions"><button class="btn-secondary close-action">Annulla</button><button id="confirmCleanup" class="btn-danger">Elimina definitivamente</button></div>
+    </div>
+  </dialog>
+
+  <dialog id="settingsDialog" class="dialog-shell">
+    <form id="settingsForm" class="dialog-card max-w-2xl">
+      <div class="dialog-head"><div><p class="eyebrow">Configurazione</p><h2 class="text-xl font-bold">Ollama e categorizzazione</h2></div><button type="button" class="close-btn" aria-label="Chiudi">×</button></div>
+      <div class="grid max-h-[72vh] gap-4 overflow-y-auto p-5 sm:grid-cols-2">
+        <label class="field sm:col-span-2"><span>Endpoint Ollama</span><input class="control" name="ollama_url" required></label>
+        <label class="field"><span>Modello</span><input class="control" name="model" list="ollamaModels" required><datalist id="ollamaModels"></datalist></label>
+        <label class="field"><span>Profondità massima</span><input class="control" name="max_depth" type="number" min="1" max="8"></label>
+        <label class="field"><span>Timeout (secondi)</span><input class="control" name="timeout" type="number" min="10"></label>
+        <label class="field"><span>Pausa tra job</span><input class="control" name="pause_seconds" type="number" min="0" step="0.5"></label>
+        <label class="field"><span>Retry</span><input class="control" name="max_retries" type="number" min="0"></label>
+        <label class="field"><span>Temperatura</span><input class="control" name="temperature" type="number" min="0" max="2" step="0.1"></label>
+        <label class="field"><span>Token risposta</span><input class="control" name="num_predict" type="number" min="128"></label>
+        <label class="field sm:col-span-2"><span>Prompt personalizzato</span><textarea class="control min-h-32" name="ai_prompt"></textarea></label>
+        <div class="sm:col-span-2 flex items-center gap-3"><button id="testOllama" type="button" class="btn-secondary">Testa Ollama</button><span id="ollamaState" class="text-sm text-slate-500"></span></div>
+      </div>
+      <div class="dialog-actions"><button type="button" class="btn-secondary close-action">Annulla</button><button class="btn-primary">Salva impostazioni</button></div>
+    </form>
+  </dialog>
+  <script src="/static/app.js" defer></script>
+</body>
+</html>

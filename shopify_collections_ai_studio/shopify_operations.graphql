@@ -1,0 +1,95 @@
+query CatalogProducts($after: String) {
+  products(first: 100, after: $after) {
+    nodes {
+      id
+      title
+      descriptionHtml
+      vendor
+      productType
+      updatedAt
+      featuredMedia { preview { image { url } } }
+      variants(first: 100) { nodes { id sku title } }
+    }
+    pageInfo { hasNextPage endCursor }
+  }
+}
+
+query CatalogCollections($after: String) {
+  collections(first: 100, after: $after) {
+    nodes {
+      id
+      title
+      handle
+      updatedAt
+      categoryPath: metafield(namespace: "custom", key: "category_path") { value }
+      sources {
+        __typename
+        id
+        ... on CollectionConditionsSource {
+          targetType
+          inclusion {
+            conditions { __typename id }
+            selections(first: 1) { nodes { product { id } } }
+          }
+        }
+        ... on CollectionSubCollectionsSource { collections { id } }
+      }
+    }
+    pageInfo { hasNextPage endCursor }
+  }
+}
+
+query CollectionProducts($id: ID!, $after: String) {
+  collection(id: $id) {
+    products(first: 250, after: $after) {
+      nodes { id }
+      pageInfo { hasNextPage endCursor }
+    }
+  }
+}
+
+query FreshProductCollections($id: ID!, $after: String) {
+  product(id: $id) {
+    id
+    title
+    vendor
+    variants(first: 100) { nodes { sku title } }
+    collections(first: 250, after: $after) {
+      nodes {
+        id
+        title
+        categoryPath: metafield(namespace: "custom", key: "category_path") { value }
+        sources {
+          __typename
+          id
+          ... on CollectionConditionsSource {
+            inclusion { conditions { __typename id } }
+          }
+        }
+      }
+      pageInfo { hasNextPage endCursor }
+    }
+  }
+}
+
+mutation CreateCollection($collection: CollectionCreateInput!) {
+  collectionCreate(collection: $collection) {
+    collection { id title sources { __typename id } }
+    userErrors { field message }
+  }
+}
+
+mutation UpdateCollectionSelections($collection: CollectionUpdateInput!) {
+  collectionUpdate(collection: $collection) {
+    collection { id }
+    job { id done }
+    userErrors { field message }
+  }
+}
+
+mutation DeleteCollection($input: CollectionDeleteInput!) {
+  collectionDelete(input: $input) {
+    deletedCollectionId
+    userErrors { field message }
+  }
+}
