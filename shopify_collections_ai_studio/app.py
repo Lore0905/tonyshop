@@ -50,6 +50,13 @@ def loads(value: str | None, default: Any = None) -> Any:
         return default
 
 
+def snapshot_fingerprint(source: dict[str, Any], paths: list[dict[str, Any]]) -> str:
+    """Fingerprint unico di stato prodotto + percorsi.
+    Usato sia da sync_shopify sia da fresh_product_state: unica fonte di verità
+    per evitare discrepanze di serializzazione tra sync e publish."""
+    return stable_hash({"content": source, "paths": paths})
+
+
 def connect() -> sqlite3.Connection:
     connection = sqlite3.connect(DB, timeout=30)
     connection.row_factory = sqlite3.Row
@@ -268,7 +275,7 @@ async def sync_shopify(origin: str = "sync") -> dict[str, int]:
         for product in products:
             paths = sorted(product_paths(db, product["id"]), key=lambda item: (path_key(item["path"]), item["id"]))
             snapshot_content = {"title": product["title"], "vendor": product.get("vendor") or "", "variants": product["variants"]["nodes"]}
-            snapshot_hash = stable_hash({"content": snapshot_content, "paths": paths})
+            snapshot_hash = snapshot_fingerprint(snapshot_content, paths)
             latest = db.execute("SELECT snapshot_hash,paths_json FROM product_snapshots WHERE product_id=? ORDER BY created_at DESC LIMIT 1", (product["id"],)).fetchone()
             if not latest or latest["snapshot_hash"] != snapshot_hash:
                 before = loads(latest["paths_json"], []) if latest else []
@@ -588,7 +595,10 @@ async def publish_preview(payload: dict[str, Any]):
 
 
 async def fresh_product_state(product_id: str) -> tuple[list[dict[str, Any]], str]:
-    query = """query FreshProductCollections($id:ID!,$after:String){product(id:$id){id title vendor variants(first:100){nodes{sku title}}collections(first:250,after:$after){nodes{id title categoryPath:metafield(namespace:\"custom\",key:\"category_path\"){value} sources{__typename id ... on CollectionConditionsSource{inclusion{conditions{__typename id}}}}}pageInfo{hasNextPage endCursor}}}}"""
+    # ATTENZIONE: la selezione delle varianti deve coincidere con PRODUCTS_QUERY
+    # (nodes{id sku title}), altrimenti l'hash fresco non corrisponde mai a quello
+    # salvato nella sync e publish_execute fallisce sempre con 409.
+    query = """query FreshProductCollections($id:ID!,$after:String){product(id:$id){id title vendor variants(first:100){nodes{id sku title}}collections(first:250,after:$after){nodes{id title categoryPath:metafield(namespace:\"custom\",key:\"category_path\"){value} sources{__typename id ... on CollectionConditionsSource{inclusion{conditions{__typename id}}}}}pageInfo{hasNextPage endCursor}}}}"""
     paths: list[dict[str, Any]] = []
     source: dict[str, Any] | None = None
     after = None
@@ -605,7 +615,7 @@ async def fresh_product_state(product_id: str) -> tuple[list[dict[str, Any]], st
             paths.append({"id": item["id"], "path": collection_path(item["title"], (item.get("categoryPath") or {}).get("value")), "kind": "smart" if is_smart else "manual", "source_id": condition_sources[0]["id"] if not is_smart and condition_sources else None, "title": item["title"]})
         if not product["collections"]["pageInfo"]["hasNextPage"]:
             paths.sort(key=lambda item: (path_key(item["path"]), item["id"]))
-            return paths, stable_hash({"content": source, "paths": paths})
+            return paths, snapshot_fingerprint(source, paths)
         after = product["collections"]["pageInfo"]["endCursor"]
 
 
@@ -657,7 +667,9 @@ async def publish_execute(payload: dict[str, Any]):
         if product_id not in snapshots:
             raise HTTPException(409, f"Snapshot mancante per {product_id}: risincronizza e rigenera.")
         _, fresh_hash = await fresh_product_state(product_id)
-        if fresh_hash != source_hashes.get(product_id):
+        expected_hash = source_hashes.get(product_id)
+        if fresh_hash != expected_hash:
+            logger.warning("Conflitto publish per %s: fresh=%s atteso=%s", product_id, fresh_hash, expected_hash)
             raise HTTPException(409, f"Le categorie di {product_id} sono cambiate su Shopify: risincronizza e rigenera.")
     created: dict[str, dict[str, str]] = {}
     pending_adds: dict[str, list[str]] = {}
