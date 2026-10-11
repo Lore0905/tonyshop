@@ -1,11 +1,14 @@
+
 from __future__ import annotations
 
 import asyncio
 import json
 import logging
 import os
+import re
 import sqlite3
 import time
+import unicodedata
 import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
@@ -31,8 +34,35 @@ load_dotenv(BASE / ".env")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", handlers=[logging.FileHandler(LOG), logging.StreamHandler()])
 logger = logging.getLogger("shopify_collections_ai_studio")
 
-SYSTEM_PROMPT = """Sei il motore di categorizzazione di Shopify Collections AI Studio. Rispondi soltanto con JSON valido conforme allo schema. Usa esclusivamente i dati sorgente ricevuti. Valuta il prodotto in modo indipendente: l'elenco delle collection esistenti è un riferimento, non un vincolo. Riusa un percorso esistente soltanto quando è semanticamente preciso; proponi un percorso nuovo quando descrive meglio il prodotto. Ogni percorso può contenere al massimo 3 livelli totali, categoria principale inclusa. Non inventare caratteristiche, compatibilità, marche o modelli. Ogni percorso deve avere una confidence tra 0 e 1 e una motivazione breve. Se il caso è dubbio, aggiungi una criticità invece di forzare una scelta."""
-DEFAULT_PROMPT = """Classifica il prodotto in uno o più percorsi chiari, specifici e utili alla navigazione. Non forzare il riuso delle categorie esistenti: usale solo se descrivono con precisione il prodotto, altrimenti proponi una nuova categoria coerente. Ogni percorso deve avere da 1 a 3 livelli complessivi. Mantieni nomi concisi, coerenti e in italiano."""
+LEGACY_DEFAULT_PROMPT = """Classifica il prodotto in uno o più percorsi chiari, specifici e utili alla navigazione. Non forzare il riuso delle categorie esistenti: usale solo se descrivono con precisione il prodotto, altrimenti proponi una nuova categoria coerente. Ogni percorso deve avere da 1 a 3 livelli complessivi. Mantieni nomi concisi, coerenti e in italiano."""
+SYSTEM_PROMPT = """Sei un responsabile senior della tassonomia di un grande e-commerce di ricambi, accessori e veicoli per minimoto, pit bike, minicross, quad e scooter. Devi assegnare categorie merceologiche STABILI, RIUTILIZZABILI e UTILI ALLA NAVIGAZIONE, non trasformare ogni parola del titolo in una sottocategoria. Rispondi esclusivamente con JSON valido conforme allo schema richiesto.
+
+GERARCHIA DI DECISIONE OBBLIGATORIA:
+1. Identifica cosa viene realmente venduto: veicolo completo, ricambio, accessorio, abbigliamento/protezione o altro.
+2. Identifica la famiglia merceologica principale e la funzione del prodotto.
+3. Distingui la famiglia merceologica dalla compatibilità: marca, modello, colore, cilindrata, anno, motorizzazione e parole come racing sono normalmente attributi, non categorie.
+4. Confronta il significato con le collection esistenti e con gli esempi di prodotti simili presenti nel catalogo.
+5. Riutilizza il percorso canonico esistente quando rappresenta davvero la stessa famiglia merceologica; proponi un nuovo percorso soltanto se nessuno è semanticamente adeguato e la nuova distinzione migliora concretamente la navigazione.
+6. Controlla che prodotti con la stessa funzione ricevano la stessa categoria, anche se cambiano veicolo compatibile, marca, modello o cilindrata.
+
+REGOLE ANTI-PROLIFERAZIONE:
+- La specificità del titolo NON è una ragione sufficiente per creare una sottocategoria.
+- Preferisci il percorso più generale che classifica correttamente il prodotto. Tre livelli sono il limite massimo, non un obiettivo; usa uno o due livelli se bastano.
+- Per impostazione predefinita restituisci un solo percorso principale. È però consentito usare due percorsi paralleli quando il catalogo Shopify dimostra che sono due rami di navigazione reali e utili (per esempio Ricambi > Accessori > Adesivi e Veicoli > Accessori > Adesivi, se entrambi esistono o sono coerenti con la tassonomia). In tal caso applica la stessa scelta a tutti i prodotti della stessa famiglia. Non creare entrambi i percorsi solo perché un accessorio è compatibile con un veicolo: il doppio percorso deve essere supportato dalla struttura del negozio, non dedotto automaticamente dal titolo.
+- Non creare categorie quasi sinonime come "Adesivi e decalcomanie", "Adesivi e identificazione" e "Adesivi e protezioni" se la categoria canonica "Adesivi" è sufficiente.
+- Un kit adesivi per quad, un kit adesivi per CRF 50 e adesivi per pit bike devono convergere nella stessa famiglia merceologica quando l'inventario conferma che sono tutti adesivi/accessori. Non differenziarli per il modello compatibile.
+- Per un veicolo completo, classifica il veicolo in base al tipo (ad esempio Veicoli > Quad oppure Veicoli > Minicross); non creare automaticamente "Quad 300cc" o "Minicross 49cc".
+- Per un ricambio o accessorio, classificalo secondo la sua natura/funzione sotto una famiglia coerente di ricambi/accessori. La compatibilità con un quad o una pit bike da sola non impone un ramo di categoria distinto.
+- Gli attributi tecnici (2 tempi, 4 tempi, cilindrata, doppio scarico, racing) possono giustificare una categoria solo se identificano una collezione realmente utile e coerente con la tassonomia esistente; non devono moltiplicare le categorie automaticamente.
+- Le collection esistenti sono una base informativa, NON un vincolo: non scegliere quella esistente più vicina per forza. Se tutte sono sbagliate o troppo specifiche, proponi un percorso nuovo più coerente.
+- Non inventare marchi, compatibilità, caratteristiche o dati non presenti nella fonte. Se il caso è davvero incerto, descrivi una criticità invece di forzare la scelta.
+- Usa nomi concisi, canonici, in italiano e coerenti con i nomi già presenti. Mantieni al massimo 3 livelli inclusa la categoria principale.
+- `nuove_categorie` deve contenere soltanto percorsi davvero nuovi rispetto alle collection ricevute; non duplicare lì percorsi già esistenti.
+
+ESEMPIO DI CONSISTENZA: "1 KIT ADESIVI QUAD RENEGADE 110", "1 Kit Adesivi Colarati CRF 50" e "Adesivi Arancione Nero Originali Per Pit Bike KAYO Ts90 Ts90r" hanno come concetto principale gli adesivi. Non inventare una diversa sottocategoria per ciascuno in base al veicolo/modello. Scegli percorsi canonici condivisi che siano coerenti con la tassonomia fornita: per esempio "Ricambi > Accessori > Adesivi" e, solo se è un ramo di navigazione reale e utile nel catalogo, anche "Veicoli > Accessori > Adesivi". Se entrambi i rami sono appropriati, restituiscili coerentemente per tutti i prodotti adesivi comparabili; altrimenti usa il solo percorso generale corretto. Se manca una categoria davvero equivalente, proponi un percorso nuovo e generale, non una variante iper-specifica.
+
+Non confondere completezza con quantità: pochi percorsi corretti sono preferibili a molti percorsi ridondanti. Usa esclusivamente i dati sorgente ricevuti, assegna a ogni percorso confidence tra 0 e 1 e una motivazione breve, e rispetta esattamente lo schema JSON."""
+DEFAULT_PROMPT = """Classifica il prodotto per famiglia merceologica e funzione principale, non per ogni dettaglio del titolo. Prima identifica cosa viene venduto (veicolo completo, ricambio o accessorio), poi separa la categoria dalla compatibilità del prodotto. Analizza tutte le collection esistenti e gli esempi di prodotti simili per mantenere categorie canoniche coerenti sull'intero catalogo. Preferisci il percorso più generale che descrive correttamente il prodotto; usa meno di tre livelli quando bastano. Marca, modello, colore, cilindrata, motorizzazione e termini come racing sono normalmente attributi e non giustificano nuove categorie da soli. Prodotti della stessa famiglia funzionale devono ricevere lo stesso percorso anche se compatibili con veicoli differenti. Per accessori trasversali come gli adesivi, considera due percorsi paralleli (ad esempio Ricambi > Accessori > Adesivi e Veicoli > Accessori > Adesivi) solo se entrambi sono coerenti con la tassonomia e rappresentano punti di navigazione utili; se li usi, applicali coerentemente ai prodotti simili. Non creare sinonimi o percorsi ridondanti; aggiungi percorsi multipli solo quando hanno una reale utilità di navigazione. Le collection esistenti non sono un vincolo: se sono tutte inappropriate, proponi una nuova categoria canonica, non una variante iper-specifica. Evita collection con un solo prodotto quando la stessa famiglia può essere raccolta in una categoria esistente o generale. Nomi in italiano, chiari e stabili; massimo tre livelli complessivi. Se mancano prove sufficienti, segnala la criticità."""
 
 
 def now() -> str:
@@ -123,6 +153,12 @@ def init_db() -> None:
         if "source_id" not in columns:
             db.execute("ALTER TABLE collections ADD COLUMN source_id TEXT")
         db.execute("INSERT OR IGNORE INTO settings VALUES(1,?,?)", (Settings().model_dump_json(), now()))
+        stored_settings_row = db.execute("SELECT value_json FROM settings WHERE id=1").fetchone()
+        stored_settings = loads(stored_settings_row[0], {}) if stored_settings_row else {}
+        # Upgrade only the untouched built-in prompt. Never overwrite a merchant's custom prompt.
+        if stored_settings.get("ai_prompt") == LEGACY_DEFAULT_PROMPT:
+            stored_settings["ai_prompt"] = DEFAULT_PROMPT
+            db.execute("UPDATE settings SET value_json=?,updated_at=? WHERE id=1", (dumps(stored_settings), now()))
         db.execute("INSERT OR IGNORE INTO queue_state VALUES(1,0,?)", (now(),))
         db.execute("UPDATE jobs SET status='queued',started_at=NULL WHERE status='processing'")
         db.execute("UPDATE products SET processing_status='queued' WHERE processing_status='processing'")
@@ -182,19 +218,119 @@ async def shop_token(client: httpx.AsyncClient) -> str:
     return response.json()["access_token"]
 
 
+SHOPIFY_MAX_RETRIES = 5
+_shopify_graphql_lock = asyncio.Lock()
+
+
+def _retry_after_seconds(response: httpx.Response | Any, attempt: int) -> float:
+    """Honor Shopify Retry-After and otherwise use bounded exponential backoff."""
+    raw = getattr(response, "headers", {}).get("Retry-After") if response is not None else None
+    if raw:
+        try:
+            return max(0.1, min(float(raw), 60.0))
+        except (TypeError, ValueError):
+            pass
+    return min(0.5 * (2 ** attempt), 8.0)
+
+
+def _is_graphql_throttle(errors: list[dict[str, Any]]) -> bool:
+    for error in errors:
+        code = str((error.get("extensions") or {}).get("code", "")).upper()
+        message = str(error.get("message", "")).casefold()
+        if code in {"THROTTLED", "THROTTLE", "RATE_LIMITED"} or "throttl" in message or "rate limit" in message or "too many requests" in message:
+            return True
+    return False
+
+
 async def graphql(query: str, variables: dict[str, Any]) -> dict[str, Any]:
-    async with httpx.AsyncClient(timeout=90) as client:
-        token = await shop_token(client)
-        version = os.getenv("SHOPIFY_API_VERSION", "2026-10")
-        response = await client.post(f"https://{shop_domain()}/admin/api/{version}/graphql.json", headers={"X-Shopify-Access-Token": token}, json={"query": query, "variables": variables})
-        response.raise_for_status()
-        body = response.json()
-    if body.get("errors"):
-        raise RuntimeError(" | ".join(error["message"] for error in body["errors"]))
-    throttle = body.get("extensions", {}).get("cost", {}).get("throttleStatus", {})
-    if throttle and throttle.get("currentlyAvailable", 1000) < 100:
-        await asyncio.sleep(max(0.1, (100 - throttle["currentlyAvailable"]) / max(throttle.get("restoreRate", 50), 1)))
-    return body["data"]
+    """Call Shopify Admin GraphQL with serialized traffic and safe throttle retries.
+
+    HTTP 429 and GraphQL THROTTLED responses are retried because Shopify rejects them
+    before applying the requested operation. Mutations are deliberately not retried on
+    ambiguous timeouts/5xx responses, which could otherwise create duplicate collections.
+    The lock covers response processing and any necessary wait so a second request cannot
+    bypass the bucket-restoration delay while the first call is sleeping.
+    """
+    is_mutation = bool(re.search(r"\bmutation\b", query, flags=re.IGNORECASE))
+    last_error: Exception | None = None
+    async with _shopify_graphql_lock:
+        for attempt in range(SHOPIFY_MAX_RETRIES + 1):
+            response: httpx.Response | None = None
+            try:
+                async with httpx.AsyncClient(timeout=90) as client:
+                    token = await shop_token(client)
+                    response = await client.post(
+                        f"https://{shop_domain()}/admin/api/{os.getenv('SHOPIFY_API_VERSION', '2026-10')}/graphql.json",
+                        headers={"X-Shopify-Access-Token": token},
+                        json={"query": query, "variables": variables},
+                    )
+            except (httpx.TimeoutException, httpx.TransportError) as exc:
+                last_error = exc
+                if is_mutation or attempt >= SHOPIFY_MAX_RETRIES:
+                    raise RuntimeError(
+                        "Errore di connessione durante la chiamata Shopify. "
+                        "Per sicurezza la mutazione non è stata ritentata automaticamente; verifica lo stato su Shopify prima di ripubblicare."
+                        if is_mutation else f"Errore di connessione Shopify dopo i tentativi disponibili: {exc}"
+                    ) from exc
+                delay = min(0.5 * (2 ** attempt), 8.0)
+                logger.warning("Shopify connection error; retry %s/%s in %.1fs", attempt + 1, SHOPIFY_MAX_RETRIES, delay)
+                await asyncio.sleep(delay)
+                continue
+
+            if response.status_code == 429:
+                last_error = RuntimeError("Shopify ha restituito HTTP 429 (throttling).")
+                if attempt >= SHOPIFY_MAX_RETRIES:
+                    raise RuntimeError(
+                        f"Shopify continua a restituire HTTP 429 dopo {SHOPIFY_MAX_RETRIES} tentativi; nessuna ulteriore scrittura è stata eseguita."
+                    )
+                delay = _retry_after_seconds(response, attempt)
+                logger.warning("Shopify HTTP 429; retry %s/%s in %.1fs", attempt + 1, SHOPIFY_MAX_RETRIES, delay)
+                await asyncio.sleep(delay)
+                continue
+
+            if response.status_code >= 500 and not is_mutation and attempt < SHOPIFY_MAX_RETRIES:
+                delay = _retry_after_seconds(response, attempt)
+                logger.warning("Shopify HTTP %s on query; retry %s/%s in %.1fs", response.status_code, attempt + 1, SHOPIFY_MAX_RETRIES, delay)
+                await asyncio.sleep(delay)
+                continue
+            response.raise_for_status()
+            body = response.json()
+            errors = body.get("errors") or []
+            if errors:
+                if _is_graphql_throttle(errors) and attempt < SHOPIFY_MAX_RETRIES:
+                    cost = (body.get("extensions") or {}).get("cost", {})
+                    throttle = cost.get("throttleStatus", {})
+                    available = throttle.get("currentlyAvailable")
+                    requested = cost.get("requestedQueryCost")
+                    restore_rate = max(float(throttle.get("restoreRate", 50) or 50), 1.0)
+                    if available is not None and requested is not None:
+                        delay = max(0.25, min(max(float(requested) - float(available), 0) / restore_rate, 30.0))
+                    else:
+                        # Some throttled responses include only errors[].extensions.code.
+                        delay = min(0.5 * (2 ** attempt), 8.0)
+                    logger.warning("Shopify GraphQL throttled; retry %s/%s in %.1fs", attempt + 1, SHOPIFY_MAX_RETRIES, delay)
+                    await asyncio.sleep(delay)
+                    continue
+                raise RuntimeError(" | ".join(str(error.get("message", error)) for error in errors))
+
+            cost = (body.get("extensions") or {}).get("cost", {})
+            throttle = cost.get("throttleStatus", {})
+            if throttle:
+                available = float(throttle.get("currentlyAvailable", 1000) or 0)
+                requested = float(cost.get("requestedQueryCost", 0) or 0)
+                restore_rate = max(float(throttle.get("restoreRate", 50) or 50), 1.0)
+                # Refill enough points for a query of similar cost before releasing the
+                # lock. This is more accurate than a fixed pause that can be too short
+                # for expensive collection/product pagination requests.
+                if requested > 0 and available < requested:
+                    delay = min((requested - available) / restore_rate, 30.0)
+                    if delay > 0:
+                        await asyncio.sleep(delay)
+            if "data" not in body or body["data"] is None:
+                raise RuntimeError("Shopify GraphQL non ha restituito il campo data.")
+            return body["data"]
+
+    raise RuntimeError(f"Chiamata Shopify fallita dopo i tentativi disponibili: {last_error or 'errore sconosciuto'}")
 
 
 PRODUCTS_QUERY = """query CatalogProducts($after:String){products(first:100,after:$after){nodes{id title descriptionHtml vendor productType updatedAt featuredMedia{preview{image{url}}} variants(first:100){nodes{id sku title}}}pageInfo{hasNextPage endCursor}}}"""
@@ -318,14 +454,179 @@ async def validate_ollama(settings: Settings) -> list[str]:
     return models
 
 
+_CORE_TYPE_TOKENS = {
+    "adesivo", "adesivi", "decalcomania", "decalcomanie", "carburatore", "carburatori", "catena", "catene",
+    "motore", "motori", "scarico", "scarichi", "freno", "freni", "pastiglia", "pastiglie", "pneumatico",
+    "pneumatici", "camera", "camere", "manubrio", "manubri", "forcella", "forcelle", "ammortizzatore",
+    "ammortizzatori", "filtro", "filtri", "candela", "candele", "pistone", "pistoni", "casco", "caschi",
+    "guanto", "guanti", "plastiche", "plastica", "paramani", "pedana", "pedane", "batteria", "batterie",
+    "carena", "carene", "parafango", "parafanghi", "frizione", "frizioni", "radiatore", "radiatori",
+}
+
+_TOKEN_STOPWORDS = {
+    "per", "con", "da", "del", "della", "delle", "dei", "degli", "dello", "di", "a", "ad", "al", "alla", "alle", "ai", "agli", "allo",
+    "il", "lo", "la", "i", "gli", "le", "un", "uno", "una", "the", "kit", "set", "tipo", "modello", "originale", "originali",
+    "ricambio", "ricambi", "accessorio", "accessori", "nuovo", "nuova", "nuovi", "nuove", "nero", "nera", "neri", "nere", "bianco", "bianca",
+    "rosso", "rossa", "blu", "arancione", "colorato", "colorata", "colorati", "colorate", "cc", "cm", "mm", "perno", "pezzo", "pezzi",
+}
+_TOKEN_RE = re.compile(r"[a-zA-ZÀ-ÿ0-9]+")
+
+
+def _product_tokens(value: str) -> set[str]:
+    normalized = unicodedata.normalize("NFKD", value.casefold())
+    normalized = "".join(char for char in normalized if not unicodedata.combining(char))
+    return {
+        token for token in _TOKEN_RE.findall(normalized)
+        if len(token) >= 3 and token not in _TOKEN_STOPWORDS and not any(char.isdigit() for char in token)
+    }
+
+
+def _catalog_context(db: sqlite3.Connection, product_id: str, title: str, prompt_version: int | None = None) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Build compact context from the full Shopify collection taxonomy and similar products.
+
+    The AI sees every distinct active category path with its live synced product count.
+    Exact duplicate paths are collapsed so they cannot bias the model into repeating the
+    same category under multiple Shopify collection records. Product examples are attached
+    only to the most relevant paths to keep the local model's context practical.
+    """
+    title_tokens = _product_tokens(title)
+    rows = db.execute(
+        "SELECT id,title,handle,path_json,kind,source_id,products_count FROM collections WHERE removed=0 ORDER BY title COLLATE NOCASE"
+    ).fetchall()
+
+    by_path: dict[str, sqlite3.Row] = {}
+    path_frequency: dict[str, int] = {}
+    for row in rows:
+        path = loads(row["path_json"], [])
+        if not path:
+            continue
+        key = path_key(path)
+        path_frequency[key] = path_frequency.get(key, 0) + 1
+        previous = by_path.get(key)
+        def priority(candidate: sqlite3.Row) -> tuple[int, int, str]:
+            editable = candidate["kind"] == "manual" and bool(candidate["source_id"])
+            manual = candidate["kind"] == "manual"
+            return (0 if editable else 1 if manual else 2, -int(candidate["products_count"] or 0), str(candidate["title"]).casefold())
+        if previous is None or priority(row) < priority(previous):
+            by_path[key] = row
+
+    collections: list[dict[str, Any]] = []
+    collection_scores: list[tuple[int, int, str]] = []
+    for key, row in by_path.items():
+        path = loads(row["path_json"], [])
+        overlap = len(title_tokens & _product_tokens(" ".join([row["title"], *path])))
+        collection_id = row["id"]
+        entry: dict[str, Any] = {
+            "percorso": path,
+            "tipo": row["kind"],
+            "prodotti_count": int(row["products_count"] or 0),
+        }
+        # Omit redundant text/IDs to keep the complete taxonomy compact for local models.
+        if not path or str(row["title"]).casefold() != str(path[-1]).casefold():
+            entry["titolo_shopify"] = row["title"]
+        if path_frequency.get(key, 1) > 1:
+            entry["duplicati_stesso_percorso"] = path_frequency[key]
+        collections.append(entry)
+        if overlap:
+            collection_scores.append((overlap, int(row["products_count"] or 0), collection_id))
+    collections.sort(key=lambda item: path_key(item["percorso"]))
+
+    # Supply examples for the strongest matching candidates, without expanding every
+    # collection into hundreds of product titles.
+    example_by_id = {row["id"]: key for key, row in by_path.items()}
+    collection_entry_by_path = {path_key(item["percorso"]): item for item in collections}
+    for _, _, collection_id in sorted(collection_scores, key=lambda item: (-item[0], -item[1], item[2]))[:12]:
+        sample = db.execute(
+            "SELECT p.title FROM product_collections pc JOIN products p ON p.id=pc.product_id "
+            "WHERE pc.collection_id=? AND p.id<>? ORDER BY p.title COLLATE NOCASE LIMIT 3",
+            (collection_id, product_id),
+        ).fetchall()
+        key = example_by_id.get(collection_id)
+        candidate = collection_entry_by_path.get(key) if key else None
+        if candidate is not None and sample:
+            candidate["esempi_prodotti"] = [item["title"] for item in sample]
+
+    # Retrieve examples from the complete synced catalogue. Product/function nouns get
+    # extra weight so a shared term such as "adesivi" outranks incidental vehicle matches.
+    products = db.execute("SELECT id,title,vendor,product_type FROM products WHERE id<>?", (product_id,)).fetchall()
+    similar_ranked: list[tuple[float, sqlite3.Row]] = []
+    for item in products:
+        tokens = _product_tokens(item["title"] or "")
+        shared = title_tokens & tokens
+        if not shared:
+            continue
+        weighted_intersection = sum(3.0 if token in _CORE_TYPE_TOKENS else 1.0 for token in shared)
+        score = weighted_intersection / max(len(title_tokens | tokens) ** 0.5, 1.0)
+        similar_ranked.append((score, item))
+    related: list[dict[str, Any]] = []
+    for _, item in sorted(similar_ranked, key=lambda pair: (-pair[0], str(pair[1]["title"]).casefold()))[:8]:
+        related_paths = product_paths(db, item["id"])
+        paths = [path["path"] for path in related_paths]
+        # Newly generated/approved products may not yet have been published to Shopify.
+        # Reuse their latest non-rejected proposal as a consistency hint for later jobs.
+        if not paths:
+            if prompt_version is None:
+                generation = db.execute(
+                    "SELECT status,output_json,approved_paths_json FROM generations "
+                    "WHERE product_id=? AND status IN ('generated','approved','published') "
+                    "ORDER BY created_at DESC LIMIT 1",
+                    (item["id"],),
+                ).fetchone()
+            else:
+                generation = db.execute(
+                    "SELECT status,output_json,approved_paths_json FROM generations "
+                    "WHERE product_id=? AND prompt_version=? AND status IN ('generated','approved','published') "
+                    "ORDER BY created_at DESC LIMIT 1",
+                    (item["id"], prompt_version),
+                ).fetchone()
+            if generation:
+                approved = loads(generation["approved_paths_json"], None)
+                if approved:
+                    paths = approved
+                else:
+                    output = loads(generation["output_json"], {})
+                    paths = [proposal.get("livelli", []) for proposal in output.get("percorsi", []) if proposal.get("livelli")]
+        related.append({
+            "titolo": item["title"],
+            "vendor": item["vendor"],
+            "product_type": item["product_type"],
+            "percorsi_attuali_o_ultima_proposta": paths,
+        })
+    return collections, related
+
+
 async def call_ollama(row: sqlite3.Row, settings: Settings) -> dict[str, Any]:
+    prompt_version = ensure_prompt_version()
     with connect() as db:
         current = product_paths(db, row["id"])
-        categories = [{"percorso": loads(item["path_json"], []), "tipo": item["kind"]} for item in db.execute("SELECT path_json,kind FROM collections WHERE removed=0 ORDER BY title")]
+        categories, similar_products = _catalog_context(db, row["id"], row["title"], prompt_version)
     depth_limit = min(settings.max_depth, 3)
-    source = {"titolo": row["title"], "descrizione": plain(row["description_html"]), "vendor": row["vendor"], "product_type": row["product_type"], "varianti": loads(row["variants_json"], []), "percorsi_attuali": [item["path"] for item in current], "categorie_esistenti": categories, "massimo_livelli": depth_limit}
-    prompt = f"{settings.ai_prompt}\nProdotto e tassonomia, unica fonte ammessa:\n{dumps({row['id']: source})}"
-    payload = {"model": settings.model, "stream": False, "format": proposal_schema(row["id"]), "messages": [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": prompt}], "options": {"temperature": settings.temperature, "num_predict": settings.num_predict}}
+    source = {
+        "titolo": row["title"],
+        "descrizione": plain(row["description_html"]),
+        "vendor": row["vendor"],
+        "product_type": row["product_type"],
+        "varianti": loads(row["variants_json"], []),
+        "percorsi_attuali": [item["path"] for item in current],
+        "catalogo_collection_esistenti": categories,
+        "prodotti_simili_catalogo": similar_products,
+        "regole_tassonomia": {
+            "preferire_famiglia_merceologica": True,
+            "marca_modello_cilindrata_sono_attributi_non_categorie_automatiche": True,
+            "creare_collection_solo_se_semanticamente_necessario": True,
+            "numero_percorsi_preferito": 1,
+            "percorsi_paralleli_ammessi_se_gia_coerenti_col_catalogo": True,
+        },
+        "massimo_livelli": depth_limit,
+    }
+    prompt = f"{settings.ai_prompt}\n\nAnalizza l'intero elenco delle collection e gli eventuali prodotti simili qui sotto. Non limitarti a trovare una corrispondenza lessicale: confronta la funzione del prodotto, la gerarchia, i conteggi e gli esempi. Non scegliere una collection esistente solo per evitare di crearne una; non crearne una nuova solo perché il titolo è diverso. Mantieni un solo percorso principale salvo reale necessità.\nDati sorgente e tassonomia, unica fonte ammessa:\n{dumps({row['id']: source})}"
+    payload = {
+        "model": settings.model,
+        "stream": False,
+        "format": proposal_schema(row["id"]),
+        "messages": [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": prompt}],
+        "options": {"temperature": settings.temperature, "num_predict": settings.num_predict},
+    }
     await validate_ollama(settings)
     async with httpx.AsyncClient(timeout=settings.timeout) as client:
         response = await client.post(f"{settings.ollama_url}/api/chat", json=payload)
@@ -642,12 +943,12 @@ DELETE_COLLECTION = """mutation DeleteCollection($input:CollectionDeleteInput!){
 async def wait_for_job(job: dict[str, Any] | None) -> None:
     if not job or job.get("done"):
         return
-    for _ in range(60):
+    for _ in range(120):
         await asyncio.sleep(0.5)
         current = (await graphql(JOB_QUERY, {"id": job["id"]})).get("job")
         if current and current.get("done"):
             return
-    raise RuntimeError("Shopify non ha completato l'aggiornamento della collection entro 30 secondi.")
+    raise RuntimeError("Shopify non ha completato l'aggiornamento della collection entro 60 secondi; verifica lo stato della collection prima di ripetere la pubblicazione.")
 
 
 @app.post("/api/publish/execute")
@@ -663,6 +964,14 @@ async def publish_execute(payload: dict[str, Any]):
         operations = loads(preview["operations_json"], {})
         source_hashes = loads(preview["source_hashes_json"], {})
         snapshots = {row["product_id"]: row["snapshot_hash"] for row in db.execute("SELECT s.product_id,s.snapshot_hash FROM product_snapshots s JOIN (SELECT product_id,MAX(created_at) created_at FROM product_snapshots GROUP BY product_id) x ON x.product_id=s.product_id AND x.created_at=s.created_at")}
+        before_paths = {product_id: [item["path"] for item in product_paths(db, product_id)] for product_id in product_ids}
+        desired_paths = {}
+        for product_id in product_ids:
+            generation = db.execute("SELECT approved_paths_json FROM generations WHERE product_id=? AND status='approved' ORDER BY created_at DESC LIMIT 1", (product_id,)).fetchone()
+            if generation:
+                desired_paths[product_id] = loads(generation["approved_paths_json"], [])
+    if operations.get("blocked"):
+        raise HTTPException(409, "La pubblicazione contiene operazioni bloccate. Aggiorna la sincronizzazione e risolvi le collection smart o le sorgenti manuali prima di riprovare.")
     for product_id in product_ids:
         if product_id not in snapshots:
             raise HTTPException(409, f"Snapshot mancante per {product_id}: risincronizza e rigenera.")
@@ -697,17 +1006,59 @@ async def publish_execute(payload: dict[str, Any]):
             update = {"id": item["collection_id"], "sourcesToUpdate": [{"condition": {"id": item["source_id"], "inclusion": {"selectionsToRemove": [{"productId": product_id} for product_id in batch]}}}]}
             result = await mutation(UPDATE_SELECTIONS, {"collection": update}, "collectionUpdate")
             await wait_for_job(result.get("job"))
+
+    # Read-after-write verification: don't mark a proposal as published until Shopify
+    # confirms both every approved path and every explicit collection membership in the dry-run.
+    required_collection_targets: dict[str, list[tuple[str, str]]] = {}
+    for operation in operations.get("add_products", []):
+        if operation.get("collection_id"):
+            target_collection_id = operation["collection_id"]
+        else:
+            created_target = created.get(path_key(operation["path"]))
+            if not created_target:
+                raise RuntimeError(f"Collection appena creata non trovata per il percorso {path_label(operation['path'])}.")
+            target_collection_id = created_target["collection_id"]
+        for product_id in operation.get("product_ids", []):
+            required_collection_targets.setdefault(product_id, []).append((target_collection_id, path_label(operation["path"])))
+
+    for product_id in product_ids:
+        wanted_paths = desired_paths.get(product_id, [])
+        required_keys = {path_key(path) for path in wanted_paths if path}
+        required_targets = required_collection_targets.get(product_id, [])
+        missing_labels: list[str] = []
+        for attempt in range(5):
+            actual_paths, _ = await fresh_product_state(product_id)
+            actual_keys = {path_key(item["path"]) for item in actual_paths}
+            actual_ids = {item["id"] for item in actual_paths}
+            missing_keys = required_keys - actual_keys
+            missing_targets = [(collection_id, label) for collection_id, label in required_targets if collection_id not in actual_ids]
+            missing_labels = [path_label(path) for path in wanted_paths if path_key(path) in missing_keys]
+            missing_labels.extend(label for _, label in missing_targets)
+            missing_labels = list(dict.fromkeys(missing_labels))
+            if not missing_labels:
+                break
+            if attempt < 4:
+                await asyncio.sleep(0.5 * (attempt + 1))
+        if missing_labels:
+            logger.error("Shopify publish verification failed for %s; missing memberships: %s", product_id, missing_labels)
+            raise RuntimeError(
+                f"Shopify non conferma ancora tutte le categorie per il prodotto {product_id}: "
+                f"{', '.join(missing_labels)}. Nessuna proposta è stata marcata come pubblicata; sincronizza lo stato Shopify prima di riprovare."
+            )
+
+    # Refresh local membership only after Shopify confirms the writes; if sync fails,
+    # keep the preview/generation unfinalized instead of reporting a false success.
+    await sync_shopify("pubblicazione")
     with connect() as db:
         db.execute("UPDATE publish_previews SET used=1 WHERE id=?", (preview_id,))
         for product_id in product_ids:
             generation = db.execute("SELECT * FROM generations WHERE product_id=? AND status='approved' ORDER BY created_at DESC LIMIT 1", (product_id,)).fetchone()
             if generation:
-                before = product_paths(db, product_id)
-                after = loads(generation["approved_paths_json"], [])
+                before = before_paths.get(product_id, [])
+                after = [item["path"] for item in product_paths(db, product_id)]
                 db.execute("UPDATE generations SET status='published',published_at=? WHERE id=?", (now(), generation["id"]))
                 db.execute("UPDATE products SET processing_status='published' WHERE id=?", (product_id,))
                 db.execute("INSERT INTO history VALUES(?,?,?,?,?,?,?,?,?,?)", (str(uuid.uuid4()), product_id, "pubblicazione", dumps(before), dumps(after), generation["model"], generation["prompt_version"], "success", None, now()))
-    await sync_shopify("pubblicazione")
     return {"published_products": len(product_ids), "created_collections": len(created)}
 
 

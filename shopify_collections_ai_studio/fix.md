@@ -13,7 +13,14 @@ ad esempio: KAYO ATV Quad Au300 300cc – Campione Fiera mi ha genrato la seguen
 
 CI DONO MOLTI PRODOTTI CHE HANNO LE STESSE CATEGORIE, QUINDI PRIMA DEVI SCARICARE TUTTE LE COLLECTIONS E VEDERE SE INSERIRE IL PRODOTTO ALLE COLLECTIONS, PERCHè NON MI VOGLIO TROVARE MILLE CATEGORIE CON 1 PRODOTTO (QUESTO E' IMPORTANTISSIMO), QUINDI DEVI PASSARE ALL'INELLIGENZA ARTIFICIALE ANCHE LE COLLECTIONS, E AI DEVE SCEGLIERE, NON DEVE SEMPRE SCEGLIERE LE COLLECTIONS GIà PRESENTI. IMPOSTA IL PROMPT IN MODO DA SCEGLIERE LA COLLECTIONS IN MODO INTELLIGENTE ALTRIMENTI LA DEVE CREARE
 
-3) fai un check anche per quanto riguardo la logica per l'update o la creazione della collection perchè ogni tanto viene fuori un errore di conflitto 429 (mi sembra che sia il codice), non so se prima di fare l'update forse dovresti eliminare la correlazione articolo collections e poi fare l'update, valuta te, devi fare in modo che non si verifichi più questo errore ma non devi cambiare errore non si deve presentare più e si deve sempre caricare correttamente la collections 
+3) fai un check anche per quanto riguardo la logica per l'update o la creazione della collection perchè ogni tanto viene fuori un errore di conflitto 429 (mi sembra che sia il codice), non so se prima di fare l'update forse dovresti eliminare la correlazione articolo collections e poi fare l'update, valuta te, devi fare in modo che non si verifichi più questo errore ma non devi cambiare errore non si deve presentare più e si deve sempre caricare correttamente la collections
+
+
+
+IMPORTANTISSIMO IL PUNTO SULLA GENERAZIONE DELLE CATEGORIE PENSACI TANTO E BENE DEVI FARE UN BEL LAVORO ALTRIMENTI UTILIZZERO UN ALTRO LLM CONCETRATI SOPRATUTTO SUL PROMPT
+
+
+non voglio modificarlo in codex
 
 
 
