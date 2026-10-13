@@ -152,6 +152,7 @@ async def test_publish_reconciles_changed_memberships_and_sets_parent(monkeypatc
         db.execute("INSERT INTO publish_previews VALUES(?,?,?,?,?,0)", ("preview", json.dumps([pid]), json.dumps(operations), '{}', app.now()))
     mutations = []
     members = []
+    published = set()
     async def fresh(_):
         return list(members), "changed"
     async def fake_mutation(query, variables, field):
@@ -161,10 +162,18 @@ async def test_publish_reconciles_changed_memberships_and_sets_parent(monkeypatc
             cid = 'gid://shopify/Collection/' + title
             members.append({'id': cid, 'path': [title] if title == 'Motore' else desired[0], 'kind': 'manual', 'source_id': 'source-' + title})
             return {"collection": {"id": cid, "sources": [{"__typename": "CollectionConditionsSource", "id": "source-" + title}]}}
+        if field == 'publishablePublish':
+            published.add(variables['id'])
         return {"metafields": [], "userErrors": []}
     async def no_sync(*_):
         return {}
     async def fake_graphql(query, variables):
+        if query == app.PUBLICATION_SCOPES_QUERY:
+            return {'currentAppInstallation': {'accessScopes': [{'handle': 'write_publications'}]}}
+        if query == app.PUBLICATIONS_QUERY:
+            return {'publications': {'nodes': [{'id': 'channel-1'}, {'id': 'channel-2'}], 'pageInfo': {'hasNextPage': False}}}
+        if query == app.COLLECTION_PUBLICATIONS_QUERY:
+            return {'collection': {'resourcePublicationsV2': {'nodes': [{'publication': {'id': channel}, 'isPublished': variables['id'] in published} for channel in ['channel-1', 'channel-2']], 'pageInfo': {'hasNextPage': False}}}}
         if query == app.PARENT_DEFINITION_QUERY:
             return {'metafieldDefinitions': {'nodes': [{'type': {'name': 'collection_reference'}}]}}
         return {'collectionByHandle': None}
@@ -179,6 +188,8 @@ async def test_publish_reconciles_changed_memberships_and_sets_parent(monkeypatc
     assert all(item['collection']['sources'][0]['source']['inclusion']['selections'] == [{'productId': pid}] for item in creates)
     parent = [item for field, variables in mutations if field == 'metafieldsSet' for item in variables['metafields'] if item['key'] == 'parent_collection']
     assert parent[0]['value'] == 'gid://shopify/Collection/Motore'
+    assert len(published) == 2
+    assert all(len(variables['input']) == 2 for field, variables in mutations if field == 'publishablePublish')
     assert not any(field == 'collectionUpdate' for field, _ in mutations)
     with app.connect() as db:
         assert db.execute("SELECT status FROM generations WHERE id='g'").fetchone()[0] == 'published'
@@ -320,12 +331,18 @@ async def test_partial_publish_keeps_approval_and_retry_reuses_collections(monke
     async def fake_sync(origin):
         with app.connect() as db:
             for item in remote:
-                db.execute("INSERT OR REPLACE INTO collections(id,title,handle,path_json,kind,source_id,products_count,shopify_hash,last_synced_at) VALUES(?,'Ricambi','ricambi','[\"Ricambi\"]','manual','s',1,'x',?)", (item['id'], app.now()))
+                db.execute("INSERT OR REPLACE INTO collections(id,title,handle,path_json,kind,source_id,products_count,shopify_hash,last_synced_at) VALUES(?,'Ricambi','category-test','[\"Ricambi\"]','manual','s',1,'x',?)", (item['id'], app.now()))
                 db.execute('INSERT OR IGNORE INTO product_collections VALUES(?,?)', (pid, item['id']))
         return {}
     async def fresh(_):
         return list(remote), 'fresh'
     async def graphql(query, variables):
+        if query == app.PUBLICATION_SCOPES_QUERY:
+            return {'currentAppInstallation': {'accessScopes': [{'handle': 'write_publications'}]}}
+        if query == app.PUBLICATIONS_QUERY:
+            return {'publications': {'nodes': [{'id': 'channel'}], 'pageInfo': {'hasNextPage': False}}}
+        if query == app.COLLECTION_PUBLICATIONS_QUERY:
+            return {'collection': {'resourcePublicationsV2': {'nodes': [{'publication': {'id': 'channel'}, 'isPublished': True}], 'pageInfo': {'hasNextPage': False}}}}
         if query == app.PARENT_DEFINITION_QUERY:
             return {'metafieldDefinitions': {'nodes': [{'type': {'name': 'list.collection_reference'}}]}}
         return {'collectionByHandle': None}
@@ -455,3 +472,76 @@ def test_reused_legacy_member_is_never_removed_when_path_is_repaired():
     assert result['remove_products'] == []
     assert [item['path'] for item in result['create_collections']] == [['Ricambi']]
     assert all(item['collection_id'] != 'c' for item in result['add_products'])
+
+
+@pytest.mark.asyncio
+async def test_channel_list_is_paginated_and_deduplicated(monkeypatch):
+    cursors = []
+    async def graphql(query, variables):
+        if query == app.PUBLICATION_SCOPES_QUERY:
+            return {'currentAppInstallation': {'accessScopes': [{'handle': 'write_publications'}]}}
+        cursors.append(variables['after'])
+        return {'publications': {'nodes': [{'id': 'one'}, {'id': 'two'}] if variables['after'] is None else [{'id': 'two'}, {'id': 'three'}], 'pageInfo': {'hasNextPage': variables['after'] is None, 'endCursor': 'next'}}}
+    monkeypatch.setattr(app, 'graphql', graphql)
+    assert await app.collection_channel_ids() == ['one', 'two', 'three']
+    assert cursors == [None, 'next']
+
+
+@pytest.mark.asyncio
+async def test_missing_publication_scope_blocks_before_enumerating_channels(monkeypatch):
+    calls = []
+    async def graphql(query, variables):
+        calls.append(query)
+        return {'currentAppInstallation': {'accessScopes': [{'handle': 'write_products'}]}}
+    monkeypatch.setattr(app, 'graphql', graphql)
+    with pytest.raises(RuntimeError, match='write_publications'):
+        await app.collection_channel_ids()
+    assert calls == [app.PUBLICATION_SCOPES_QUERY]
+
+
+@pytest.mark.asyncio
+async def test_partial_channel_publication_retry_only_publishes_missing(monkeypatch):
+    published = {'one'}
+    requests = []
+    fail = True
+    async def graphql(query, variables):
+        return {'collection': {'resourcePublicationsV2': {'nodes': [{'publication': {'id': channel}, 'isPublished': True} for channel in published], 'pageInfo': {'hasNextPage': False}}}}
+    async def mutation(query, variables, field):
+        nonlocal fail
+        requests.append([item['publicationId'] for item in variables['input']])
+        if fail:
+            fail = False
+            published.add('two')
+            raise RuntimeError('Response lost after partial write')
+        published.update(requests[-1])
+        return {}
+    monkeypatch.setattr(app, 'graphql', graphql)
+    monkeypatch.setattr(app, 'mutation', mutation)
+    with pytest.raises(RuntimeError):
+        await app.ensure_collection_channels('collection', ['one', 'two', 'three'])
+    await app.ensure_collection_channels('collection', ['one', 'two', 'three'])
+    assert requests == [['three', 'two'], ['three']]
+    assert published == {'one', 'two', 'three'}
+
+
+@pytest.mark.asyncio
+async def test_unconfirmed_channels_are_never_reported_as_success(monkeypatch):
+    async def graphql(query, variables):
+        return {'collection': {'resourcePublicationsV2': {'nodes': [], 'pageInfo': {'hasNextPage': False}}}}
+    async def mutation(*args):
+        return {}
+    async def sleep(_):
+        pass
+    monkeypatch.setattr(app, 'graphql', graphql)
+    monkeypatch.setattr(app, 'mutation', mutation)
+    monkeypatch.setattr(app.asyncio, 'sleep', sleep)
+    with pytest.raises(RuntimeError, match='non conferma'):
+        await app.ensure_collection_channels('collection', ['one'])
+
+
+@pytest.mark.asyncio
+async def test_collection_publication_status_paginates_and_ignores_unpublished(monkeypatch):
+    async def graphql(query, variables):
+        return {'collection': {'resourcePublicationsV2': {'nodes': [{'publication': {'id': 'one'}, 'isPublished': True}, {'publication': {'id': 'scheduled'}, 'isPublished': False}] if variables['after'] is None else [{'publication': {'id': 'two'}, 'isPublished': True}], 'pageInfo': {'hasNextPage': variables['after'] is None, 'endCursor': 'next'}}}}
+    monkeypatch.setattr(app, 'graphql', graphql)
+    assert await app.published_collection_channels('collection') == {'one', 'two'}

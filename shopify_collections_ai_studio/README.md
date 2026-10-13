@@ -7,7 +7,7 @@ Applicazione locale FastAPI per sincronizzare l'intero catalogo Shopify, proporr
 - Python 3.11+
 - Node.js 18+
 - Ollama avviato localmente con almeno un modello installato
-- app Shopify con scope `read_products,write_products`
+- app Shopify con scope `read_products,write_products,read_publications,write_publications`
 
 ## Installazione
 
@@ -45,3 +45,5 @@ La gerarchia usa il metafield Shopify esistente `custom.parent_collection`: `col
 Prima di generare o pubblicare viene sincronizzato il catalogo. La pubblicazione riconcilia le appartenenze Shopify con l’ultima approvazione senza richiedere una nuova generazione quando cambiano soltanto le categorie remote. Crea anche i padri mancanti, riusa le collection esistenti e aggiunge il prodotto a ogni livello. I titoli senza gerarchia vengono riusati solo se non ambigui. La creazione usa un handle deterministico per recuperare risposte perse senza duplicare collection.
 
 Le aggiunte sono verificate prima delle rimozioni; la proposta diventa pubblicata soltanto dopo la verifica e la sincronizzazione finale. In caso di errore l’approvazione rimane salvata, viene tentata una sincronizzazione di recupero e una nuova esecuzione ricalcola le sole operazioni mancanti. Se cambia l’approvazione, serve una nuova anteprima. Le anteprime create prima di questo aggiornamento devono essere ricreate.
+
+Le collection create dall’app (incluse quelle padre) vengono pubblicate su tutte le pubblicazioni Shopify restituite dall’API. Il codice pagina l’elenco dei canali e verifica le pubblicazioni attive della collection dopo ogni aggiornamento. I permessi di pubblicazione sono controllati prima della creazione. Se un canale restituisce un errore o una risposta viene persa, l’approvazione resta salvata: ripetendo la pubblicazione l’app riconosce la collection dal suo handle deterministico e completa soltanto i canali mancanti, prima di rimuovere le vecchie categorie. I canali non accessibili alle credenziali dell’app devono essere resi accessibili su Shopify; gli errori di autorizzazione non vengono trattati come successo.

@@ -1126,6 +1126,66 @@ JOB_QUERY = """query JobStatus($id:ID!){job(id:$id){id done}}"""
 DELETE_COLLECTION = """mutation DeleteCollection($input:CollectionDeleteInput!){collectionDelete(input:$input){deletedCollectionId userErrors{field message}}}"""
 
 
+PUBLICATIONS_QUERY = """query CollectionSalesChannels($after:String){publications(first:100,after:$after){nodes{id}pageInfo{hasNextPage endCursor}}}"""
+PUBLICATION_SCOPES_QUERY = """query CollectionPublicationScopes{currentAppInstallation{accessScopes{handle}}}"""
+COLLECTION_PUBLICATIONS_QUERY = """query CollectionPublicationStatus($id:ID!,$after:String){collection(id:$id){resourcePublicationsV2(first:100,after:$after){nodes{isPublished publication{id}}pageInfo{hasNextPage endCursor}}}}"""
+PUBLISH_COLLECTION = """mutation PublishCollectionChannels($id:ID!,$input:[PublicationInput!]!){publishablePublish(id:$id,input:$input){publishable{... on Collection{id}}userErrors{field message}}}"""
+
+
+async def collection_channel_ids() -> list[str]:
+    installation = (await graphql(PUBLICATION_SCOPES_QUERY, {})).get("currentAppInstallation") or {}
+    scopes = {item["handle"] for item in installation.get("accessScopes", [])}
+    if "write_publications" not in scopes:
+        raise RuntimeError("Manca il permesso Shopify write_publications: abilita read_publications e write_publications per pubblicare le collection su tutti i canali. Nessuna nuova collection creata.")
+    ids: list[str] = []
+    after = None
+    seen_cursors = set()
+    while True:
+        block = (await graphql(PUBLICATIONS_QUERY, {"after": after}))["publications"]
+        ids.extend(item["id"] for item in block["nodes"])
+        if not block["pageInfo"]["hasNextPage"]:
+            break
+        after = block["pageInfo"]["endCursor"]
+        if not after or after in seen_cursors:
+            raise RuntimeError("Paginazione canali Shopify non valida: nessuna nuova collection creata.")
+        seen_cursors.add(after)
+    if not ids:
+        raise RuntimeError("Shopify non restituisce canali di pubblicazione: nessuna nuova collection creata.")
+    return list(dict.fromkeys(ids))
+
+
+async def published_collection_channels(collection_id: str) -> set[str]:
+    ids: set[str] = set()
+    after = None
+    seen_cursors = set()
+    while True:
+        collection = (await graphql(COLLECTION_PUBLICATIONS_QUERY, {"id": collection_id, "after": after})).get("collection")
+        if not collection:
+            raise RuntimeError("Collection non trovata durante la verifica dei canali: " + collection_id)
+        block = collection["resourcePublicationsV2"]
+        ids.update(item["publication"]["id"] for item in block["nodes"] if item["isPublished"])
+        if not block["pageInfo"]["hasNextPage"]:
+            return ids
+        after = block["pageInfo"]["endCursor"]
+        if not after or after in seen_cursors:
+            raise RuntimeError("Paginazione pubblicazioni collection non valida")
+        seen_cursors.add(after)
+
+
+async def ensure_collection_channels(collection_id: str, channel_ids: list[str]) -> None:
+    desired = set(channel_ids)
+    current = await published_collection_channels(collection_id)
+    missing = sorted(desired - current)
+    for batch in chunks(missing):
+        await mutation(PUBLISH_COLLECTION, {"id": collection_id, "input": [{"publicationId": channel_id} for channel_id in batch]}, "publishablePublish")
+    for attempt in range(5):
+        if desired <= await published_collection_channels(collection_id):
+            return
+        if attempt < 4:
+            await asyncio.sleep(0.5 * (attempt + 1))
+    raise RuntimeError("Shopify non conferma la collection su tutti i canali: " + collection_id + ". L'approvazione resta salvata; riprova per completare i canali mancanti.")
+
+
 async def wait_for_job(job: dict[str, Any] | None) -> None:
     if not job or job.get("done"):
         return
@@ -1206,6 +1266,9 @@ async def _publish_execute(payload: dict[str, Any]):
     existing_paths = {path_key(item["path"]) for item in collections}
     if any(key in existing_paths and key not in targets for key in needed_paths):
         raise HTTPException(409, "Gerarchia con collection smart o senza sorgente manuale: nessuna scrittura eseguita.")
+    managed_collection_ids = {item["id"] for item in collections if item.get("handle", "").startswith("category-") and path_key(item["path"]) in needed_paths}
+    # A deterministic handle also identifies a creation recovered after a lost response.
+    channel_ids = await collection_channel_ids() if operations["create_collections"] or managed_collection_ids else []
     initialized = set()
     created: dict[str, dict[str, str]] = {}
     pending_adds: dict[str, list[str]] = {}
@@ -1230,6 +1293,7 @@ async def _publish_execute(payload: dict[str, Any]):
             raise RuntimeError("Collection di recupero non manuale: " + item["title"])
         condition_source = next(source for source in sources if source["__typename"] == "CollectionConditionsSource")
         collection_id = result["collection"]["id"]
+        await ensure_collection_channels(collection_id, channel_ids)
         created[path_key(item["path"])] = {"collection_id": collection_id, "source_id": condition_source["id"]}
         targets[path_key(item["path"])] = created[path_key(item["path"])]
         metafield = {"ownerId": collection_id, "namespace": "custom", "key": "category_path", "type": "single_line_text_field", "value": path_label(item["path"])}
@@ -1258,6 +1322,10 @@ async def _publish_execute(payload: dict[str, Any]):
                     raise RuntimeError("Gerarchia non aggiornabile: " + path_label(desired[:depth]))
                 value = parent["collection_id"] if parent_type == "collection_reference" else dumps([parent["collection_id"]])
                 await mutation(METAFIELDS_SET, {"metafields": [{"ownerId": child["collection_id"], "namespace": "custom", "key": "parent_collection", "type": parent_type, "value": value}]}, "metafieldsSet")
+    # Reconcile channels for new collections and creations recovered on subsequent runs.
+    channel_collection_ids = managed_collection_ids - {target["collection_id"] for target in created.values()}
+    for collection_id in sorted(channel_collection_ids):
+        await ensure_collection_channels(collection_id, channel_ids)
     # Verify additions BEFORE removing the old categories.
     for product in products:
         required_ids = {targets[path_key(path[:depth])]["collection_id"] for path in product["desired"] for depth in range(1, len(path) + 1) if path_key(path[:depth]) in targets}

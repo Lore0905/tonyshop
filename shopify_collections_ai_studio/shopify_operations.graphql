@@ -106,3 +106,30 @@ mutation DeleteCollection($input: CollectionDeleteInput!) {
     userErrors { field message }
   }
 }
+
+query CollectionSalesChannels($after: String) {
+  publications(first: 100, after: $after) {
+    nodes { id }
+    pageInfo { hasNextPage endCursor }
+  }
+}
+
+query CollectionPublicationScopes {
+  currentAppInstallation { accessScopes { handle } }
+}
+
+query CollectionPublicationStatus($id: ID!, $after: String) {
+  collection(id: $id) {
+    resourcePublicationsV2(first: 100, after: $after) {
+      nodes { isPublished publication { id } }
+      pageInfo { hasNextPage endCursor }
+    }
+  }
+}
+
+mutation PublishCollectionChannels($id: ID!, $input: [PublicationInput!]!) {
+  publishablePublish(id: $id, input: $input) {
+    publishable { ... on Collection { id } }
+    userErrors { field message }
+  }
+}
