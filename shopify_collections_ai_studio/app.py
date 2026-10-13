@@ -22,7 +22,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, ValidationError, field_validator
 
-from core import build_dry_run, collection_path, empty_manual_collections, normalize_ai_output, path_key, path_label, plain, stable_hash
+from core import match_collection_paths, build_dry_run, collection_path, empty_manual_collections, normalize_ai_output, path_key, path_label, plain, stable_hash
 
 
 BASE = Path(__file__).resolve().parent
@@ -61,7 +61,7 @@ REGOLE ANTI-PROLIFERAZIONE:
 
 ESEMPIO DI CONSISTENZA: "1 KIT ADESIVI QUAD RENEGADE 110", "1 Kit Adesivi Colarati CRF 50" e "Adesivi Arancione Nero Originali Per Pit Bike KAYO Ts90 Ts90r" hanno come concetto principale gli adesivi. Non inventare una diversa sottocategoria per ciascuno in base al veicolo/modello. Scegli percorsi canonici condivisi che siano coerenti con la tassonomia fornita: per esempio "Ricambi > Accessori > Adesivi" e, solo se è un ramo di navigazione reale e utile nel catalogo, anche "Veicoli > Accessori > Adesivi". Se entrambi i rami sono appropriati, restituiscili coerentemente per tutti i prodotti adesivi comparabili; altrimenti usa il solo percorso generale corretto. Se manca una categoria davvero equivalente, proponi un percorso nuovo e generale, non una variante iper-specifica.
 
-Non confondere completezza con quantità: pochi percorsi corretti sono preferibili a molti percorsi ridondanti. Usa esclusivamente i dati sorgente ricevuti, assegna a ogni percorso confidence tra 0 e 1 e una motivazione breve, e rispetta esattamente lo schema JSON."""
+Non confondere completezza con quantità: pochi percorsi corretti sono preferibili a molti percorsi ridondanti. Usa esclusivamente i dati sorgente ricevuti, assegna a ogni percorso confidence tra 0 e 1 e una motivazione breve. Ogni campo `motivazione` deve essere una singola frase concisa di massimo 250 caratteri; non superare mai 300 caratteri. Rispetta esattamente lo schema JSON."""
 DEFAULT_PROMPT = """Classifica il prodotto per famiglia merceologica e funzione principale, non per ogni dettaglio del titolo. Prima identifica cosa viene venduto (veicolo completo, ricambio o accessorio), poi separa la categoria dalla compatibilità del prodotto. Analizza tutte le collection esistenti e gli esempi di prodotti simili per mantenere categorie canoniche coerenti sull'intero catalogo. Preferisci il percorso più generale che descrive correttamente il prodotto; usa meno di tre livelli quando bastano. Marca, modello, colore, cilindrata, motorizzazione e termini come racing sono normalmente attributi e non giustificano nuove categorie da soli. Prodotti della stessa famiglia funzionale devono ricevere lo stesso percorso anche se compatibili con veicoli differenti. Per accessori trasversali come gli adesivi, considera due percorsi paralleli (ad esempio Ricambi > Accessori > Adesivi e Veicoli > Accessori > Adesivi) solo se entrambi sono coerenti con la tassonomia e rappresentano punti di navigazione utili; se li usi, applicali coerentemente ai prodotti simili. Non creare sinonimi o percorsi ridondanti; aggiungi percorsi multipli solo quando hanno una reale utilità di navigazione. Le collection esistenti non sono un vincolo: se sono tutte inappropriate, proponi una nuova categoria canonica, non una variante iper-specifica. Evita collection con un solo prodotto quando la stessa famiglia può essere raccolta in una categoria esistente o generale. Nomi in italiano, chiari e stabili; massimo tre livelli complessivi. Se mancano prove sufficienti, segnala la criticità."""
 
 
@@ -101,6 +101,13 @@ class PathProposal(BaseModel):
     confidence: float = Field(ge=0, le=1)
     motivazione: str = Field(min_length=1, max_length=300)
 
+    @field_validator("motivazione", mode="before")
+    @classmethod
+    def limit_motivazione(cls, value: Any) -> str:
+        # Ollama/local models sometimes exceed the requested limit. Keep the useful
+        # beginning of the explanation rather than rejecting an otherwise valid proposal.
+        return str(value or "").strip()[:300]
+
 
 class AIProposal(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -112,7 +119,9 @@ class AIProposal(BaseModel):
 class Settings(BaseModel):
     ollama_url: HttpUrl | str = "http://127.0.0.1:11434"
     model: str = "llama3.2"
-    timeout: int = Field(180, ge=10, le=1800)
+    # Local models may need several minutes to evaluate a full collection catalogue.
+    # Keep a long default and allow operators to tune it from the settings dialog.
+    timeout: int = Field(600, ge=10, le=3600)
     pause_seconds: float = Field(10, ge=0, le=3600)
     max_retries: int = Field(2, ge=0, le=10)
     temperature: float = Field(0.2, ge=0, le=2)
@@ -131,6 +140,23 @@ class Settings(BaseModel):
 
 class OllamaConfigurationError(RuntimeError):
     pass
+
+
+class OllamaRequestTimeoutError(RuntimeError):
+    """A retryable timeout while waiting for the local Ollama inference response."""
+    pass
+
+
+def ollama_http_timeout(settings: Settings, attempt: int = 1) -> httpx.Timeout:
+    """Use a generous read timeout, increasing it for each queue retry.
+
+    Ollama returns the complete non-streamed JSON only when inference finishes, so
+    its read timeout must accommodate long local-model generations. Keep connect,
+    write and pool timeouts independent from the inference read timeout.
+    """
+    retry_index = max(0, min(int(attempt) - 1, 4))
+    read_timeout = min(3600.0, float(settings.timeout) * (1.0 + 0.5 * retry_index))
+    return httpx.Timeout(connect=20.0, read=read_timeout, write=60.0, pool=20.0)
 
 
 def init_db() -> None:
@@ -156,8 +182,17 @@ def init_db() -> None:
         stored_settings_row = db.execute("SELECT value_json FROM settings WHERE id=1").fetchone()
         stored_settings = loads(stored_settings_row[0], {}) if stored_settings_row else {}
         # Upgrade only the untouched built-in prompt. Never overwrite a merchant's custom prompt.
+        settings_changed = False
         if stored_settings.get("ai_prompt") == LEGACY_DEFAULT_PROMPT:
             stored_settings["ai_prompt"] = DEFAULT_PROMPT
+            settings_changed = True
+        # 180 seconds was the previous application default. Upgrade that legacy value
+        # to 600 seconds so existing databases benefit without requiring manual edits.
+        # Any other value is treated as an explicit operator setting and preserved.
+        if stored_settings.get("timeout") == 180:
+            stored_settings["timeout"] = 600
+            settings_changed = True
+        if settings_changed:
             db.execute("UPDATE settings SET value_json=?,updated_at=? WHERE id=1", (dumps(stored_settings), now()))
         db.execute("INSERT OR IGNORE INTO queue_state VALUES(1,0,?)", (now(),))
         db.execute("UPDATE jobs SET status='queued',started_at=NULL WHERE status='processing'")
@@ -334,7 +369,7 @@ async def graphql(query: str, variables: dict[str, Any]) -> dict[str, Any]:
 
 
 PRODUCTS_QUERY = """query CatalogProducts($after:String){products(first:100,after:$after){nodes{id title descriptionHtml vendor productType updatedAt featuredMedia{preview{image{url}}} variants(first:100){nodes{id sku title}}}pageInfo{hasNextPage endCursor}}}"""
-COLLECTIONS_QUERY = """query CatalogCollections($after:String){collections(first:100,after:$after){nodes{id title handle updatedAt categoryPath:metafield(namespace:\"custom\",key:\"category_path\"){value} sources{__typename id ... on CollectionConditionsSource{targetType inclusion{conditions{__typename id} selections(first:1){nodes{product{id}}}}} ... on CollectionSubCollectionsSource{collections{id}}}}pageInfo{hasNextPage endCursor}}}"""
+COLLECTIONS_QUERY = """query CatalogCollections($after:String){collections(first:100,after:$after){nodes{id title handle updatedAt categoryPath:metafield(namespace:\"custom\",key:\"category_path\"){value} parentCollection:metafield(namespace:\"custom\",key:\"parent_collection\"){type value} sources{__typename id ... on CollectionConditionsSource{targetType inclusion{conditions{__typename id} selections(first:1){nodes{product{id}}}}} ... on CollectionSubCollectionsSource{collections{id}}}}pageInfo{hasNextPage endCursor}}}"""
 COLLECTION_PRODUCTS_QUERY = """query CollectionProducts($id:ID!,$after:String){collection(id:$id){products(first:250,after:$after){nodes{id}pageInfo{hasNextPage endCursor}}}}"""
 
 
@@ -368,7 +403,61 @@ async def fetch_all_collections() -> list[dict[str, Any]]:
             if not connection["pageInfo"]["hasNextPage"]:
                 break
             product_after = connection["pageInfo"]["endCursor"]
+    resolve_collection_hierarchy(items)
     return items
+
+
+def resolve_collection_hierarchy(items: list[dict[str, Any]]) -> None:
+    by_id = {item["id"]: item for item in items}
+    visiting: set[str] = set()
+    resolved: dict[str, list[str]] = {}
+
+    def resolve(collection_id: str) -> list[str]:
+        if collection_id in resolved:
+            return resolved[collection_id]
+        if collection_id in visiting:
+            raise RuntimeError("Gerarchia collection ciclica: " + collection_id)
+        if collection_id not in by_id:
+            raise RuntimeError("Collection padre inesistente: " + collection_id)
+        visiting.add(collection_id)
+        item = by_id[collection_id]
+        field = item.get("parentCollection")
+        fallback = collection_path(item["title"], (item.get("categoryPath") or {}).get("value"))
+        parents = []
+        if field:
+            field_type = field.get("type")
+            if field_type == "collection_reference":
+                parents = [field["value"]] if field.get("value") else []
+            elif field_type == "list.collection_reference":
+                parents = json.loads(field["value"])
+                if not isinstance(parents, list) or any(not isinstance(parent, str) for parent in parents):
+                    raise RuntimeError("Lista collection padre non valida: " + collection_id)
+            else:
+                raise RuntimeError("custom.parent_collection deve essere collection_reference o list.collection_reference")
+        # A single canonical path cannot represent several distinct parents safely.
+        if len(set(parents)) > 1:
+            raise RuntimeError("Collection con più padri: seleziona un padre canonico prima di pubblicare: " + item["title"])
+        if parents:
+            path = resolve(parents[0]) + [fallback[-1]]
+        else:
+            path = fallback
+        visiting.remove(collection_id)
+        resolved[collection_id] = path
+        item["resolved_path"] = path
+        return path
+
+    for collection_id in by_id:
+        resolve(collection_id)
+
+
+PARENT_DEFINITION_QUERY = """query ParentDefinition{metafieldDefinitions(first:10,ownerType:COLLECTION,namespace:"custom",key:"parent_collection"){nodes{type{name}}}}"""
+
+
+async def parent_collection_type() -> str:
+    nodes = (await graphql(PARENT_DEFINITION_QUERY, {}))["metafieldDefinitions"]["nodes"]
+    if len(nodes) != 1 or nodes[0]["type"]["name"] not in {"collection_reference", "list.collection_reference"}:
+        raise RuntimeError("Definizione custom.parent_collection assente o non supportata: nessuna scrittura eseguita.")
+    return nodes[0]["type"]["name"]
 
 
 def product_paths(db: sqlite3.Connection, product_id: str) -> list[dict[str, Any]]:
@@ -376,15 +465,25 @@ def product_paths(db: sqlite3.Connection, product_id: str) -> list[dict[str, Any
     return [{"id": row["id"], "path": loads(row["path_json"], []), "kind": row["kind"], "source_id": row["source_id"], "title": row["title"]} for row in rows]
 
 
+_sync_lock = asyncio.Lock()
+_publish_lock = asyncio.Lock()
+
+
 async def sync_shopify(origin: str = "sync") -> dict[str, int]:
+    async with _sync_lock:
+        return await _sync_shopify(origin)
+
+
+async def _sync_shopify(origin: str = "sync") -> dict[str, int]:
     products, collections = await asyncio.gather(fetch_all_products(), fetch_all_collections())
+    resolve_collection_hierarchy(collections)
     synced_at = now()
     new_count = modified_count = 0
     remote_ids = {item["id"] for item in collections}
     with connect() as db:
         previous = {row["id"]: dict(row) for row in db.execute("SELECT * FROM collections")}
         for item in collections:
-            path = collection_path(item["title"], (item.get("categoryPath") or {}).get("value"))
+            path = item.get("resolved_path") or collection_path(item["title"], (item.get("categoryPath") or {}).get("value"))
             sources = item.get("sources") or []
             condition_sources = [source for source in sources if source.get("__typename") == "CollectionConditionsSource"]
             has_automatic_source = any(source.get("__typename") != "CollectionConditionsSource" or (source.get("inclusion") or {}).get("conditions") for source in sources)
@@ -595,7 +694,7 @@ def _catalog_context(db: sqlite3.Connection, product_id: str, title: str, prompt
     return collections, related
 
 
-async def call_ollama(row: sqlite3.Row, settings: Settings) -> dict[str, Any]:
+async def call_ollama(row: sqlite3.Row, settings: Settings, attempt: int = 1) -> dict[str, Any]:
     prompt_version = ensure_prompt_version()
     with connect() as db:
         current = product_paths(db, row["id"])
@@ -628,11 +727,29 @@ async def call_ollama(row: sqlite3.Row, settings: Settings) -> dict[str, Any]:
         "options": {"temperature": settings.temperature, "num_predict": settings.num_predict},
     }
     await validate_ollama(settings)
-    async with httpx.AsyncClient(timeout=settings.timeout) as client:
-        response = await client.post(f"{settings.ollama_url}/api/chat", json=payload)
-        if response.status_code == 404:
-            raise OllamaConfigurationError(f"Ollama non espone /api/chat oppure non trova il modello '{settings.model}'.")
-        response.raise_for_status()
+    timeout = ollama_http_timeout(settings, attempt)
+    read_timeout = timeout.read or settings.timeout
+    logger.info(
+        "Chiamata Ollama: prodotto=%s modello=%s tentativo=%s timeout_lettura=%ss prompt_chars=%s",
+        row["id"], settings.model, attempt, int(read_timeout), len(prompt),
+    )
+    try:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.post(f"{settings.ollama_url}/api/chat", json=payload)
+            if response.status_code == 404:
+                raise OllamaConfigurationError(f"Ollama non espone /api/chat oppure non trova il modello '{settings.model}'.")
+            response.raise_for_status()
+    except httpx.ReadTimeout as exc:
+        raise OllamaRequestTimeoutError(
+            f"Ollama non ha completato la risposta entro {int(read_timeout)} secondi "
+            f"(tentativo {attempt}). Il job verrà ritentato con un timeout maggiore. "
+            "Verifica che il PC che ospita Ollama non sia in sospensione e che modello/RAM siano sufficienti."
+        ) from exc
+    except (httpx.ConnectTimeout, httpx.PoolTimeout, httpx.WriteTimeout) as exc:
+        raise OllamaRequestTimeoutError(
+            f"Timeout di connessione/comunicazione con Ollama ({type(exc).__name__}) "
+            f"all'indirizzo {settings.ollama_url}. Verifica rete ed endpoint."
+        ) from exc
     try:
         parsed = json.loads(response.json()["message"]["content"])
         validated = AIProposal.model_validate(parsed[row["id"]]).model_dump()
@@ -651,10 +768,13 @@ async def process_job(job: sqlite3.Row) -> float:
         snapshot = db.execute("SELECT snapshot_hash FROM product_snapshots WHERE product_id=? ORDER BY created_at DESC LIMIT 1", (row["id"],)).fetchone()
     if not snapshot:
         raise RuntimeError("Snapshot mancante: risincronizza e rigenera.")
-    proposal = await call_ollama(row, settings)
+    proposal = await call_ollama(row, settings, attempt=int(job["attempts"]) + 1)
     generation_id = str(uuid.uuid4())
     version = ensure_prompt_version()
     with connect() as db:
+        current_snapshot = db.execute("SELECT snapshot_hash FROM product_snapshots WHERE product_id=? ORDER BY created_at DESC LIMIT 1", (row["id"],)).fetchone()
+        if not current_snapshot or current_snapshot["snapshot_hash"] != snapshot["snapshot_hash"]:
+            raise RuntimeError("Shopify è cambiato durante la generazione: proposta scartata, il job verrà ritentato.")
         before = product_paths(db, row["id"])
         db.execute("INSERT INTO generations(id,product_id,prompt_version,model,output_json,status,source_hash,created_at) VALUES(?,?,?,?,?,'generated',?,?)", (generation_id, row["id"], version, settings.model, dumps(proposal), snapshot["snapshot_hash"], now()))
         db.execute("UPDATE products SET processing_status='completed',last_error=NULL WHERE id=?", (row["id"],))
@@ -688,7 +808,14 @@ async def worker() -> None:
                 settings = get_settings()
                 with connect() as db:
                     if attempts < settings.max_retries + 1 and not isinstance(exc, OllamaConfigurationError):
-                        db.execute("UPDATE jobs SET status='queued',error=?,next_attempt_at=? WHERE id=?", (str(exc), time.time() + min(60, 2**attempts), job["id"]))
+                        if isinstance(exc, OllamaRequestTimeoutError):
+                            # Give the remote/local inference process time to release resources;
+                            # the next attempt also receives a longer read timeout.
+                            retry_delay = min(120, 15 * (2 ** max(0, attempts - 1)))
+                            logger.warning("Timeout Ollama: nuovo tentativo del job %s tra %s secondi", job["id"], retry_delay)
+                        else:
+                            retry_delay = min(60, 2**attempts)
+                        db.execute("UPDATE jobs SET status='queued',error=?,next_attempt_at=? WHERE id=?", (str(exc), time.time() + retry_delay, job["id"]))
                         db.execute("UPDATE products SET processing_status='queued',last_error=? WHERE id=?", (str(exc), job["product_id"]))
                     else:
                         db.execute("UPDATE jobs SET status='error',finished_at=?,error=? WHERE id=?", (now(), str(exc), job["id"]))
@@ -706,6 +833,8 @@ def product_payload(db: sqlite3.Connection, row: sqlite3.Row) -> dict[str, Any]:
     item["paths"] = product_paths(db, row["id"])
     generation = db.execute("SELECT * FROM generations WHERE product_id=? ORDER BY created_at DESC LIMIT 1", (row["id"],)).fetchone()
     item["latest_generation"] = generation_payload(generation)
+    approval = db.execute("SELECT * FROM generations WHERE product_id=? AND status IN ('approved','published') ORDER BY approved_at DESC,created_at DESC LIMIT 1", (row["id"],)).fetchone()
+    item["latest_approved_generation"] = generation_payload(approval)
     return item
 
 
@@ -800,6 +929,7 @@ async def enqueue(payload: dict[str, Any]):
     product_ids = list(dict.fromkeys(payload.get("product_ids", [])))[:500]
     if not product_ids:
         raise HTTPException(400, "Seleziona almeno un prodotto")
+    await sync_shopify("sync")
     settings = get_settings()
     try:
         await validate_ollama(settings)
@@ -841,13 +971,24 @@ async def queue_action(action: Literal["pause", "resume", "cancel"]):
 
 @app.post("/api/generations/{generation_id}/approve")
 async def approve(generation_id: str, payload: dict[str, Any]):
+    async with _publish_lock:
+        return await _approve(generation_id, payload)
+
+
+async def _approve(generation_id: str, payload: dict[str, Any]):
     indexes = {int(item) for item in payload.get("indexes", [])}
     with connect() as db:
         row = db.execute("SELECT * FROM generations WHERE id=?", (generation_id,)).fetchone()
         if not row:
             raise HTTPException(404, "Proposta non trovata")
+        latest = db.execute("SELECT id FROM generations WHERE product_id=? ORDER BY created_at DESC LIMIT 1", (row["product_id"],)).fetchone()
+        if latest["id"] != generation_id:
+            raise HTTPException(409, "Proposta superata: approva l'ultima generazione.")
         output = loads(row["output_json"], {})
         approved = [item["livelli"] for index, item in enumerate(output.get("percorsi", [])) if index in indexes]
+        if not approved:
+            raise HTTPException(400, "Approva almeno un percorso")
+        db.execute("UPDATE generations SET status='superseded' WHERE product_id=? AND status='approved' AND id<>?", (row["product_id"], generation_id))
         approved.sort(key=path_key)
         previous = loads(row["approved_paths_json"], [])
         changed = sorted(previous, key=path_key) != approved
@@ -862,6 +1003,11 @@ async def approve(generation_id: str, payload: dict[str, Any]):
 
 @app.post("/api/generations/{generation_id}/reject")
 async def reject(generation_id: str):
+    async with _publish_lock:
+        return await _reject(generation_id)
+
+
+async def _reject(generation_id: str):
     with connect() as db:
         row = db.execute("SELECT product_id,status FROM generations WHERE id=?", (generation_id,)).fetchone()
         if not row:
@@ -874,7 +1020,7 @@ async def reject(generation_id: str):
 def approved_products(db: sqlite3.Connection, product_ids: list[str]) -> list[dict[str, Any]]:
     result = []
     for product_id in product_ids:
-        generation = db.execute("SELECT * FROM generations WHERE product_id=? AND status='approved' ORDER BY created_at DESC LIMIT 1", (product_id,)).fetchone()
+        generation = db.execute("SELECT * FROM generations WHERE product_id=? AND status='approved' ORDER BY approved_at DESC,created_at DESC LIMIT 1", (product_id,)).fetchone()
         if generation:
             result.append({"id": product_id, "desired": loads(generation["approved_paths_json"], []), "current": product_paths(db, product_id), "generation": dict(generation)})
     return result
@@ -883,12 +1029,20 @@ def approved_products(db: sqlite3.Connection, product_ids: list[str]) -> list[di
 @app.post("/api/publish/preview")
 async def publish_preview(payload: dict[str, Any]):
     product_ids = list(dict.fromkeys(payload.get("product_ids", [])))[:500]
+    await sync_shopify("sync")
     with connect() as db:
         products = approved_products(db, product_ids)
         if not products:
             raise HTTPException(400, "Nessuna proposta approvata per i prodotti selezionati")
         collections = [{**dict(row), "path": loads(row["path_json"], [])} for row in db.execute("SELECT * FROM collections")]
+        try:
+            collections = match_collection_paths(products, collections)
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
         operations = build_dry_run(products, collections)
+        hierarchy_paths = {path_key(path[:depth]): path[:depth] for product in products for path in product["desired"] for depth in range(1, len(path) + 1)}
+        operations["hierarchy_updates"] = [{"path": levels, "parent_path": levels[:-1]} for levels in hierarchy_paths.values()]
+        operations["approval_signatures"] = {item["id"]: stable_hash({"id": item["generation"]["id"], "paths": item["desired"]}) for item in products}
         source_hashes = {item["id"]: item["generation"]["source_hash"] for item in products}
         preview_id = str(uuid.uuid4())
         db.execute("INSERT INTO publish_previews VALUES(?,?,?,?,?,0)", (preview_id, dumps([item["id"] for item in products]), dumps(operations), dumps(source_hashes), now()))
@@ -899,8 +1053,9 @@ async def fresh_product_state(product_id: str) -> tuple[list[dict[str, Any]], st
     # ATTENZIONE: la selezione delle varianti deve coincidere con PRODUCTS_QUERY
     # (nodes{id sku title}), altrimenti l'hash fresco non corrisponde mai a quello
     # salvato nella sync e publish_execute fallisce sempre con 409.
-    query = """query FreshProductCollections($id:ID!,$after:String){product(id:$id){id title vendor variants(first:100){nodes{id sku title}}collections(first:250,after:$after){nodes{id title categoryPath:metafield(namespace:\"custom\",key:\"category_path\"){value} sources{__typename id ... on CollectionConditionsSource{inclusion{conditions{__typename id}}}}}pageInfo{hasNextPage endCursor}}}}"""
+    query = """query FreshProductCollections($id:ID!,$after:String){product(id:$id){id title vendor variants(first:100){nodes{id sku title}}collections(first:250,after:$after){nodes{id title categoryPath:metafield(namespace:\"custom\",key:\"category_path\"){value} parentCollection:metafield(namespace:\"custom\",key:\"parent_collection\"){type value} sources{__typename id ... on CollectionConditionsSource{inclusion{conditions{__typename id}}}}}pageInfo{hasNextPage endCursor}}}}"""
     paths: list[dict[str, Any]] = []
+    remote_collections: dict[str, dict[str, Any]] = {}
     source: dict[str, Any] | None = None
     after = None
     while True:
@@ -913,11 +1068,41 @@ async def fresh_product_state(product_id: str) -> tuple[list[dict[str, Any]], st
             sources = item.get("sources") or []
             condition_sources = [source for source in sources if source.get("__typename") == "CollectionConditionsSource"]
             is_smart = any(source.get("__typename") != "CollectionConditionsSource" or (source.get("inclusion") or {}).get("conditions") for source in sources)
-            paths.append({"id": item["id"], "path": collection_path(item["title"], (item.get("categoryPath") or {}).get("value")), "kind": "smart" if is_smart else "manual", "source_id": condition_sources[0]["id"] if not is_smart and condition_sources else None, "title": item["title"]})
+            remote_collections[item["id"]] = item
+            resolved_path = collection_path(item["title"], (item.get("categoryPath") or {}).get("value"))
+            paths.append({"id": item["id"], "path": resolved_path, "kind": "smart" if is_smart else "manual", "source_id": condition_sources[0]["id"] if not is_smart and condition_sources else None, "title": item["title"]})
         if not product["collections"]["pageInfo"]["hasNextPage"]:
+            await hydrate_collection_parents(remote_collections)
+            resolve_collection_hierarchy(list(remote_collections.values()))
+            for entry in paths:
+                entry["path"] = remote_collections[entry["id"]]["resolved_path"]
             paths.sort(key=lambda item: (path_key(item["path"]), item["id"]))
             return paths, snapshot_fingerprint(source, paths)
         after = product["collections"]["pageInfo"]["endCursor"]
+
+
+PARENT_COLLECTION_QUERY = """query ParentCollection($id:ID!){collection(id:$id){id title categoryPath:metafield(namespace:"custom",key:"category_path"){value} parentCollection:metafield(namespace:"custom",key:"parent_collection"){type value}}}"""
+
+
+async def hydrate_collection_parents(items: dict[str, dict[str, Any]]) -> None:
+    pending = list(items.values())
+    while pending:
+        item = pending.pop()
+        field = item.get("parentCollection") or {}
+        parents = []
+        if field.get("type") == "collection_reference" and field.get("value"):
+            parents = [field["value"]]
+        elif field.get("type") == "list.collection_reference":
+            parents = json.loads(field["value"])
+            if not isinstance(parents, list) or any(not isinstance(parent, str) for parent in parents):
+                raise RuntimeError("Lista collection padre non valida")
+        for parent_id in parents:
+            if parent_id not in items:
+                parent = (await graphql(PARENT_COLLECTION_QUERY, {"id": parent_id})).get("collection")
+                if not parent:
+                    raise RuntimeError("Collection padre inesistente: " + parent_id)
+                items[parent_id] = parent
+                pending.append(parent)
 
 
 def chunks(items: list[str], size: int = 250):
@@ -933,6 +1118,7 @@ async def mutation(query: str, variables: dict[str, Any], field: str) -> dict[st
     return payload
 
 
+COLLECTION_BY_HANDLE = """query CollectionRecovery($handle:String!){collectionByHandle:collectionByIdentifier(identifier:{handle:$handle}){id title sources{__typename id ... on CollectionConditionsSource{inclusion{conditions{__typename id}}}}}}"""
 CREATE_COLLECTION = """mutation CreateCollection($collection:CollectionCreateInput!){collectionCreate(collection:$collection){collection{id title sources{__typename id}}userErrors{field message}}}"""
 UPDATE_SELECTIONS = """mutation UpdateCollectionSelections($collection:CollectionUpdateInput!){collectionUpdate(collection:$collection){collection{id}job{id done}userErrors{field message}}}"""
 METAFIELDS_SET = """mutation SetCollectionPath($metafields:[MetafieldsSetInput!]!){metafieldsSet(metafields:$metafields){metafields{ownerType key value}userErrors{field message code}}}"""
@@ -953,6 +1139,26 @@ async def wait_for_job(job: dict[str, Any] | None) -> None:
 
 @app.post("/api/publish/execute")
 async def publish_execute(payload: dict[str, Any]):
+    async with _publish_lock:
+        try:
+            return await _publish_execute(payload)
+        except HTTPException:
+            raise
+        except Exception as exc:
+            logger.exception("Pubblicazione interrotta; approvazione conservata")
+            with connect() as db:
+                preview = db.execute("SELECT product_ids_json FROM publish_previews WHERE id=?", (payload.get("preview_id"),)).fetchone()
+                if preview:
+                    for product_id in loads(preview["product_ids_json"], []):
+                        db.execute("UPDATE products SET last_error=? WHERE id=?", (str(exc), product_id))
+            try:
+                await sync_shopify("recupero")
+            except Exception:
+                logger.exception("Sincronizzazione di recupero fallita; snapshot precedente conservato")
+            raise HTTPException(502, f"Pubblicazione interrotta: {exc}. L'ultima approvazione è conservata; ripeti la pubblicazione per completare le operazioni mancanti.") from exc
+
+
+async def _publish_execute(payload: dict[str, Any]):
     preview_id = payload.get("preview_id")
     if not payload.get("confirm"):
         raise HTTPException(400, "Conferma esplicita richiesta")
@@ -962,45 +1168,107 @@ async def publish_execute(payload: dict[str, Any]):
             raise HTTPException(404, "Anteprima non trovata o già usata")
         product_ids = loads(preview["product_ids_json"], [])
         operations = loads(preview["operations_json"], {})
-        source_hashes = loads(preview["source_hashes_json"], {})
-        snapshots = {row["product_id"]: row["snapshot_hash"] for row in db.execute("SELECT s.product_id,s.snapshot_hash FROM product_snapshots s JOIN (SELECT product_id,MAX(created_at) created_at FROM product_snapshots GROUP BY product_id) x ON x.product_id=s.product_id AND x.created_at=s.created_at")}
-        before_paths = {product_id: [item["path"] for item in product_paths(db, product_id)] for product_id in product_ids}
         desired_paths = {}
         for product_id in product_ids:
-            generation = db.execute("SELECT approved_paths_json FROM generations WHERE product_id=? AND status='approved' ORDER BY created_at DESC LIMIT 1", (product_id,)).fetchone()
+            generation = db.execute("SELECT approved_paths_json FROM generations WHERE product_id=? AND status='approved' ORDER BY approved_at DESC,created_at DESC LIMIT 1", (product_id,)).fetchone()
             if generation:
                 desired_paths[product_id] = loads(generation["approved_paths_json"], [])
+    if not desired_paths or set(desired_paths) != set(product_ids):
+        raise HTTPException(409, "Approvazione mancante o revocata: crea una nuova anteprima.")
+    if not operations.get("approval_signatures"):
+        raise HTTPException(409, "Anteprima precedente alla nuova versione: crea una nuova anteprima.")
+    await sync_shopify("sync")
+    with connect() as db:
+        products = approved_products(db, product_ids)
+        signatures = {item["id"]: stable_hash({"id": item["generation"]["id"], "paths": item["desired"]}) for item in products}
+        if signatures != operations.get("approval_signatures"):
+            raise HTTPException(409, "Approvazioni cambiate o anteprima precedente alla nuova versione: crea una nuova anteprima.")
+        collections = [{**dict(row), "path": loads(row["path_json"], [])} for row in db.execute("SELECT * FROM collections WHERE removed=0")]
+        # Reconcile live memberships, including writes completed before a previous failure.
+        for product in products:
+            product["current"], _ = await fresh_product_state(product["id"])
+        try:
+            collections = match_collection_paths(products, collections)
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+        operations = build_dry_run(products, collections)
+        before_paths = {item["id"]: [entry["path"] for entry in item["current"]] for item in products}
+        generation_ids = {item["id"]: item["generation"]["id"] for item in products}
+        desired_paths = {item["id"]: item["desired"] for item in products}
     if operations.get("blocked"):
-        raise HTTPException(409, "La pubblicazione contiene operazioni bloccate. Aggiorna la sincronizzazione e risolvi le collection smart o le sorgenti manuali prima di riprovare.")
-    for product_id in product_ids:
-        if product_id not in snapshots:
-            raise HTTPException(409, f"Snapshot mancante per {product_id}: risincronizza e rigenera.")
-        _, fresh_hash = await fresh_product_state(product_id)
-        expected_hash = source_hashes.get(product_id)
-        if fresh_hash != expected_hash:
-            logger.warning("Conflitto publish per %s: fresh=%s atteso=%s", product_id, fresh_hash, expected_hash)
-            raise HTTPException(409, f"Le categorie di {product_id} sono cambiate su Shopify: risincronizza e rigenera.")
+        raise HTTPException(409, "Operazioni bloccate: " + dumps(operations["blocked"]))
+    parent_type = await parent_collection_type()
+    targets = {}
+    for item in sorted(collections, key=lambda item: (-int(item.get("products_count", 0)), item["id"])):
+        if item["kind"] == "manual" and item["source_id"]:
+            targets.setdefault(path_key(item["path"]), {"collection_id": item["id"], "source_id": item["source_id"]})
+    needed_paths = {path_key(path[:depth]) for product in products for path in product["desired"] for depth in range(1, len(path) + 1)}
+    existing_paths = {path_key(item["path"]) for item in collections}
+    if any(key in existing_paths and key not in targets for key in needed_paths):
+        raise HTTPException(409, "Gerarchia con collection smart o senza sorgente manuale: nessuna scrittura eseguita.")
+    initialized = set()
     created: dict[str, dict[str, str]] = {}
     pending_adds: dict[str, list[str]] = {}
     for item in operations["add_products"]:
         if item["collection_id"] is None:
             pending_adds[path_key(item["path"])] = item["product_ids"]
-    for item in operations["create_collections"]:
+    for item in sorted(operations["create_collections"], key=lambda entry: (len(entry["path"]), path_key(entry["path"]))):
         product_ids = pending_adds.get(path_key(item["path"]), [])
         source = {"source": {"title": "Selezione manuale", "targetType": "PRODUCTS", "inclusion": {"selections": [{"productId": product_id} for product_id in product_ids[:250]]}}}
-        result = await mutation(CREATE_COLLECTION, {"collection": {"title": item["title"], "sources": [source]}}, "collectionCreate")
-        condition_source = next(source for source in result["collection"]["sources"] if source["__typename"] == "CollectionConditionsSource")
+        # A deterministic handle lets recovery find a collection even if creation succeeded
+        # but the response or subsequent metafield write was lost.
+        handle = "category-" + stable_hash(path_key(item["path"]))[:24]
+        lookup = await graphql(COLLECTION_BY_HANDLE, {"handle": handle})
+        existing = lookup.get("collectionByHandle")
+        if existing:
+            result = {"collection": existing}
+        else:
+            initialized.add(path_key(item["path"]))
+            result = await mutation(CREATE_COLLECTION, {"collection": {"title": item["title"], "handle": handle, "sources": [source]}}, "collectionCreate")
+        sources = result["collection"].get("sources") or []
+        if not sources or any(source["__typename"] != "CollectionConditionsSource" or (source.get("inclusion") or {}).get("conditions") for source in sources):
+            raise RuntimeError("Collection di recupero non manuale: " + item["title"])
+        condition_source = next(source for source in sources if source["__typename"] == "CollectionConditionsSource")
         collection_id = result["collection"]["id"]
         created[path_key(item["path"])] = {"collection_id": collection_id, "source_id": condition_source["id"]}
+        targets[path_key(item["path"])] = created[path_key(item["path"])]
         metafield = {"ownerId": collection_id, "namespace": "custom", "key": "category_path", "type": "single_line_text_field", "value": path_label(item["path"])}
         await mutation(METAFIELDS_SET, {"metafields": [metafield]}, "metafieldsSet")
     for item in operations["add_products"]:
         target = {"collection_id": item["collection_id"], "source_id": item["source_id"]} if item["collection_id"] else created[path_key(item["path"])]
-        already_created = 250 if item["collection_id"] is None else 0
+        already_created = 250 if path_key(item["path"]) in initialized else 0
         for batch in chunks(item["product_ids"][already_created:]):
             update = {"id": target["collection_id"], "sourcesToUpdate": [{"condition": {"id": target["source_id"], "inclusion": {"selectionsToAdd": [{"productId": product_id} for product_id in batch]}}}]}
             result = await mutation(UPDATE_SELECTIONS, {"collection": update}, "collectionUpdate")
             await wait_for_job(result.get("job"))
+    # Persist canonical paths for reused legacy collections as well as new ones.
+    for product in products:
+        for desired in product["desired"]:
+            for depth in range(1, len(desired) + 1):
+                levels = desired[:depth]
+                target = targets.get(path_key(levels))
+                if target:
+                    await mutation(METAFIELDS_SET, {"metafields": [{"ownerId": target["collection_id"], "namespace": "custom", "key": "category_path", "type": "single_line_text_field", "value": path_label(levels)}]}, "metafieldsSet")
+    # Link every parent/child, including reused collections; never write labels as IDs.
+    for product in products:
+        for desired in product["desired"]:
+            for depth in range(2, len(desired) + 1):
+                child, parent = targets.get(path_key(desired[:depth])), targets.get(path_key(desired[:depth - 1]))
+                if not child or not parent:
+                    raise RuntimeError("Gerarchia non aggiornabile: " + path_label(desired[:depth]))
+                value = parent["collection_id"] if parent_type == "collection_reference" else dumps([parent["collection_id"]])
+                await mutation(METAFIELDS_SET, {"metafields": [{"ownerId": child["collection_id"], "namespace": "custom", "key": "parent_collection", "type": parent_type, "value": value}]}, "metafieldsSet")
+    # Verify additions BEFORE removing the old categories.
+    for product in products:
+        required_ids = {targets[path_key(path[:depth])]["collection_id"] for path in product["desired"] for depth in range(1, len(path) + 1) if path_key(path[:depth]) in targets}
+        for attempt in range(5):
+            actual, _ = await fresh_product_state(product["id"])
+            if required_ids <= {entry["id"] for entry in actual}:
+                break
+            if attempt < 4:
+                await asyncio.sleep(0.5 * (attempt + 1))
+        else:
+            raise RuntimeError("Shopify non conferma le aggiunte: categorie precedenti conservate. Ripeti la pubblicazione.")
     for item in operations["remove_products"]:
         for batch in chunks(item["product_ids"]):
             update = {"id": item["collection_id"], "sourcesToUpdate": [{"condition": {"id": item["source_id"], "inclusion": {"selectionsToRemove": [{"productId": product_id} for product_id in batch]}}}]}
@@ -1035,6 +1303,8 @@ async def publish_execute(payload: dict[str, Any]):
             missing_labels = [path_label(path) for path in wanted_paths if path_key(path) in missing_keys]
             missing_labels.extend(label for _, label in missing_targets)
             missing_labels = list(dict.fromkeys(missing_labels))
+            obsolete = [operation for operation in operations["remove_products"] if product_id in operation["product_ids"] and operation["collection_id"] in actual_ids]
+            missing_labels.extend("Rimozione non confermata: " + path_label(operation["path"]) for operation in obsolete)
             if not missing_labels:
                 break
             if attempt < 4:
@@ -1052,12 +1322,12 @@ async def publish_execute(payload: dict[str, Any]):
     with connect() as db:
         db.execute("UPDATE publish_previews SET used=1 WHERE id=?", (preview_id,))
         for product_id in product_ids:
-            generation = db.execute("SELECT * FROM generations WHERE product_id=? AND status='approved' ORDER BY created_at DESC LIMIT 1", (product_id,)).fetchone()
-            if generation:
+            generation = db.execute("SELECT * FROM generations WHERE product_id=? AND status='approved' ORDER BY approved_at DESC,created_at DESC LIMIT 1", (product_id,)).fetchone()
+            if generation and generation["id"] == generation_ids[product_id]:
                 before = before_paths.get(product_id, [])
                 after = [item["path"] for item in product_paths(db, product_id)]
                 db.execute("UPDATE generations SET status='published',published_at=? WHERE id=?", (now(), generation["id"]))
-                db.execute("UPDATE products SET processing_status='published' WHERE id=?", (product_id,))
+                db.execute("UPDATE products SET processing_status='published',last_error=NULL WHERE id=?", (product_id,))
                 db.execute("INSERT INTO history VALUES(?,?,?,?,?,?,?,?,?,?)", (str(uuid.uuid4()), product_id, "pubblicazione", dumps(before), dumps(after), generation["model"], generation["prompt_version"], "success", None, now()))
     return {"published_products": len(product_ids), "created_collections": len(created)}
 

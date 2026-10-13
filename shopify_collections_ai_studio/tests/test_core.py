@@ -139,38 +139,49 @@ async def test_approval_is_idempotent_and_rejection_sets_product_status(monkeypa
 
 
 @pytest.mark.asyncio
-async def test_new_collection_is_created_with_initial_membership_and_path_metafield(monkeypatch, tmp_path):
-    monkeypatch.setattr(app, "DB", tmp_path / "create.sqlite")
+async def test_publish_reconciles_changed_memberships_and_sets_parent(monkeypatch, tmp_path):
+    monkeypatch.setattr(app, "DB", tmp_path / "publish.sqlite")
     app.init_db()
-    product_id = "gid://shopify/Product/1"
-    source_hash = "expected"
-    operations = {"create_collections": [{"path": ["Motore", "Carburatori"], "title": "Carburatori"}], "add_products": [{"collection_id": None, "source_id": None, "path": ["Motore", "Carburatori"], "product_ids": [product_id]}], "remove_products": [], "blocked": []}
+    pid = "gid://shopify/Product/1"
+    desired = [["Motore", "Carburatori"]]
+    signature = stable_hash({"id": "g", "paths": desired})
     with app.connect() as db:
-        db.execute("INSERT INTO products(id,title,content_hash,last_synced_at) VALUES(?,?,?,?)", (product_id, "P", "x", app.now()))
-        db.execute("INSERT INTO product_snapshots VALUES(?,?,?,?,?,?,?)", ("s", product_id, "{}", "[]", source_hash, app.now(), "sync"))
-        db.execute("INSERT INTO generations(id,product_id,prompt_version,model,output_json,approved_paths_json,status,source_hash,created_at) VALUES('g',?,1,'m','{}',?,'approved',?,?)", (product_id, json.dumps([["Motore", "Carburatori"]]), source_hash, app.now()))
-        db.execute("INSERT INTO publish_previews VALUES(?,?,?,?,?,0)", ("preview", json.dumps([product_id]), json.dumps(operations), json.dumps({product_id: source_hash}), app.now()))
-
+        db.execute("INSERT INTO products(id,title,content_hash,last_synced_at) VALUES(?,?,?,?)", (pid, "P", "x", app.now()))
+        db.execute("INSERT INTO generations(id,product_id,prompt_version,model,output_json,approved_paths_json,status,source_hash,created_at) VALUES('g',?,1,'m','{}',?,'approved','obsolete',?)", (pid, json.dumps(desired), app.now()))
+        operations = {"approval_signatures": {pid: signature}}
+        db.execute("INSERT INTO publish_previews VALUES(?,?,?,?,?,0)", ("preview", json.dumps([pid]), json.dumps(operations), '{}', app.now()))
     mutations = []
+    members = []
     async def fresh(_):
-        return [], source_hash
+        return list(members), "changed"
     async def fake_mutation(query, variables, field):
         mutations.append((field, variables))
         if field == "collectionCreate":
-            return {"collection": {"id": "gid://shopify/Collection/new", "sources": [{"__typename": "CollectionConditionsSource", "id": "gid://shopify/CollectionConditionsSource/new"}]}}
+            title = variables['collection']['title']
+            cid = 'gid://shopify/Collection/' + title
+            members.append({'id': cid, 'path': [title] if title == 'Motore' else desired[0], 'kind': 'manual', 'source_id': 'source-' + title})
+            return {"collection": {"id": cid, "sources": [{"__typename": "CollectionConditionsSource", "id": "source-" + title}]}}
         return {"metafields": [], "userErrors": []}
     async def no_sync(*_):
         return {}
+    async def fake_graphql(query, variables):
+        if query == app.PARENT_DEFINITION_QUERY:
+            return {'metafieldDefinitions': {'nodes': [{'type': {'name': 'collection_reference'}}]}}
+        return {'collectionByHandle': None}
     monkeypatch.setattr(app, "fresh_product_state", fresh)
     monkeypatch.setattr(app, "mutation", fake_mutation)
+    monkeypatch.setattr(app, "graphql", fake_graphql)
     monkeypatch.setattr(app, "sync_shopify", no_sync)
     result = await app.publish_execute({"preview_id": "preview", "confirm": True})
-    assert result["created_collections"] == 1
-    create = next(variables for field, variables in mutations if field == "collectionCreate")
-    selection = create["collection"]["sources"][0]["source"]["inclusion"]["selections"]
-    assert selection == [{"productId": product_id}]
-    metafield = next(variables for field, variables in mutations if field == "metafieldsSet")
-    assert metafield["metafields"][0]["value"] == "Motore > Carburatori"
+    assert result["created_collections"] == 2
+    creates = [variables for field, variables in mutations if field == 'collectionCreate']
+    assert [item['collection']['title'] for item in creates] == ['Motore', 'Carburatori']
+    assert all(item['collection']['sources'][0]['source']['inclusion']['selections'] == [{'productId': pid}] for item in creates)
+    parent = [item for field, variables in mutations if field == 'metafieldsSet' for item in variables['metafields'] if item['key'] == 'parent_collection']
+    assert parent[0]['value'] == 'gid://shopify/Collection/Motore'
+    assert not any(field == 'collectionUpdate' for field, _ in mutations)
+    with app.connect() as db:
+        assert db.execute("SELECT status FROM generations WHERE id='g'").fetchone()[0] == 'published'
 
 
 def test_cleanup_excludes_smart_and_nonempty_collections():
@@ -216,3 +227,231 @@ async def test_queue_is_strictly_sequential(monkeypatch, tmp_path):
     assert peak == 1
     with app.connect() as db:
         assert db.execute("SELECT COUNT(*) FROM jobs WHERE status='completed'").fetchone()[0] == 2
+
+
+def test_hierarchy_uses_reference_ids_and_supports_lists():
+    for field in ({'type': 'collection_reference', 'value': 'parent'}, {'type': 'list.collection_reference', 'value': '["parent"]'}):
+        items = [{'id': 'child', 'title': 'Gomme', 'parentCollection': field}, {'id': 'parent', 'title': 'Ricambi'}]
+        app.resolve_collection_hierarchy(items)
+        assert items[0]['resolved_path'] == ['Ricambi', 'Gomme']
+
+
+@pytest.mark.parametrize('items', [
+    [{'id': 'a', 'title': 'A', 'parentCollection': {'type': 'collection_reference', 'value': 'a'}}],
+    [{'id': 'a', 'title': 'A', 'parentCollection': {'type': 'collection_reference', 'value': 'missing'}}],
+    [{'id': 'a', 'title': 'A', 'parentCollection': {'type': 'list.collection_reference', 'value': '["x","y"]'}}],
+    [{'id': 'a', 'title': 'A', 'parentCollection': {'type': 'list.single_line_text_field', 'value': '["A"]'}}],
+])
+def test_invalid_hierarchy_is_rejected(items):
+    with pytest.raises(RuntimeError):
+        app.resolve_collection_hierarchy(items)
+
+
+def test_all_ancestors_created_and_added_and_existing_child_reused():
+    collections = [{'id': 'child', 'title': 'Camere', 'path': ['Ricambi', 'Gomme', 'Camere'], 'kind': 'manual', 'source_id': 's'}]
+    result = build_dry_run([{'id': 'p', 'desired': [['Ricambi', 'Gomme', 'Camere']], 'current': []}], collections)
+    assert [item['path'] for item in result['create_collections']] == [['Ricambi'], ['Ricambi', 'Gomme']]
+    assert len(result['add_products']) == 3
+    assert next(item for item in result['add_products'] if len(item['path']) == 3)['collection_id'] == 'child'
+
+
+def test_legacy_title_is_reused_and_ambiguous_title_is_blocked():
+    from core import match_collection_paths
+    products = [{'id': 'p', 'desired': [['Ricambi', 'Camere']]}]
+    collections = [{'id': 'a', 'title': 'Camere', 'path': ['Camere'], 'kind': 'manual', 'source_id': 's'}]
+    matched = match_collection_paths(products, collections)
+    assert matched[0]['path'] == ['Ricambi', 'Camere']
+    assert collections[0]['path'] == ['Camere']
+    with pytest.raises(ValueError):
+        match_collection_paths(products, collections + [{**collections[0], 'id': 'b'}])
+
+
+@pytest.mark.asyncio
+async def test_sync_failure_preserves_approved_and_memberships(monkeypatch, tmp_path):
+    monkeypatch.setattr(app, 'DB', tmp_path / 'failure.sqlite')
+    app.init_db()
+    with app.connect() as db:
+        db.execute("INSERT INTO products(id,title,content_hash,last_synced_at) VALUES('p','P','x',?)", (app.now(),))
+        db.execute("INSERT INTO generations(id,product_id,prompt_version,model,output_json,approved_paths_json,status,source_hash,created_at) VALUES('g','p',1,'m','{}','[[\"Ricambi\"]]','approved','x',?)", (app.now(),))
+    async def products():
+        return []
+    async def failure():
+        raise RuntimeError('429 exhausted')
+    monkeypatch.setattr(app, 'fetch_all_products', products)
+    monkeypatch.setattr(app, 'fetch_all_collections', failure)
+    with pytest.raises(RuntimeError):
+        await app.sync_shopify()
+    with app.connect() as db:
+        assert db.execute("SELECT approved_paths_json,status FROM generations WHERE id='g'").fetchone()[:] == ('[["Ricambi"]]', 'approved')
+
+
+@pytest.mark.asyncio
+async def test_approval_supersedes_old_approval_and_empty_is_rejected(monkeypatch, tmp_path):
+    monkeypatch.setattr(app, 'DB', tmp_path / 'approve.sqlite')
+    app.init_db()
+    with app.connect() as db:
+        db.execute("INSERT INTO products(id,title,content_hash,last_synced_at) VALUES('p','P','x',?)", (app.now(),))
+        for gid, status, date in [('old', 'approved', '2026-10-01'), ('new', 'generated', '2026-10-02')]:
+            db.execute("INSERT INTO generations(id,product_id,prompt_version,model,output_json,status,source_hash,created_at) VALUES(?,'p',1,'m',?,?,'x',?)", (gid, json.dumps({'percorsi': [{'livelli': ['Nuova']}]}), status, date))
+    with pytest.raises(app.HTTPException):
+        await app.approve('old', {'indexes': [0]})
+    with pytest.raises(app.HTTPException):
+        await app.approve('new', {'indexes': []})
+    await app.approve('new', {'indexes': [0]})
+    with app.connect() as db:
+        assert db.execute("SELECT status FROM generations WHERE id='old'").fetchone()[0] == 'superseded'
+        assert app.approved_products(db, ['p'])[0]['desired'] == [['Nuova']]
+
+
+@pytest.mark.asyncio
+async def test_partial_publish_keeps_approval_and_retry_reuses_collections(monkeypatch, tmp_path):
+    monkeypatch.setattr(app, 'DB', tmp_path / 'retry.sqlite')
+    app.init_db()
+    pid = 'p'
+    desired = [['Ricambi']]
+    with app.connect() as db:
+        db.execute("INSERT INTO products(id,title,content_hash,last_synced_at) VALUES('p','P','x',?)", (app.now(),))
+        db.execute("INSERT INTO generations(id,product_id,prompt_version,model,output_json,approved_paths_json,status,source_hash,created_at) VALUES('g','p',1,'m','{}',?,'approved','x',?)", (json.dumps(desired), app.now()))
+        ops = {'approval_signatures': {pid: stable_hash({'id': 'g', 'paths': desired})}}
+        db.execute('INSERT INTO publish_previews VALUES(?,?,?,?,?,0)', ('preview', '["p"]', json.dumps(ops), '{}', app.now()))
+    remote = []
+    creates = 0
+    fail = True
+    async def fake_sync(origin):
+        with app.connect() as db:
+            for item in remote:
+                db.execute("INSERT OR REPLACE INTO collections(id,title,handle,path_json,kind,source_id,products_count,shopify_hash,last_synced_at) VALUES(?,'Ricambi','ricambi','[\"Ricambi\"]','manual','s',1,'x',?)", (item['id'], app.now()))
+                db.execute('INSERT OR IGNORE INTO product_collections VALUES(?,?)', (pid, item['id']))
+        return {}
+    async def fresh(_):
+        return list(remote), 'fresh'
+    async def graphql(query, variables):
+        if query == app.PARENT_DEFINITION_QUERY:
+            return {'metafieldDefinitions': {'nodes': [{'type': {'name': 'list.collection_reference'}}]}}
+        return {'collectionByHandle': None}
+    async def mutate(query, variables, field):
+        nonlocal creates, fail
+        if field == 'collectionCreate':
+            creates += 1
+            remote.append({'id': 'c', 'title': 'Ricambi', 'path': ['Ricambi'], 'kind': 'manual', 'source_id': 's'})
+            return {'collection': {'id': 'c', 'sources': [{'__typename': 'CollectionConditionsSource', 'id': 's'}]}}
+        if field == 'metafieldsSet' and fail:
+            fail = False
+            raise RuntimeError('Timeout after creation')
+        return {}
+    monkeypatch.setattr(app, 'sync_shopify', fake_sync)
+    monkeypatch.setattr(app, 'fresh_product_state', fresh)
+    monkeypatch.setattr(app, 'graphql', graphql)
+    monkeypatch.setattr(app, 'mutation', mutate)
+    with pytest.raises(app.HTTPException) as error:
+        await app.publish_execute({'preview_id': 'preview', 'confirm': True})
+    assert error.value.status_code == 502
+    with app.connect() as db:
+        assert db.execute("SELECT status FROM generations WHERE id='g'").fetchone()[0] == 'approved'
+        assert db.execute("SELECT used FROM publish_previews WHERE id='preview'").fetchone()[0] == 0
+    result = await app.publish_execute({'preview_id': 'preview', 'confirm': True})
+    assert result['published_products'] == 1
+    assert result['created_collections'] == 0
+    assert creates == 1
+    with pytest.raises(app.HTTPException) as error:
+        await app.publish_execute({'preview_id': 'preview', 'confirm': True})
+    assert error.value.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_changed_approval_invalidates_preview_before_writing(monkeypatch, tmp_path):
+    monkeypatch.setattr(app, 'DB', tmp_path / 'changed.sqlite')
+    app.init_db()
+    with app.connect() as db:
+        db.execute("INSERT INTO products(id,title,content_hash,last_synced_at) VALUES('p','P','x',?)", (app.now(),))
+        db.execute("INSERT INTO generations(id,product_id,prompt_version,model,output_json,approved_paths_json,status,source_hash,created_at) VALUES('g','p',1,'m','{}','[[\"Nuova\"]]','approved','x',?)", (app.now(),))
+        db.execute('INSERT INTO publish_previews VALUES(?,?,?,?,?,0)', ('preview', '["p"]', json.dumps({'approval_signatures': {'p': 'previous'}}), '{}', app.now()))
+    async def no_sync(*_):
+        return {}
+    async def no_mutations(*_):
+        pytest.fail('Stale approval must never write')
+    monkeypatch.setattr(app, 'sync_shopify', no_sync)
+    monkeypatch.setattr(app, 'mutation', no_mutations)
+    with pytest.raises(app.HTTPException) as error:
+        await app.publish_execute({'preview_id': 'preview', 'confirm': True})
+    assert error.value.status_code == 409
+
+
+@pytest.mark.asyncio
+async def test_fresh_hierarchy_loads_missing_parent_from_shopify(monkeypatch):
+    items = {'child': {'id': 'child', 'title': 'Camere', 'categoryPath': {'value': 'Vecchio > Camere'}, 'parentCollection': {'type': 'collection_reference', 'value': 'parent'}}}
+    calls = []
+    async def graphql(query, variables):
+        calls.append(variables['id'])
+        return {'collection': {'id': 'parent', 'title': 'Gomme', 'categoryPath': {'value': 'Ricambi > Gomme'}}}
+    monkeypatch.setattr(app, 'graphql', graphql)
+    await app.hydrate_collection_parents(items)
+    app.resolve_collection_hierarchy(list(items.values()))
+    assert items['child']['resolved_path'] == ['Ricambi', 'Gomme', 'Camere']
+    assert calls == ['parent']
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('first', ['http429', 'graphql_throttled'])
+async def test_shopify_throttling_retries_safely(monkeypatch, first):
+    import httpx
+    responses = []
+    if first == 'http429':
+        responses.append(httpx.Response(429, headers={'Retry-After': '1'}, request=httpx.Request('POST', 'https://test')))
+    else:
+        responses.append(httpx.Response(200, json={'errors': [{'message': 'Throttled', 'extensions': {'code': 'THROTTLED'}}]}, request=httpx.Request('POST', 'https://test')))
+    responses.append(httpx.Response(200, json={'data': {'ok': True}}, request=httpx.Request('POST', 'https://test')))
+    class Client:
+        def __init__(self, **kwargs):
+            pass
+        async def __aenter__(self):
+            return self
+        async def __aexit__(self, *args):
+            pass
+        async def post(self, *args, **kwargs):
+            return responses.pop(0)
+    async def token(_):
+        return 'test-token'
+    async def sleep(_):
+        pass
+    monkeypatch.setattr(app.httpx, 'AsyncClient', Client)
+    monkeypatch.setattr(app, 'shop_token', token)
+    monkeypatch.setattr(app, 'shop_domain', lambda: 'test.myshopify.com')
+    monkeypatch.setattr(app.asyncio, 'sleep', sleep)
+    assert await app.graphql('mutation Test{test}', {}) == {'ok': True}
+    assert responses == []
+
+
+@pytest.mark.asyncio
+async def test_ambiguous_mutation_timeout_is_not_retried(monkeypatch):
+    import httpx
+    calls = 0
+    class Client:
+        def __init__(self, **kwargs):
+            pass
+        async def __aenter__(self):
+            return self
+        async def __aexit__(self, *args):
+            pass
+        async def post(self, *args, **kwargs):
+            nonlocal calls
+            calls += 1
+            raise httpx.ReadTimeout('lost response')
+    async def token(_):
+        return 'test-token'
+    monkeypatch.setattr(app.httpx, 'AsyncClient', Client)
+    monkeypatch.setattr(app, 'shop_token', token)
+    monkeypatch.setattr(app, 'shop_domain', lambda: 'test.myshopify.com')
+    with pytest.raises(RuntimeError, match='non è stata ritentata'):
+        await app.graphql('mutation Create{test}', {})
+    assert calls == 1
+
+
+def test_reused_legacy_member_is_never_removed_when_path_is_repaired():
+    from core import match_collection_paths
+    legacy = {'id': 'c', 'title': 'Camere', 'path': ['Camere'], 'kind': 'manual', 'source_id': 's'}
+    products = [{'id': 'p', 'current': [legacy], 'desired': [['Ricambi', 'Camere']]}]
+    result = build_dry_run(products, match_collection_paths(products, [legacy]))
+    assert result['remove_products'] == []
+    assert [item['path'] for item in result['create_collections']] == [['Ricambi']]
+    assert all(item['collection_id'] != 'c' for item in result['add_products'])

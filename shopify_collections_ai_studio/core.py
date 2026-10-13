@@ -110,6 +110,7 @@ def build_dry_run(products: list[dict[str, Any]], collections: list[dict[str, An
     manually editable one and migrate product memberships to that representative.
     """
     active = [item for item in collections if not item.get("removed") and normalize_levels(item.get("path", []))]
+    by_id = {item["id"]: item for item in active}
     by_path: dict[str, dict[str, Any]] = {}
     for item in sorted(active, key=_collection_priority):
         by_path.setdefault(path_key(item["path"]), item)
@@ -153,12 +154,16 @@ def build_dry_run(products: list[dict[str, Any]], collections: list[dict[str, An
 
     for product in products:
         product_id = product["id"]
-        current_items = [item for item in product.get("current", []) if normalize_levels(item.get("path", []))]
+        current_items = [{**item, "path": by_id.get(item["id"], item).get("path", [])} for item in product.get("current", []) if normalize_levels(item.get("path", []))]
         desired: dict[str, list[str]] = {}
         for path in product.get("desired", []):
             normalized = normalize_levels(path)
             if normalized:
                 desired.setdefault(path_key(normalized), normalized)
+
+        for child in list(desired.values()):
+            for depth in range(1, len(child)):
+                desired.setdefault(path_key(child[:depth]), child[:depth])
 
         # If a desired subcategory has an existing manual parent collection, assign
         # the product to the parent too. This keeps parent collection pages complete.
@@ -233,3 +238,23 @@ def build_dry_run(products: list[dict[str, Any]], collections: list[dict[str, An
 
 def empty_manual_collections(collections: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return [item for item in collections if item.get("kind") == "manual" and not item.get("removed") and int(item.get("products_count", 0)) == 0]
+
+
+def match_collection_paths(products: list[dict[str, Any]], collections: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Reuse an unambiguous legacy collection lacking hierarchy before creating one."""
+    result = [dict(item) for item in collections]
+    paths = {path_key(item['path']) for item in result if not item.get('removed')}
+    for product in products:
+        for desired in product.get('desired', []):
+            for depth in range(1, len(desired) + 1):
+                levels = desired[:depth]
+                key = path_key(levels)
+                if key in paths:
+                    continue
+                candidates = [item for item in result if not item.get('removed') and len(item.get('path', [])) == 1 and path_key([item['title']]) == path_key([levels[-1]])]
+                if len(candidates) > 1:
+                    raise ValueError('Collection omonime senza gerarchia: ' + path_label(levels))
+                if candidates:
+                    candidates[0]['path'] = levels
+                    paths.add(key)
+    return result

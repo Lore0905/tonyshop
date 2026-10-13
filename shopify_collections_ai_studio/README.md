@@ -40,4 +40,8 @@ Apri `http://127.0.0.1:8780`.
 4. **Applica su Shopify** crea un dry-run senza scritture; la conferma esegue solo dopo un nuovo controllo conflitti.
 5. **Pulisci vuote** effettua una sync fresca, mostra solo collection manuali vuote, richiede una seconda conferma e salva un backup JSON prima dell'eliminazione.
 
-La gerarchia è salvata nel metafield di collection `custom.category_path`. Le smart collection sono visibili ma sempre in sola lettura.
+La gerarchia usa il metafield Shopify esistente `custom.parent_collection`: `collection_reference` salva il GID del padre, `list.collection_reference` salva un array JSON di GID. Il percorso leggibile viene mantenuto anche in `custom.category_path`. I riferimenti a padri mancanti, i cicli e le liste con più padri distinti bloccano la sincronizzazione senza sostituire lo snapshot locale: questa app gestisce percorsi canonici con un solo padre per collection. Le smart collection sono visibili in sola lettura.
+
+Prima di generare o pubblicare viene sincronizzato il catalogo. La pubblicazione riconcilia le appartenenze Shopify con l’ultima approvazione senza richiedere una nuova generazione quando cambiano soltanto le categorie remote. Crea anche i padri mancanti, riusa le collection esistenti e aggiunge il prodotto a ogni livello. I titoli senza gerarchia vengono riusati solo se non ambigui. La creazione usa un handle deterministico per recuperare risposte perse senza duplicare collection.
+
+Le aggiunte sono verificate prima delle rimozioni; la proposta diventa pubblicata soltanto dopo la verifica e la sincronizzazione finale. In caso di errore l’approvazione rimane salvata, viene tentata una sincronizzazione di recupero e una nuova esecuzione ricalcola le sole operazioni mancanti. Se cambia l’approvazione, serve una nuova anteprima. Le anteprime create prima di questo aggiornamento devono essere ricreate.

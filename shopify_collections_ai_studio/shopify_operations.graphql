@@ -22,6 +22,7 @@ query CatalogCollections($after: String) {
       handle
       updatedAt
       categoryPath: metafield(namespace: "custom", key: "category_path") { value }
+      parentCollection: metafield(namespace: "custom", key: "parent_collection") { type value }
       sources {
         __typename
         id
@@ -53,12 +54,13 @@ query FreshProductCollections($id: ID!, $after: String) {
     id
     title
     vendor
-    variants(first: 100) { nodes { sku title } }
+    variants(first: 100) { nodes { id sku title } }
     collections(first: 250, after: $after) {
       nodes {
         id
         title
         categoryPath: metafield(namespace: "custom", key: "category_path") { value }
+      parentCollection: metafield(namespace: "custom", key: "parent_collection") { type value }
         sources {
           __typename
           id
