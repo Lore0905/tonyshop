@@ -79,7 +79,7 @@ async def test_sync_is_idempotent(monkeypatch, tmp_path):
         assert db.execute("SELECT COUNT(*) FROM product_snapshots").fetchone()[0] == 1
 
 
-def test_dry_run_creates_adds_removes_and_blocks_smart():
+def test_dry_run_creates_adds_removes_and_adds_source_for_smart():
     collections = [
         {"id": "manual-old", "source_id": "source-old", "path": ["Vecchia"], "kind": "manual", "removed": 0},
         {"id": "smart", "path": ["Automatica"], "kind": "smart", "removed": 0},
@@ -88,7 +88,8 @@ def test_dry_run_creates_adds_removes_and_blocks_smart():
     result = build_dry_run(products, collections)
     assert result["create_collections"] == [{"path": ["Nuova"], "title": "Nuova"}]
     assert result["remove_products"][0]["collection_id"] == "manual-old"
-    assert result["blocked"][0]["reason"] == "Collection smart in sola lettura"
+    assert result["blocked"] == []
+    assert result["create_sources"] == [{"collection_id": "smart", "path": ["Automatica"]}]
 
 
 @pytest.mark.asyncio
@@ -867,3 +868,166 @@ def test_main_categories_constrain_first_level_in_ollama_json_schema():
     assert levels['items'] == {'type': 'string'}
     free = app.proposal_schema('p')['properties']['p']['properties']['percorsi']['items']['properties']['livelli']
     assert 'prefixItems' not in free
+
+
+def test_smart_parent_and_child_accept_additions_and_keep_automatic_memberships():
+    collections = [
+        {'id': 'root', 'path': ['Ricambi'], 'kind': 'smart', 'source_id': 'root-source'},
+        {'id': 'quad', 'path': ['Ricambi', 'Ricambi quad 4t'], 'kind': 'smart', 'source_id': 'quad-source'},
+        {'id': 'old', 'path': ['Vecchia automatica'], 'kind': 'smart', 'source_id': 'old-source'},
+    ]
+    plan = build_dry_run([{'id': 'p', 'desired': [['Ricambi', 'Ricambi quad 4t']], 'current': [collections[2]]}], collections)
+    assert plan['blocked'] == []
+    assert plan['create_collections'] == []
+    assert {item['source_id'] for item in plan['add_products']} == {'root-source', 'quad-source'}
+    assert plan['remove_products'] == []
+    assert plan['create_sources'] == []
+
+
+def test_writable_source_does_not_touch_shared_or_variant_sources():
+    sources = [
+        {'id': 'shared', '__typename': 'CollectionConditionsSource', 'targetType': 'PRODUCTS', 'shareable': True},
+        {'id': 'variants', '__typename': 'CollectionConditionsSource', 'targetType': 'VARIANTS', 'shareable': False},
+        {'id': 'sub', '__typename': 'CollectionSubCollectionsSource'},
+        {'id': 'auto', '__typename': 'CollectionConditionsSource', 'targetType': 'PRODUCTS', 'shareable': False, 'inclusion': {'conditions': [{'id': 'tag-rule'}]}},
+    ]
+    assert app.writable_collection_source(sources) == 'auto'
+    assert app.writable_collection_source(sources[:3]) is None
+
+
+@pytest.mark.asyncio
+async def test_sync_keeps_rules_and_exposes_selection_source_for_smart(monkeypatch, tmp_path):
+    import copy
+    monkeypatch.setattr(app, 'DB', tmp_path / 'smart-sync.sqlite')
+    app.init_db()
+    item = collection_fixture('smart')
+    item['sources'][0].update(targetType='PRODUCTS', shareable=False)
+    before = copy.deepcopy(item)
+    async def products():
+        return [product_fixture()]
+    async def collections():
+        return [item]
+    monkeypatch.setattr(app, 'fetch_all_products', products)
+    monkeypatch.setattr(app, 'fetch_all_collections', collections)
+    await app.sync_shopify()
+    assert item['sources'] == before['sources']
+    with app.connect() as db:
+        row = db.execute('SELECT kind,source_id FROM collections').fetchone()
+        assert row['kind'] == 'smart'
+        assert row['source_id'] == 'source-1'
+
+
+@pytest.mark.asyncio
+async def test_new_scoped_source_preserves_shared_rules_and_is_reused(monkeypatch):
+    import copy
+    shared = {'id': 'shared', '__typename': 'CollectionConditionsSource', 'targetType': 'PRODUCTS', 'shareable': True, 'inclusion': {'conditions': [{'id': 'rule', 'values': ['quad']}], 'matchType': 'ALL'}}
+    before = copy.deepcopy(shared)
+    sources = [shared]
+    updates = []
+    async def graphql(query, variables):
+        return {'collection': {'id': 'collection', 'sources': sources}}
+    async def mutate(query, variables, field):
+        updates.append(variables['collection'])
+        sources.append({'id': 'scoped', '__typename': 'CollectionConditionsSource', 'targetType': 'PRODUCTS', 'shareable': False, 'inclusion': {'conditions': []}})
+        return {'job': None}
+    monkeypatch.setattr(app, 'graphql', graphql)
+    monkeypatch.setattr(app, 'mutation', mutate)
+    assert await app.ensure_product_selection_source('collection', ['p']) == ('scoped', 1)
+    assert shared == before
+    assert updates == [{'id': 'collection', 'sourcesToCreate': [{'source': {'title': "Prodotti approvati dall'app", 'targetType': 'PRODUCTS', 'inclusion': {'selections': [{'productId': 'p'}]}}}]}]
+    assert await app.ensure_product_selection_source('collection', ['p']) == ('scoped', 0)
+    assert len(updates) == 1
+
+
+@pytest.mark.asyncio
+async def test_publish_adds_to_smart_with_selection_delta_only(monkeypatch, tmp_path):
+    monkeypatch.setattr(app, 'DB', tmp_path / 'smart-publish.sqlite')
+    app.init_db()
+    desired = [['Ricambi']]
+    with app.connect() as db:
+        db.execute("INSERT INTO products(id,title,content_hash,last_synced_at) VALUES('p','P','x',?)", (app.now(),))
+        db.execute("INSERT INTO collections(id,title,handle,path_json,kind,source_id,products_count,shopify_hash,last_synced_at,category_value) VALUES('c','Ricambi','ricambi','[\"Ricambi\"]','smart','auto-source',10,'x',?,'Ricambi')", (app.now(),))
+        db.execute("INSERT INTO generations(id,product_id,prompt_version,model,output_json,approved_paths_json,status,source_hash,created_at) VALUES('g','p',1,'m','{}',?,'approved','x',?)", (json.dumps(desired), app.now()))
+        db.execute('INSERT INTO publish_previews VALUES(?,?,?,?,?,0)', ('preview', '["p"]', json.dumps({'approval_signatures': {'p': stable_hash({'id': 'g', 'paths': desired})}}), '{}', app.now()))
+    updates = []
+    members = []
+    async def sync(*_):
+        return {}
+    async def fresh(_):
+        return list(members), 'hash'
+    async def graphql(query, variables):
+        assert query == app.PARENT_DEFINITION_QUERY
+        return {'metafieldDefinitions': {'nodes': [{'type': {'name': 'collection_reference'}}]}}
+    async def mutate(query, variables, field):
+        assert field == 'collectionUpdate'
+        updates.append(variables['collection'])
+        members.append({'id': 'c', 'title': 'Ricambi', 'path': ['Ricambi'], 'kind': 'smart', 'source_id': 'auto-source'})
+        return {'job': None}
+    monkeypatch.setattr(app, 'sync_shopify', sync)
+    monkeypatch.setattr(app, 'fresh_product_state', fresh)
+    monkeypatch.setattr(app, 'graphql', graphql)
+    monkeypatch.setattr(app, 'mutation', mutate)
+    result = await app.publish_execute({'preview_id': 'preview', 'confirm': True})
+    assert result['published_products'] == 1
+    assert result['created_collections'] == 0
+    assert updates == [{'id': 'c', 'sourcesToUpdate': [{'condition': {'id': 'auto-source', 'inclusion': {'selectionsToAdd': [{'productId': 'p'}]}}}]}]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('selected,remove,delete_source', [(['p'], ['p'], True), (['p','q'], ['p'], False), (['p'], ['missing'], False)])
+async def test_removal_of_last_manual_selection_detaches_source(monkeypatch, selected, remove, delete_source):
+    updates = []
+    async def graphql(query, variables):
+        return {'node': {'id': 's', 'shareable': False, 'targetType': 'PRODUCTS', 'inclusion': {'conditions': [], 'selections': {'nodes': [{'product': {'id': pid}} for pid in selected], 'pageInfo': {'hasNextPage': False}}}, 'exclusion': {'conditions': []}}}
+    async def mutate(query, variables, field):
+        updates.append(variables['collection'])
+        return {'job': None}
+    monkeypatch.setattr(app, 'graphql', graphql)
+    monkeypatch.setattr(app, 'mutation', mutate)
+    await app.remove_manual_source_products('c','s',remove)
+    if delete_source:
+        assert updates == [{'id': 'c', 'sourcesToDelete': ['s']}]
+    elif 'p' in remove:
+        assert updates == [{'id': 'c', 'sourcesToUpdate': [{'condition': {'id': 's', 'inclusion': {'selectionsToRemove': [{'productId': 'p'}]}}}]}]
+    else:
+        assert updates == []
+
+
+@pytest.mark.asyncio
+async def test_remove_manual_source_never_deletes_source_with_rules(monkeypatch):
+    async def graphql(query, variables):
+        return {'node': {'id': 's', 'shareable': False, 'targetType': 'PRODUCTS', 'inclusion': {'conditions': [{'id': 'rule'}]}}}
+    async def mutate(*_):
+        pytest.fail('Rules must not be modified')
+    monkeypatch.setattr(app, 'graphql', graphql)
+    monkeypatch.setattr(app, 'mutation', mutate)
+    with pytest.raises(RuntimeError, match='regole automatiche'):
+        await app.remove_manual_source_products('c','s',['p'])
+
+
+def test_published_latest_approval_prevents_reapplying_old_pending_categories(monkeypatch, tmp_path):
+    monkeypatch.setattr(app, 'DB', tmp_path / 'old-approvals.sqlite')
+    app.init_db()
+    with app.connect() as db:
+        db.execute("INSERT INTO products(id,title,content_hash,last_synced_at) VALUES('p','P','x',?)", (app.now(),))
+        for gid,status,date,path in [('old','approved','2026-10-10',[['Vecchia']]), ('new','published','2026-10-14',[['Nuova']])]:
+            db.execute("INSERT INTO generations(id,product_id,prompt_version,model,output_json,approved_paths_json,status,source_hash,created_at,approved_at) VALUES(?,'p',1,'m','{}',?,?,'x',?,?)", (gid,json.dumps(path),status,date,date))
+        assert app.approved_products(db,['p']) == []
+        assert app.supersede_old_approvals(db) == 1
+        assert db.execute("SELECT status FROM generations WHERE id='old'").fetchone()[0] == 'superseded'
+        assert db.execute("SELECT status FROM generations WHERE id='new'").fetchone()[0] == 'published'
+
+
+@pytest.mark.asyncio
+async def test_manual_removal_checks_all_pages_before_detaching_source(monkeypatch):
+    updates = []
+    async def graphql(query, variables):
+        after = variables['after']
+        return {'node': {'id': 's', 'targetType': 'PRODUCTS', 'shareable': False, 'inclusion': {'conditions': [], 'selections': {'nodes': [{'product': {'id': 'p' if after is None else 'q'}}], 'pageInfo': {'hasNextPage': after is None, 'endCursor': 'next'}}}, 'exclusion': {'conditions': []}}}
+    async def mutate(query, variables, field):
+        updates.append(variables['collection'])
+        return {'job': None}
+    monkeypatch.setattr(app, 'graphql', graphql)
+    monkeypatch.setattr(app, 'mutation', mutate)
+    await app.remove_manual_source_products('c','s',['p'])
+    assert updates == [{'id': 'c', 'sourcesToUpdate': [{'condition': {'id': 's', 'inclusion': {'selectionsToRemove': [{'productId': 'p'}]}}}]}]

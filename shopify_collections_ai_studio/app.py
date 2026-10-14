@@ -22,7 +22,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, ValidationError, field_validator
 
-from core import reuse_canonical_categories, match_collection_paths, build_dry_run, collection_path, empty_manual_collections, normalize_ai_output, path_key, path_label, plain, stable_hash
+from core import collection_priority, reuse_canonical_categories, match_collection_paths, build_dry_run, collection_path, empty_manual_collections, normalize_ai_output, path_key, path_label, plain, stable_hash
 
 
 BASE = Path(__file__).resolve().parent
@@ -272,7 +272,18 @@ def init_db() -> None:
             END
             WHERE EXISTS (SELECT 1 FROM generations g WHERE g.product_id = products.id)
         """)
+    with connect() as db:
+        supersede_old_approvals(db)
     ensure_prompt_version()
+
+
+def supersede_old_approvals(db: sqlite3.Connection) -> int:
+    return db.execute("""UPDATE generations SET status='superseded' WHERE status='approved' AND EXISTS (
+        SELECT 1 FROM generations newer WHERE newer.product_id=generations.product_id
+        AND newer.status IN ('approved','published') AND (
+            COALESCE(newer.approved_at,newer.created_at)>COALESCE(generations.approved_at,generations.created_at)
+            OR (COALESCE(newer.approved_at,newer.created_at)=COALESCE(generations.approved_at,generations.created_at) AND newer.created_at>generations.created_at)
+        ))""").rowcount
 
 
 def get_settings() -> Settings:
@@ -450,7 +461,7 @@ async def graphql(query: str, variables: dict[str, Any]) -> dict[str, Any]:
 
 
 PRODUCTS_QUERY = """query CatalogProducts($after:String){products(first:100,after:$after){nodes{id title descriptionHtml vendor productType updatedAt featuredMedia{preview{image{url}}} variants(first:100){nodes{id sku title}}}pageInfo{hasNextPage endCursor}}}"""
-COLLECTIONS_QUERY = """query CatalogCollections($after:String){collections(first:100,after:$after){nodes{id title handle updatedAt categoryPath:metafield(namespace:\"custom\",key:\"category_path\"){value} parentCollection:metafield(namespace:\"custom\",key:\"parent_collection\"){type value} sources{__typename id ... on CollectionConditionsSource{targetType inclusion{conditions{__typename id} selections(first:1){nodes{product{id}}}}} ... on CollectionSubCollectionsSource{collections{id}}}}pageInfo{hasNextPage endCursor}}}"""
+COLLECTIONS_QUERY = """query CatalogCollections($after:String){collections(first:100,after:$after){nodes{id title handle updatedAt categoryPath:metafield(namespace:\"custom\",key:\"category_path\"){value} parentCollection:metafield(namespace:\"custom\",key:\"parent_collection\"){type value} sources{__typename id ... on CollectionConditionsSource{targetType shareable inclusion{conditions{__typename id} selections(first:1){nodes{product{id}}}}} ... on CollectionSubCollectionsSource{collections{id}}}}pageInfo{hasNextPage endCursor}}}"""
 COLLECTION_PRODUCTS_QUERY = """query CollectionProducts($id:ID!,$after:String){collection(id:$id){products(first:250,after:$after){nodes{id}pageInfo{hasNextPage endCursor}}}}"""
 
 
@@ -597,6 +608,12 @@ async def parent_collection_type() -> str:
     return nodes[0]["type"]["name"]
 
 
+def writable_collection_source(sources: list[dict[str, Any]]) -> str | None:
+    candidates = [source for source in sources if source.get("__typename") == "CollectionConditionsSource" and source.get("targetType", "PRODUCTS") == "PRODUCTS" and not source.get("shareable", False)]
+    candidates.sort(key=lambda source: (bool((source.get("inclusion") or {}).get("conditions")), source["id"]))
+    return candidates[0]["id"] if candidates else None
+
+
 def product_paths(db: sqlite3.Connection, product_id: str) -> list[dict[str, Any]]:
     rows = db.execute("""SELECT c.id,c.path_json,c.kind,c.source_id,c.title FROM collections c JOIN product_collections pc ON pc.collection_id=c.id WHERE pc.product_id=? AND c.removed=0 ORDER BY c.title COLLATE NOCASE""", (product_id,)).fetchall()
     return [{"id": row["id"], "path": loads(row["path_json"], []), "kind": row["kind"], "source_id": row["source_id"], "title": row["title"]} for row in rows]
@@ -629,7 +646,7 @@ def store_shopify_snapshot(products: list[dict[str, Any]], collections: list[dic
             condition_sources = [source for source in sources if source.get("__typename") == "CollectionConditionsSource"]
             has_automatic_source = any(source.get("__typename") != "CollectionConditionsSource" or (source.get("inclusion") or {}).get("conditions") for source in sources)
             kind = "smart" if has_automatic_source else "manual"
-            source_id = condition_sources[0]["id"] if kind == "manual" and condition_sources else None
+            source_id = writable_collection_source(sources)
             digest = stable_hash({"title": item["title"], "handle": item["handle"], "path": path, "kind": kind, "source_id": source_id, "products": sorted(item["product_ids"])})
             old = previous.get(item["id"])
             if not old:
@@ -748,7 +765,7 @@ def _catalog_context(db: sqlite3.Connection, product_id: str, title: str, prompt
         path_frequency[key] = path_frequency.get(key, 0) + 1
         previous = by_path.get(key)
         def priority(candidate: sqlite3.Row) -> tuple[int, int, str]:
-            editable = candidate["kind"] == "manual" and bool(candidate["source_id"])
+            editable = bool(candidate["source_id"])
             manual = candidate["kind"] == "manual"
             return (0 if editable else 1 if manual else 2, -int(candidate["products_count"] or 0), str(candidate["title"]).casefold())
         if previous is None or priority(row) < priority(previous):
@@ -764,7 +781,7 @@ def _catalog_context(db: sqlite3.Connection, product_id: str, title: str, prompt
             "percorso": path,
             "collection_id": collection_id,
             "origine": "shopify",
-            "assegnabile_manualmente": row["kind"] == "manual" and bool(row["source_id"]),
+            "assegnabile_manualmente": True,
             "tipo": row["kind"],
             "prodotti_count": int(row["products_count"] or 0),
         }
@@ -1342,8 +1359,8 @@ async def _reject(generation_id: str):
 def approved_products(db: sqlite3.Connection, product_ids: list[str]) -> list[dict[str, Any]]:
     result = []
     for product_id in product_ids:
-        generation = db.execute("SELECT * FROM generations WHERE product_id=? AND status='approved' ORDER BY approved_at DESC,created_at DESC LIMIT 1", (product_id,)).fetchone()
-        if generation:
+        generation = db.execute("SELECT * FROM generations WHERE product_id=? AND status IN ('approved','published') ORDER BY COALESCE(approved_at,created_at) DESC,created_at DESC LIMIT 1", (product_id,)).fetchone()
+        if generation and generation["status"] == "approved":
             result.append({"id": product_id, "desired": loads(generation["approved_paths_json"], []), "current": product_paths(db, product_id), "generation": dict(generation)})
     return result
 
@@ -1375,7 +1392,7 @@ async def fresh_product_state(product_id: str) -> tuple[list[dict[str, Any]], st
     # ATTENZIONE: la selezione delle varianti deve coincidere con PRODUCTS_QUERY
     # (nodes{id sku title}), altrimenti l'hash fresco non corrisponde mai a quello
     # salvato nella sync e publish_execute fallisce sempre con 409.
-    query = """query FreshProductCollections($id:ID!,$after:String){product(id:$id){id title vendor variants(first:100){nodes{id sku title}}collections(first:250,after:$after){nodes{id title categoryPath:metafield(namespace:\"custom\",key:\"category_path\"){value} parentCollection:metafield(namespace:\"custom\",key:\"parent_collection\"){type value} sources{__typename id ... on CollectionConditionsSource{inclusion{conditions{__typename id}}}}}pageInfo{hasNextPage endCursor}}}}"""
+    query = """query FreshProductCollections($id:ID!,$after:String){product(id:$id){id title vendor variants(first:100){nodes{id sku title}}collections(first:250,after:$after){nodes{id title categoryPath:metafield(namespace:\"custom\",key:\"category_path\"){value} parentCollection:metafield(namespace:\"custom\",key:\"parent_collection\"){type value} sources{__typename id ... on CollectionConditionsSource{targetType shareable inclusion{conditions{__typename id}}}}}pageInfo{hasNextPage endCursor}}}}"""
     paths: list[dict[str, Any]] = []
     remote_collections: dict[str, dict[str, Any]] = {}
     source: dict[str, Any] | None = None
@@ -1392,7 +1409,7 @@ async def fresh_product_state(product_id: str) -> tuple[list[dict[str, Any]], st
             is_smart = any(source.get("__typename") != "CollectionConditionsSource" or (source.get("inclusion") or {}).get("conditions") for source in sources)
             remote_collections[item["id"]] = item
             resolved_path = collection_path(item["title"], (item.get("categoryPath") or {}).get("value"))
-            paths.append({"id": item["id"], "path": resolved_path, "kind": "smart" if is_smart else "manual", "source_id": condition_sources[0]["id"] if not is_smart and condition_sources else None, "title": item["title"]})
+            paths.append({"id": item["id"], "path": resolved_path, "kind": "smart" if is_smart else "manual", "source_id": writable_collection_source(sources), "title": item["title"]})
         if not product["collections"]["pageInfo"]["hasNextPage"]:
             await hydrate_collection_parents(remote_collections)
             resolve_collection_hierarchy(list(remote_collections.values()))
@@ -1440,13 +1457,79 @@ async def mutation(query: str, variables: dict[str, Any], field: str) -> dict[st
     return payload
 
 
-COLLECTION_BY_HANDLE = """query CollectionRecovery($handle:String!){collectionByHandle:collectionByIdentifier(identifier:{handle:$handle}){id title sources{__typename id ... on CollectionConditionsSource{inclusion{conditions{__typename id}}}}}}"""
+COLLECTION_BY_HANDLE = """query CollectionRecovery($handle:String!){collectionByHandle:collectionByIdentifier(identifier:{handle:$handle}){id title sources{__typename id ... on CollectionConditionsSource{targetType shareable inclusion{conditions{__typename id}}}}}}"""
 CREATE_COLLECTION = """mutation CreateCollection($collection:CollectionCreateInput!){collectionCreate(collection:$collection){collection{id title sources{__typename id}}userErrors{field message}}}"""
 UPDATE_SELECTIONS = """mutation UpdateCollectionSelections($collection:CollectionUpdateInput!){collectionUpdate(collection:$collection){collection{id}job{id done}userErrors{field message}}}"""
 METAFIELDS_SET = """mutation SetCollectionPath($metafields:[MetafieldsSetInput!]!){metafieldsSet(metafields:$metafields){metafields{ownerType key value}userErrors{field message code}}}"""
 JOB_QUERY = """query JobStatus($id:ID!){job(id:$id){id done}}"""
 DELETE_COLLECTION = """mutation DeleteCollection($input:CollectionDeleteInput!){collectionDelete(input:$input){deletedCollectionId userErrors{field message}}}"""
 
+
+COLLECTION_SOURCE_QUERY = """query CollectionSelectionSources($id:ID!){collection(id:$id){id sources{__typename id ... on CollectionConditionsSource{targetType shareable inclusion{conditions{__typename id}}}}}}"""
+CREATE_SELECTION_SOURCE = """mutation CreateCollectionSelectionSource($collection:CollectionUpdateInput!){collectionUpdate(collection:$collection){collection{id}job{id done}userErrors{field message}}}"""
+
+
+async def ensure_product_selection_source(collection_id: str, product_ids: list[str]) -> tuple[str, int]:
+    collection = (await graphql(COLLECTION_SOURCE_QUERY, {"id": collection_id})).get("collection")
+    if not collection:
+        raise RuntimeError("Collection Shopify non trovata: " + collection_id)
+    source_id = writable_collection_source(collection.get("sources") or [])
+    if source_id:
+        return source_id, 0
+    initial = product_ids[:250]
+    update = {"id": collection_id, "sourcesToCreate": [{"source": {"title": "Prodotti approvati dall'app", "targetType": "PRODUCTS", "inclusion": {"selections": [{"productId": product_id} for product_id in initial]}}}]}
+    result = await mutation(CREATE_SELECTION_SOURCE, {"collection": update}, "collectionUpdate")
+    await wait_for_job(result.get("job"))
+    for attempt in range(5):
+        collection = (await graphql(COLLECTION_SOURCE_QUERY, {"id": collection_id})).get("collection")
+        source_id = writable_collection_source((collection or {}).get("sources") or [])
+        if source_id:
+            return source_id, len(initial)
+        if attempt < 4:
+            await asyncio.sleep(0.5 * (attempt + 1))
+    raise RuntimeError("Shopify non conferma la nuova sorgente manuale: riprova la pubblicazione")
+
+SOURCE_SELECTIONS_QUERY = """query ManualSourceSelections($id:ID!,$after:String){node(id:$id){... on CollectionConditionsSource{id targetType shareable inclusion{conditions{__typename id} selections(first:250,after:$after){nodes{product{id}}pageInfo{hasNextPage endCursor}}} exclusion{conditions{__typename id}}}}}"""
+
+
+async def remove_manual_source_products(collection_id: str, source_id: str, product_ids: list[str]) -> None:
+    selected: set[str] = set()
+    after = None
+    cursors = set()
+    while True:
+        source = (await graphql(SOURCE_SELECTIONS_QUERY, {"id": source_id, "after": after})).get("node")
+        if not source:
+            # Recovery after deleting a source: verify membership in the caller.
+            return
+        if source.get("shareable") or source.get("targetType") != "PRODUCTS":
+            raise RuntimeError("La sorgente non è più una selezione locale di prodotti: risincronizza " + collection_id)
+        inclusion = source.get("inclusion") or {}
+        if inclusion.get("conditions"):
+            raise RuntimeError("La sorgente ora contiene regole automatiche: rimozione interrotta per conservarle invariate")
+        block = inclusion["selections"]
+        selected.update(item["product"]["id"] for item in block["nodes"])
+        if not block["pageInfo"]["hasNextPage"]:
+            break
+        after = block["pageInfo"]["endCursor"]
+        if not after or after in cursors:
+            raise RuntimeError("Paginazione selezioni manuali non valida")
+        cursors.add(after)
+    remove = selected & set(product_ids)
+    if not remove:
+        return
+    if not selected - remove:
+        if (source.get("exclusion") or {}).get("conditions"):
+            raise RuntimeError("La sorgente contiene esclusioni automatiche: nessuna regola modificata")
+        # Shopify rejects an empty conditions-based source. Detach the rules-free
+        # manual source instead of deleting the collection or inventing conditions.
+        update = {"id": collection_id, "sourcesToDelete": [source_id]}
+        result = await mutation(UPDATE_SELECTIONS, {"collection": update}, "collectionUpdate")
+        await wait_for_job(result.get("job"))
+        return
+    for batch in chunks(sorted(remove)):
+        update = {"id": collection_id, "sourcesToUpdate": [{"condition": {"id": source_id, "inclusion": {"selectionsToRemove": [{"productId": product_id} for product_id in batch]}}}]}
+        result = await mutation(UPDATE_SELECTIONS, {"collection": update}, "collectionUpdate")
+        await wait_for_job(result.get("job"))
 
 PUBLICATIONS_QUERY = """query CollectionSalesChannels($after:String){publications(first:100,after:$after){nodes{id}pageInfo{hasNextPage endCursor}}}"""
 PUBLICATION_SCOPES_QUERY = """query CollectionPublicationScopes{currentAppInstallation{accessScopes{handle}}}"""
@@ -1581,13 +1664,13 @@ async def _publish_execute(payload: dict[str, Any]):
         raise HTTPException(409, "Operazioni bloccate: " + dumps(operations["blocked"]))
     parent_type = await parent_collection_type()
     targets = {}
-    for item in sorted(collections, key=lambda item: (-int(item.get("products_count", 0)), item["id"])):
-        if item["kind"] == "manual" and item["source_id"]:
+    for item in sorted(collections, key=collection_priority):
+        if item["id"]:
             targets.setdefault(path_key(item["path"]), {"collection_id": item["id"], "source_id": item["source_id"]})
     needed_paths = {path_key(path[:depth]) for product in products for path in product["desired"] for depth in range(1, len(path) + 1)}
     existing_paths = {path_key(item["path"]) for item in collections}
     if any(key in existing_paths and key not in targets for key in needed_paths):
-        raise HTTPException(409, "Gerarchia con collection smart o senza sorgente manuale: nessuna scrittura eseguita.")
+        raise HTTPException(409, "Gerarchia con collection non disponibile: nessuna scrittura eseguita.")
     managed_collection_ids = {item["id"] for item in collections if item.get("handle", "").startswith("category-") and path_key(item["path"]) in needed_paths}
     # A deterministic handle also identifies a creation recovered after a lost response.
     channel_ids = await collection_channel_ids() if operations["create_collections"] or managed_collection_ids else []
@@ -1611,18 +1694,21 @@ async def _publish_execute(payload: dict[str, Any]):
             initialized.add(path_key(item["path"]))
             result = await mutation(CREATE_COLLECTION, {"collection": {"title": item["title"], "handle": handle, "sources": [source]}}, "collectionCreate")
         sources = result["collection"].get("sources") or []
-        if not sources or any(source["__typename"] != "CollectionConditionsSource" or (source.get("inclusion") or {}).get("conditions") for source in sources):
-            raise RuntimeError("Collection di recupero non manuale: " + item["title"])
-        condition_source = next(source for source in sources if source["__typename"] == "CollectionConditionsSource")
+        source_id = writable_collection_source(sources)
         collection_id = result["collection"]["id"]
         await ensure_collection_channels(collection_id, channel_ids)
-        created[path_key(item["path"])] = {"collection_id": collection_id, "source_id": condition_source["id"]}
+        created[path_key(item["path"])] = {"collection_id": collection_id, "source_id": source_id}
         targets[path_key(item["path"])] = created[path_key(item["path"])]
         metafield = {"ownerId": collection_id, "namespace": "custom", "key": "category_path", "type": "single_line_text_field", "value": path_label(item["path"])}
         await mutation(METAFIELDS_SET, {"metafields": [metafield]}, "metafieldsSet")
     for item in operations["add_products"]:
         target = {"collection_id": item["collection_id"], "source_id": item["source_id"]} if item["collection_id"] else created[path_key(item["path"])]
         already_created = 250 if path_key(item["path"]) in initialized else 0
+        if not target["source_id"]:
+            source_id, seeded = await ensure_product_selection_source(target["collection_id"], item["product_ids"])
+            target["source_id"] = source_id
+            targets[path_key(item["path"])] = target
+            already_created = seeded
         for batch in chunks(item["product_ids"][already_created:]):
             update = {"id": target["collection_id"], "sourcesToUpdate": [{"condition": {"id": target["source_id"], "inclusion": {"selectionsToAdd": [{"productId": product_id} for product_id in batch]}}}]}
             result = await mutation(UPDATE_SELECTIONS, {"collection": update}, "collectionUpdate")
@@ -1669,10 +1755,7 @@ async def _publish_execute(payload: dict[str, Any]):
         else:
             raise RuntimeError("Shopify non conferma le aggiunte: categorie precedenti conservate. Ripeti la pubblicazione.")
     for item in operations["remove_products"]:
-        for batch in chunks(item["product_ids"]):
-            update = {"id": item["collection_id"], "sourcesToUpdate": [{"condition": {"id": item["source_id"], "inclusion": {"selectionsToRemove": [{"productId": product_id} for product_id in batch]}}}]}
-            result = await mutation(UPDATE_SELECTIONS, {"collection": update}, "collectionUpdate")
-            await wait_for_job(result.get("job"))
+        await remove_manual_source_products(item["collection_id"], item["source_id"], item["product_ids"])
 
     # Read-after-write verification: don't mark a proposal as published until Shopify
     # confirms both every approved path and every explicit collection membership in the dry-run.
@@ -1728,6 +1811,7 @@ async def _publish_execute(payload: dict[str, Any]):
                 db.execute("UPDATE generations SET status='published',published_at=? WHERE id=?", (now(), generation["id"]))
                 db.execute("UPDATE products SET processing_status='published',last_error=NULL WHERE id=?", (product_id,))
                 db.execute("INSERT INTO history VALUES(?,?,?,?,?,?,?,?,?,?)", (str(uuid.uuid4()), product_id, "pubblicazione", dumps(before), dumps(after), generation["model"], generation["prompt_version"], "success", None, now()))
+        supersede_old_approvals(db)
     return {"published_products": len(product_ids), "created_collections": len(created)}
 
 

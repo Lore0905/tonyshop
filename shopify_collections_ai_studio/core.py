@@ -91,11 +91,11 @@ def _is_path_prefix(parent: Iterable[str], child: Iterable[str]) -> bool:
     return bool(parent_parts) and len(parent_parts) <= len(child_parts) and child_parts[:len(parent_parts)] == parent_parts
 
 
-def _collection_priority(item: dict[str, Any]) -> tuple[int, int, str, str]:
+def collection_priority(item: dict[str, Any]) -> tuple[int, int, str, str]:
     """Prefer a collection that can be updated safely when duplicate paths exist."""
     kind = item.get("kind")
     source_id = item.get("source_id")
-    usable_manual = kind == "manual" and bool(source_id)
+    usable_manual = bool(source_id)
     manual = kind == "manual"
     priority = 0 if usable_manual else 1 if manual else 2
     return (priority, -int(item.get("products_count", 0) or 0), str(item.get("title", "")).casefold(), str(item.get("id", "")))
@@ -112,7 +112,7 @@ def build_dry_run(products: list[dict[str, Any]], collections: list[dict[str, An
     active = [item for item in collections if not item.get("removed") and normalize_levels(item.get("path", []))]
     by_id = {item["id"]: item for item in active}
     by_path: dict[str, dict[str, Any]] = {}
-    for item in sorted(active, key=_collection_priority):
+    for item in sorted(active, key=collection_priority):
         by_path.setdefault(path_key(item["path"]), item)
 
     create: dict[str, dict[str, Any]] = {}
@@ -165,35 +165,8 @@ def build_dry_run(products: list[dict[str, Any]], collections: list[dict[str, An
             for depth in range(1, len(child)):
                 desired.setdefault(path_key(child[:depth]), child[:depth])
 
-        # If a desired subcategory has an existing manual parent collection, assign
-        # the product to the parent too. This keeps parent collection pages complete.
-        desired_paths = list(desired.values())
-        for ancestor_key, collection in by_path.items():
-            ancestor = normalize_levels(collection["path"])
-            if ancestor_key in desired:
-                continue
-            if not any(len(ancestor) < len(child) and _is_path_prefix(ancestor, child) for child in desired_paths):
-                continue
-            already_in_parent = any(item["id"] == collection["id"] for item in current_items)
-            if collection.get("kind") == "manual" and collection.get("source_id"):
-                desired[ancestor_key] = ancestor
-            elif already_in_parent:
-                # A smart parent already contains this product; preserve its membership.
-                continue
-            elif collection.get("kind") == "smart":
-                block(product_id, ancestor, "Collection padre smart: il prodotto non risulta incluso dalle regole Shopify")
-            else:
-                block(product_id, ancestor, "Collection padre non aggiornabile: sorgente manuale Shopify non disponibile")
-
         for key, levels in desired.items():
             collection = by_path.get(key)
-            if collection and collection.get("kind") == "smart":
-                if not any(item["id"] == collection["id"] for item in current_items):
-                    block(product_id, levels, "Collection smart in sola lettura")
-                continue
-            if collection and not collection.get("source_id"):
-                block(product_id, levels, "Sorgente manuale Shopify non disponibile")
-                continue
             # A same-path membership in a duplicate collection is not enough: assign the
             # product to the chosen canonical collection ID to keep the taxonomy stable.
             already_in_target = bool(collection) and any(
@@ -232,6 +205,7 @@ def build_dry_run(products: list[dict[str, Any]], collections: list[dict[str, An
         "create_collections": sorted(create.values(), key=lambda item: path_key(item["path"])),
         "add_products": sorted(add.values(), key=lambda item: path_key(item["path"])),
         "remove_products": sorted(remove.values(), key=lambda item: path_key(item["path"])),
+        "create_sources": [{"collection_id": item["collection_id"], "path": item["path"]} for item in add.values() if item["collection_id"] and not item["source_id"]],
         "blocked": blocked,
     }
 

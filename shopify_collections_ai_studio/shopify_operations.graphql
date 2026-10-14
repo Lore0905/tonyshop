@@ -28,6 +28,7 @@ query CatalogCollections($after: String) {
         id
         ... on CollectionConditionsSource {
           targetType
+          shareable
           inclusion {
             conditions { __typename id }
             selections(first: 1) { nodes { product { id } } }
@@ -144,5 +145,46 @@ mutation BulkCollectionMemberships($query: String!) {
 query BulkMembershipStatus($id: ID!) {
   node(id: $id) {
     ... on BulkOperation { status url errorCode objectCount }
+  }
+}
+
+query CollectionSelectionSources($id: ID!) {
+  collection(id: $id) {
+    id
+    sources {
+      __typename
+      id
+      ... on CollectionConditionsSource {
+        targetType
+        shareable
+        inclusion { conditions { __typename id } }
+      }
+    }
+  }
+}
+
+mutation CreateCollectionSelectionSource($collection: CollectionUpdateInput!) {
+  collectionUpdate(collection: $collection) {
+    collection { id }
+    job { id done }
+    userErrors { field message }
+  }
+}
+
+query ManualSourceSelections($id: ID!, $after: String) {
+  node(id: $id) {
+    ... on CollectionConditionsSource {
+      id
+      targetType
+      shareable
+      inclusion {
+        conditions { __typename id }
+        selections(first: 250, after: $after) {
+          nodes { product { id } }
+          pageInfo { hasNextPage endCursor }
+        }
+      }
+      exclusion { conditions { __typename id } }
+    }
   }
 }
