@@ -258,3 +258,54 @@ def match_collection_paths(products: list[dict[str, Any]], collections: list[dic
                     candidates[0]['path'] = levels
                     paths.add(key)
     return result
+
+
+# Deliberately narrow aliases: match equivalent names only within the same branch.
+_CATEGORY_ALIASES = {
+    'adesivi': 'adesivi', 'adesivo': 'adesivi', 'decalcomanie': 'adesivi',
+    'decalcomania': 'adesivi', 'adesivi e decalcomanie': 'adesivi',
+    'decalcomanie e adesivi': 'adesivi', 'kit adesivi': 'adesivi',
+    'quad': 'quad', 'atv': 'quad', 'quad e atv': 'quad', 'quad atv': 'quad',
+    'camera d aria': 'camere aria', 'camere d aria': 'camere aria',
+    'camere aria': 'camere aria', 'camera aria': 'camere aria',
+}
+
+
+def _category_name_key(name: str) -> str:
+    return _SPACE.sub(' ', re.sub(r"[’'/_-]+", ' ', name.casefold())).strip()
+
+
+def reuse_canonical_categories(output: dict[str, Any], categories: list[dict[str, Any]], max_depth: int) -> dict[str, Any]:
+    """Repair spelling/explicit synonyms; never guess equivalence from fuzzy similarity."""
+    known = [entry for entry in categories if entry.get('percorso')]
+    known.sort(key=lambda entry: (entry.get('tipo') == 'smart', entry.get('origine') != 'shopify', -int(entry.get('prodotti_count', 0)), path_key(entry['percorso'])))
+    exact = {}
+    aliases = {}
+    def exact_key(path):
+        return tuple(_category_name_key(level) for level in path)
+    def alias_key(path):
+        key = exact_key(path)
+        return (*key[:-1], _CATEGORY_ALIASES.get(key[-1], key[-1]))
+    for entry in known:
+        levels = normalize_levels(entry['percorso'])
+        exact.setdefault(exact_key(levels), levels)
+        aliases.setdefault(alias_key(levels), levels)
+    result = normalize_ai_output(output, max_depth)
+    for item in result['percorsi']:
+        original = item['livelli']
+        chosen = exact.get(exact_key(original)) or aliases.get(alias_key(original))
+        if chosen and chosen != original:
+            item['livelli'] = chosen
+            result['criticita'].append(f"Riutilizzato il percorso canonico '{path_label(chosen)}' invece di '{path_label(original)}'.")
+        elif not chosen:
+            for depth in range(len(original) - 1, 0, -1):
+                prefix = exact.get(exact_key(original[:depth]))
+                if prefix:
+                    item['livelli'] = prefix + original[depth:]
+                    break
+    result = normalize_ai_output(result, max_depth)
+    # The model cannot omit a new path from the new-category list or list an existing
+    # collection as new: derive it from the actual selected canonical paths.
+    existing_keys = {exact_key(entry['percorso']) for entry in known}
+    result['nuove_categorie'] = [item['livelli'] for item in result['percorsi'] if exact_key(item['livelli']) not in existing_keys]
+    return result

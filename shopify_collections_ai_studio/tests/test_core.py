@@ -545,3 +545,325 @@ async def test_collection_publication_status_paginates_and_ignores_unpublished(m
         return {'collection': {'resourcePublicationsV2': {'nodes': [{'publication': {'id': 'one'}, 'isPublished': True}, {'publication': {'id': 'scheduled'}, 'isPublished': False}] if variables['after'] is None else [{'publication': {'id': 'two'}, 'isPublished': True}], 'pageInfo': {'hasNextPage': variables['after'] is None, 'endCursor': 'next'}}}}
     monkeypatch.setattr(app, 'graphql', graphql)
     assert await app.published_collection_channels('collection') == {'one', 'two'}
+
+
+@pytest.mark.asyncio
+async def test_operation_submission_is_immediate_deduplicated_and_durable(monkeypatch, tmp_path):
+    monkeypatch.setattr(app, 'DB', tmp_path / 'operations.sqlite')
+    app.init_db()
+    async def network(*_):
+        pytest.fail('Submitting must not call Shopify or AI')
+    monkeypatch.setattr(app, 'sync_shopify', network)
+    payload = {'action': 'generate', 'payload': {'product_ids': ['p']}}
+    first = await app.submit_operation(payload)
+    assert await app.submit_operation(payload) == first
+    assert (await app.operation_status(first['operation_id']))['status'] == 'queued'
+    with app.connect() as db:
+        db.execute("UPDATE operations SET status='processing'")
+    app.init_db()
+    assert (await app.operation_status(first['operation_id']))['status'] == 'queued'
+
+
+@pytest.mark.asyncio
+async def test_operation_failure_remains_visible(monkeypatch, tmp_path):
+    monkeypatch.setattr(app, 'DB', tmp_path / 'op_error.sqlite')
+    app.init_db()
+    async def failed():
+        raise RuntimeError('Shopify unavailable')
+    monkeypatch.setattr(app, 'sync_endpoint', failed)
+    job = await app.submit_operation({'action': 'sync'})
+    with app.connect() as db:
+        row = db.execute('SELECT * FROM operations WHERE id=?', (job['operation_id'],)).fetchone()
+    await app.run_operation(row)
+    status = await app.operation_status(job['operation_id'])
+    assert status['status'] == 'error'
+    assert status['error'] == 'Shopify unavailable'
+
+
+@pytest.mark.asyncio
+async def test_oauth_token_is_reused_until_expiry(monkeypatch):
+    import time
+    monkeypatch.delenv('SHOPIFY_ADMIN_ACCESS_TOKEN', raising=False)
+    monkeypatch.setenv('SHOPIFY_CLIENT_ID', 'test-client')
+    monkeypatch.setenv('SHOPIFY_CLIENT_SECRET', 'test-secret')
+    monkeypatch.setattr(app, 'shop_domain', lambda: 'test.myshopify.com')
+    monkeypatch.setattr(app, '_token_cache', {})
+    class Response:
+        def raise_for_status(self):
+            pass
+        def json(self):
+            return {'access_token': 'cached', 'expires_in': 3600}
+    class Client:
+        calls = 0
+        async def post(self, *args, **kwargs):
+            self.calls += 1
+            return Response()
+    client = Client()
+    assert await app.shop_token(client) == 'cached'
+    assert await app.shop_token(client) == 'cached'
+    assert client.calls == 1
+    app._token_cache['expires_at'] = time.monotonic() - 1
+    await app.shop_token(client)
+    assert client.calls == 2
+
+
+@pytest.mark.asyncio
+async def test_ai_worker_processes_only_one_product_at_a_time(monkeypatch, tmp_path):
+    monkeypatch.setattr(app, 'DB', tmp_path / 'serial.sqlite')
+    app.init_db()
+    with app.connect() as db:
+        for index in range(3):
+            pid = str(index)
+            db.execute('INSERT INTO products(id,title,content_hash,last_synced_at) VALUES(?,?,?,?)', (pid, 'P', 'x', app.now()))
+            db.execute("INSERT INTO jobs(id,product_id,kind,status,created_at) VALUES(?,?,'generate','queued',?)", (pid, pid, app.now()))
+    active = maximum = completed = 0
+    done = asyncio.Event()
+    async def process(job):
+        nonlocal active, maximum, completed
+        active += 1
+        maximum = max(maximum, active)
+        await asyncio.sleep(0.001)
+        active -= 1
+        completed += 1
+        if completed == 3:
+            done.set()
+        return 0.001
+    monkeypatch.setattr(app, 'process_job', process)
+    monkeypatch.setattr(app, 'get_settings', lambda: app.Settings(pause_seconds=0))
+    task = asyncio.create_task(app.worker())
+    try:
+        await asyncio.wait_for(done.wait(), timeout=1)
+    finally:
+        task.cancel()
+        await asyncio.gather(task, return_exceptions=True)
+    assert maximum == 1
+    assert completed == 3
+
+
+@pytest.mark.asyncio
+async def test_bulk_reader_checks_completeness_and_preserves_empty_collections(monkeypatch):
+    lines = ['{"id":"c1"}', '{"id":"p1","__parentId":"c1"}', '{"id":"c2"}']
+    class Response:
+        async def __aenter__(self):
+            return self
+        async def __aexit__(self, *args):
+            pass
+        def raise_for_status(self):
+            pass
+        async def aiter_lines(self):
+            for line in lines:
+                yield line
+    class Client:
+        def __init__(self, **kwargs):
+            pass
+        async def __aenter__(self):
+            return self
+        async def __aexit__(self, *args):
+            pass
+        def stream(self, *args):
+            return Response()
+    monkeypatch.setattr(app.httpx, 'AsyncClient', Client)
+    assert await app.read_bulk_memberships('https://example.test', {'c1', 'c2'}, 3) == {'c1': ['p1'], 'c2': []}
+    with pytest.raises(RuntimeError, match='incompleta'):
+        await app.read_bulk_memberships('https://example.test', {'c1', 'c2'}, 4)
+    with pytest.raises(RuntimeError, match='Catalogo'):
+        await app.read_bulk_memberships('https://example.test', {'c1', 'c2', 'c3'}, 3)
+
+
+@pytest.mark.asyncio
+async def test_cancelled_generation_preparation_does_not_queue_ai(monkeypatch, tmp_path):
+    monkeypatch.setattr(app, 'DB', tmp_path / 'cancel.sqlite')
+    app.init_db()
+    job = await app.submit_operation({'action': 'generate', 'payload': {'product_ids': ['p']}})
+    async def cancelled_sync(*_):
+        await app.queue_action('cancel')
+        return {}
+    async def inference(*_):
+        pytest.fail('Cancelled preparation must not reach AI')
+    monkeypatch.setattr(app, 'sync_shopify', cancelled_sync)
+    monkeypatch.setattr(app, 'validate_ollama', inference)
+    with app.connect() as db:
+        row = db.execute('SELECT * FROM operations WHERE id=?', (job['operation_id'],)).fetchone()
+    await app.run_operation(row)
+    assert (await app.operation_status(job['operation_id']))['status'] == 'cancelled'
+    with app.connect() as db:
+        assert db.execute('SELECT COUNT(*) FROM jobs').fetchone()[0] == 0
+
+
+def test_canonical_reuse_collapses_synonyms_without_crossing_branches():
+    from core import reuse_canonical_categories
+    categories = [{'percorso': ['Ricambi', 'Accessori', 'Adesivi'], 'origine': 'shopify', 'tipo': 'manual', 'prodotti_count': 20}]
+    def proposal(path):
+        return {'percorsi': [{'livelli': path, 'confidence': .9, 'motivazione': 'Famiglia coerente'}], 'nuove_categorie': [path], 'criticita': []}
+    fixed = reuse_canonical_categories(proposal(['ricambi', 'accessori', 'Adesivi e decalcomanie']), categories, 3)
+    assert fixed['percorsi'][0]['livelli'] == categories[0]['percorso']
+    assert fixed['nuove_categorie'] == []
+    separate = reuse_canonical_categories(proposal(['Veicoli', 'Accessori', 'Adesivi e decalcomanie']), categories, 3)
+    assert separate['nuove_categorie'] == [['Veicoli', 'Accessori', 'Adesivi e decalcomanie']]
+    distinct = reuse_canonical_categories(proposal(['Ricambi', 'Accessori', 'Protezioni']), categories, 3)
+    assert distinct['nuove_categorie'] == [['Ricambi', 'Accessori', 'Protezioni']]
+
+
+def test_new_categories_derived_from_selected_paths_not_model_claims():
+    from core import reuse_canonical_categories
+    output = {'percorsi': [{'livelli': ['Ricambi', 'Radiatori'], 'confidence': .9, 'motivazione': 'Raffreddamento'}], 'nuove_categorie': [['Inutilizzata']], 'criticita': []}
+    assert reuse_canonical_categories(output, [], 3)['nuove_categorie'] == [['Ricambi', 'Radiatori']]
+
+
+@pytest.mark.asyncio
+async def test_actual_ollama_prompt_contains_shopify_and_unpublished_approved_taxonomy(monkeypatch, tmp_path):
+    monkeypatch.setattr(app, 'DB', tmp_path / 'prompt.sqlite')
+    app.init_db()
+    with app.connect() as db:
+        for pid in ['target', 'approved', 'rejected']:
+            db.execute('INSERT INTO products(id,title,content_hash,last_synced_at) VALUES(?,?,?,?)', (pid, 'Kit adesivi quad', 'x', app.now()))
+        db.execute("INSERT INTO collections(id,title,path_json,kind,source_id,products_count,shopify_hash,last_synced_at) VALUES('c','Adesivi','[\"Ricambi\",\"Adesivi\"]','manual','s',20,'x',?)", (app.now(),))
+        for pid, status, path in [('approved', 'approved', ['Ricambi', 'Plastiche']), ('rejected', 'rejected', ['Ricambi', 'Categoria sbagliata'])]:
+            db.execute('INSERT INTO generations(id,product_id,prompt_version,model,output_json,approved_paths_json,status,source_hash,created_at) VALUES(?,?,1,\'m\',\'{}\',?,?,\'x\',?)', (pid, pid, json.dumps([path]), status, app.now()))
+        row = db.execute("SELECT * FROM products WHERE id='target'").fetchone()
+    captured = []
+    class Response:
+        status_code = 200
+        def raise_for_status(self):
+            pass
+        def json(self):
+            output = {'percorsi': [{'livelli': ['Ricambi', 'Adesivi e decalcomanie'], 'confidence': 1, 'motivazione': 'Stessa famiglia'}], 'nuove_categorie': [['Ricambi', 'Adesivi e decalcomanie']], 'criticita': []}
+            return {'message': {'content': json.dumps({'target': output})}}
+    class Client:
+        def __init__(self, **kwargs):
+            pass
+        async def __aenter__(self):
+            return self
+        async def __aexit__(self, *args):
+            pass
+        async def post(self, url, json):
+            captured.append(json)
+            return Response()
+    async def available(_):
+        return ['m']
+    monkeypatch.setattr(app, 'validate_ollama', available)
+    monkeypatch.setattr(app.httpx, 'AsyncClient', Client)
+    result = await app.call_ollama(row, app.Settings(model='m'))
+    source = json.loads(captured[0]['messages'][1]['content'].split('unica fonte ammessa:\n', 1)[1])['target']
+    categories = source['catalogo_collection_esistenti']
+    assert {'Ricambi > Adesivi', 'Ricambi > Plastiche'} == {' > '.join(c['percorso']) for c in categories}
+    assert next(c for c in categories if c['percorso'][-1] == 'Adesivi')['collection_id'] == 'c'
+    assert next(c for c in categories if c['percorso'][-1] == 'Plastiche')['origine'] == 'approvazione'
+    assert result['percorsi'][0]['livelli'] == ['Ricambi', 'Adesivi']
+    assert result['nuove_categorie'] == []
+
+
+def test_default_prompt_upgrade_preserves_custom_prompts(monkeypatch, tmp_path):
+    monkeypatch.setattr(app, 'DB', tmp_path / 'settings.sqlite')
+    app.init_db()
+    for old, expected in [(app.PREVIOUS_DEFAULT_PROMPT, app.DEFAULT_PROMPT), ('Il mio prompt personalizzato', 'Il mio prompt personalizzato')]:
+        with app.connect() as db:
+            settings = app.Settings(ai_prompt=old)
+            db.execute('UPDATE settings SET value_json=? WHERE id=1', (settings.model_dump_json(),))
+        app.init_db()
+        assert app.get_settings().ai_prompt == expected
+
+
+def test_main_categories_normalize_duplicates_and_reject_nested_names():
+    assert app.Settings(main_categories=[' Ricambi ', 'ricambi', '  Veicoli  ']).main_categories == ['Ricambi', 'Veicoli']
+    assert app.Settings().main_categories == []
+    for invalid in [[''], ['Ricambi > Gomme'], ['Ricambi\nVeicoli'], [123], 'Ricambi']:
+        with pytest.raises(ValueError):
+            app.Settings(main_categories=invalid)
+
+
+@pytest.mark.asyncio
+async def test_import_main_categories_pages_filters_parent_and_preserves_local_settings(monkeypatch, tmp_path):
+    monkeypatch.setattr(app, 'DB', tmp_path / 'roots.sqlite')
+    app.init_db()
+    await app.update_settings(app.Settings(main_categories=['Manuale']))
+    queries = []
+    async def graphql(query, variables):
+        queries.append(variables['after'])
+        if variables['after'] is None:
+            nodes = [{'id': '1', 'title': 'Ricambi', 'parentCollection': None}, {'id': '2', 'title': 'Gomme', 'parentCollection': {'type': 'collection_reference', 'value': 'parent'}}, {'id': '3', 'title': 'Veicoli', 'parentCollection': {'type': 'list.collection_reference', 'value': ' [] '}}]
+        else:
+            nodes = [{'id': '4', 'title': 'ricambi', 'parentCollection': None}, {'id': '5', 'title': 'Accessori', 'parentCollection': {'type': 'list.collection_reference', 'value': '["parent"]'}}, {'id': '6', 'title': 'Abbigliamento', 'parentCollection': {'type': 'collection_reference', 'value': ''}}]
+        return {'collections': {'nodes': nodes, 'pageInfo': {'hasNextPage': variables['after'] is None, 'endCursor': 'next'}}}
+    monkeypatch.setattr(app, 'graphql', graphql)
+    assert (await app.import_main_categories())['main_categories'] == ['Abbigliamento', 'Ricambi', 'Veicoli']
+    assert queries == [None, 'next']
+    assert app.get_settings().main_categories == ['Manuale']
+
+
+def test_main_category_enforcement_rejects_ai_invented_roots_without_remapping():
+    output = {'percorsi': [{'livelli': ['Ricambi', 'Gomme']}], 'nuove_categorie': [['Ricambi', 'Gomme']], 'criticita': []}
+    assert app.enforce_main_categories(output, []) is output
+    assert app.enforce_main_categories(output, ['RICAMBI'])['percorsi'][0]['livelli'] == ['RICAMBI', 'Gomme']
+    with pytest.raises(RuntimeError, match='non consentite'):
+        app.enforce_main_categories({'percorsi': [{'livelli': ['Inventata', 'Gomme']}], 'nuove_categorie': [], 'criticita': []}, ['Ricambi'])
+
+
+@pytest.mark.asyncio
+async def test_main_categories_are_saved_and_included_in_ollama_prompt(monkeypatch, tmp_path):
+    monkeypatch.setattr(app, 'DB', tmp_path / 'root_prompt.sqlite')
+    app.init_db()
+    settings = app.Settings(main_categories=['Ricambi'], model='m')
+    await app.update_settings(settings)
+    assert app.get_settings().main_categories == ['Ricambi']
+    with app.connect() as db:
+        db.execute("INSERT INTO products(id,title,content_hash,last_synced_at) VALUES('p','Gomme','x',?)", (app.now(),))
+        row = db.execute("SELECT * FROM products WHERE id='p'").fetchone()
+    captured = []
+    class Response:
+        status_code = 200
+        def raise_for_status(self):
+            pass
+        def json(self):
+            return {'message': {'content': json.dumps({'p': {'percorsi': [{'livelli': ['Ricambi', 'Gomme'], 'confidence': 1, 'motivazione': 'Famiglia corretta'}], 'nuove_categorie': [], 'criticita': []}})}}
+    class Client:
+        def __init__(self, **kwargs):
+            pass
+        async def __aenter__(self):
+            return self
+        async def __aexit__(self, *args):
+            pass
+        async def post(self, url, json):
+            captured.append(json)
+            return Response()
+    async def available(_):
+        return ['m']
+    monkeypatch.setattr(app.httpx, 'AsyncClient', Client)
+    monkeypatch.setattr(app, 'validate_ollama', available)
+    result = await app.call_ollama(row, settings)
+    prompt = captured[0]['messages'][1]['content']
+    assert '"categorie_principali_consentite":["Ricambi"]' in prompt
+    assert 'VINCOLO OBBLIGATORIO' in prompt
+    assert result['percorsi'][0]['livelli'][0] == 'Ricambi'
+
+
+@pytest.mark.asyncio
+async def test_main_categories_change_prompt_version_and_empty_restores_current_prompt(monkeypatch, tmp_path):
+    monkeypatch.setattr(app, 'DB', tmp_path / 'root_version.sqlite')
+    app.init_db()
+    original = app.ensure_prompt_version()
+    await app.update_settings(app.Settings(main_categories=['Ricambi']))
+    assert app.ensure_prompt_version() != original
+    await app.update_settings(app.Settings(main_categories=[]))
+    assert app.ensure_prompt_version() == original
+
+
+@pytest.mark.parametrize('value,expected', [(100, 1), (95, .95), (.95, .95), (1, 1), (0, 0), ('100', 1), ('95%', .95), ('1%', .01), ('0,95', .95)])
+def test_ollama_confidence_accepts_probabilities_and_percentages(value, expected):
+    proposal = app.AIProposal.model_validate({'percorsi': [{'livelli': ['Ricambi', 'Pastiglie freno'], 'confidence': value, 'motivazione': 'Ricambio freni'}], 'nuove_categorie': [], 'criticita': []})
+    assert proposal.percorsi[0].confidence == expected
+
+
+@pytest.mark.parametrize('value', [-1, 101, '101%', True, float('nan'), float('inf'), 'non valida'])
+def test_ollama_confidence_rejects_invalid_values(value):
+    with pytest.raises(ValueError):
+        app.PathProposal(livelli=['Ricambi'], confidence=value, motivazione='Ricambio')
+
+
+def test_main_categories_constrain_first_level_in_ollama_json_schema():
+    schema = app.proposal_schema('p', ['Ricambi', 'Veicoli'])
+    levels = schema['properties']['p']['properties']['percorsi']['items']['properties']['livelli']
+    assert levels['prefixItems'][0]['enum'] == ['Ricambi', 'Veicoli']
+    assert levels['items'] == {'type': 'string'}
+    free = app.proposal_schema('p')['properties']['p']['properties']['percorsi']['items']['properties']['livelli']
+    assert 'prefixItems' not in free

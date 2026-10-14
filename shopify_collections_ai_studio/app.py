@@ -22,7 +22,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, ValidationError, field_validator
 
-from core import match_collection_paths, build_dry_run, collection_path, empty_manual_collections, normalize_ai_output, path_key, path_label, plain, stable_hash
+from core import reuse_canonical_categories, match_collection_paths, build_dry_run, collection_path, empty_manual_collections, normalize_ai_output, path_key, path_label, plain, stable_hash
 
 
 BASE = Path(__file__).resolve().parent
@@ -33,6 +33,7 @@ DATA.mkdir(exist_ok=True)
 load_dotenv(BASE / ".env")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", handlers=[logging.FileHandler(LOG), logging.StreamHandler()])
 logger = logging.getLogger("shopify_collections_ai_studio")
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 LEGACY_DEFAULT_PROMPT = """Classifica il prodotto in uno o più percorsi chiari, specifici e utili alla navigazione. Non forzare il riuso delle categorie esistenti: usale solo se descrivono con precisione il prodotto, altrimenti proponi una nuova categoria coerente. Ogni percorso deve avere da 1 a 3 livelli complessivi. Mantieni nomi concisi, coerenti e in italiano."""
 SYSTEM_PROMPT = """Sei un responsabile senior della tassonomia di un grande e-commerce di ricambi, accessori e veicoli per minimoto, pit bike, minicross, quad e scooter. Devi assegnare categorie merceologiche STABILI, RIUTILIZZABILI e UTILI ALLA NAVIGAZIONE, non trasformare ogni parola del titolo in una sottocategoria. Rispondi esclusivamente con JSON valido conforme allo schema richiesto.
@@ -42,8 +43,9 @@ GERARCHIA DI DECISIONE OBBLIGATORIA:
 2. Identifica la famiglia merceologica principale e la funzione del prodotto.
 3. Distingui la famiglia merceologica dalla compatibilità: marca, modello, colore, cilindrata, anno, motorizzazione e parole come racing sono normalmente attributi, non categorie.
 4. Confronta il significato con le collection esistenti e con gli esempi di prodotti simili presenti nel catalogo.
-5. Riutilizza il percorso canonico esistente quando rappresenta davvero la stessa famiglia merceologica; proponi un nuovo percorso soltanto se nessuno è semanticamente adeguato e la nuova distinzione migliora concretamente la navigazione.
-6. Controlla che prodotti con la stessa funzione ricevano la stessa categoria, anche se cambiano veicolo compatibile, marca, modello o cilindrata.
+5. La prima scelta è SEMPRE il riuso esatto di un percorso Shopify o già approvato quando copre la famiglia e la funzione del prodotto. Copia esattamente i livelli, senza rinominare, aggiungere sinonimi o inserire attributi. Una nuova collection è una scelta eccezionale: ammessa solo se manca una famiglia o funzione realmente diversa.
+6. Prima di proporre una nuova categoria confrontala con TUTTI i percorsi esistenti, inclusi i parent generali: in motivazione indica quale categoria vicina hai valutato e quale differenza merceologica concreta impedisce il riuso. Una differenza di nome, marca, modello, colore o cilindrata non è sufficiente.
+7. Controlla che prodotti con la stessa funzione ricevano la stessa categoria, anche se cambiano veicolo compatibile, marca, modello o cilindrata.
 
 REGOLE ANTI-PROLIFERAZIONE:
 - La specificità del titolo NON è una ragione sufficiente per creare una sottocategoria.
@@ -54,7 +56,10 @@ REGOLE ANTI-PROLIFERAZIONE:
 - Per un veicolo completo, classifica il veicolo in base al tipo (ad esempio Veicoli > Quad oppure Veicoli > Minicross); non creare automaticamente "Quad 300cc" o "Minicross 49cc".
 - Per un ricambio o accessorio, classificalo secondo la sua natura/funzione sotto una famiglia coerente di ricambi/accessori. La compatibilità con un quad o una pit bike da sola non impone un ramo di categoria distinto.
 - Gli attributi tecnici (2 tempi, 4 tempi, cilindrata, doppio scarico, racing) possono giustificare una categoria solo se identificano una collezione realmente utile e coerente con la tassonomia esistente; non devono moltiplicare le categorie automaticamente.
-- Le collection esistenti sono una base informativa, NON un vincolo: non scegliere quella esistente più vicina per forza. Se tutte sono sbagliate o troppo specifiche, proponi un percorso nuovo più coerente.
+- Le collection esistenti costituiscono il vocabolario canonico. Riusa una famiglia generale corretta prima di crearne una più specifica. Se nessuna descrive il prodotto, puoi proporre una famiglia nuova: non assegnare categorie semanticamente sbagliate.
+- Le categorie già approvate ma non pubblicate sono parte della tassonomia da riusare. Le sole proposte non approvate dei prodotti simili sono indizi di coerenza, non decisioni definitive.
+- Obiettivo SEO: categorie stabili per famiglie di prodotti e intenzioni di navigazione distinte. Evita pagine quasi identiche o dedicate a ogni variante commerciale; preferisci categorie utili a raggruppare prodotti comparabili. Non inventare volumi di ricerca o promettere ranking; i conteggi del catalogo sono evidenza di assortimento, non dati sulle ricerche.
+- Categoria e sottocategoria devono aiutare a raggiungere i prodotti attraverso la navigazione. Una nuova categoria non si giustifica solo per inserire più keyword o perché una collection attuale ha pochi prodotti.
 - Non inventare marchi, compatibilità, caratteristiche o dati non presenti nella fonte. Se il caso è davvero incerto, descrivi una criticità invece di forzare la scelta.
 - Usa nomi concisi, canonici, in italiano e coerenti con i nomi già presenti. Mantieni al massimo 3 livelli inclusa la categoria principale.
 - `nuove_categorie` deve contenere soltanto percorsi davvero nuovi rispetto alle collection ricevute; non duplicare lì percorsi già esistenti.
@@ -62,7 +67,9 @@ REGOLE ANTI-PROLIFERAZIONE:
 ESEMPIO DI CONSISTENZA: "1 KIT ADESIVI QUAD RENEGADE 110", "1 Kit Adesivi Colarati CRF 50" e "Adesivi Arancione Nero Originali Per Pit Bike KAYO Ts90 Ts90r" hanno come concetto principale gli adesivi. Non inventare una diversa sottocategoria per ciascuno in base al veicolo/modello. Scegli percorsi canonici condivisi che siano coerenti con la tassonomia fornita: per esempio "Ricambi > Accessori > Adesivi" e, solo se è un ramo di navigazione reale e utile nel catalogo, anche "Veicoli > Accessori > Adesivi". Se entrambi i rami sono appropriati, restituiscili coerentemente per tutti i prodotti adesivi comparabili; altrimenti usa il solo percorso generale corretto. Se manca una categoria davvero equivalente, proponi un percorso nuovo e generale, non una variante iper-specifica.
 
 Non confondere completezza con quantità: pochi percorsi corretti sono preferibili a molti percorsi ridondanti. Usa esclusivamente i dati sorgente ricevuti, assegna a ogni percorso confidence tra 0 e 1 e una motivazione breve. Ogni campo `motivazione` deve essere una singola frase concisa di massimo 250 caratteri; non superare mai 300 caratteri. Rispetta esattamente lo schema JSON."""
-DEFAULT_PROMPT = """Classifica il prodotto per famiglia merceologica e funzione principale, non per ogni dettaglio del titolo. Prima identifica cosa viene venduto (veicolo completo, ricambio o accessorio), poi separa la categoria dalla compatibilità del prodotto. Analizza tutte le collection esistenti e gli esempi di prodotti simili per mantenere categorie canoniche coerenti sull'intero catalogo. Preferisci il percorso più generale che descrive correttamente il prodotto; usa meno di tre livelli quando bastano. Marca, modello, colore, cilindrata, motorizzazione e termini come racing sono normalmente attributi e non giustificano nuove categorie da soli. Prodotti della stessa famiglia funzionale devono ricevere lo stesso percorso anche se compatibili con veicoli differenti. Per accessori trasversali come gli adesivi, considera due percorsi paralleli (ad esempio Ricambi > Accessori > Adesivi e Veicoli > Accessori > Adesivi) solo se entrambi sono coerenti con la tassonomia e rappresentano punti di navigazione utili; se li usi, applicali coerentemente ai prodotti simili. Non creare sinonimi o percorsi ridondanti; aggiungi percorsi multipli solo quando hanno una reale utilità di navigazione. Le collection esistenti non sono un vincolo: se sono tutte inappropriate, proponi una nuova categoria canonica, non una variante iper-specifica. Evita collection con un solo prodotto quando la stessa famiglia può essere raccolta in una categoria esistente o generale. Nomi in italiano, chiari e stabili; massimo tre livelli complessivi. Se mancano prove sufficienti, segnala la criticità."""
+PREVIOUS_DEFAULT_PROMPT = """Classifica il prodotto per famiglia merceologica e funzione principale, non per ogni dettaglio del titolo. Prima identifica cosa viene venduto (veicolo completo, ricambio o accessorio), poi separa la categoria dalla compatibilità del prodotto. Analizza tutte le collection esistenti e gli esempi di prodotti simili per mantenere categorie canoniche coerenti sull'intero catalogo. Preferisci il percorso più generale che descrive correttamente il prodotto; usa meno di tre livelli quando bastano. Marca, modello, colore, cilindrata, motorizzazione e termini come racing sono normalmente attributi e non giustificano nuove categorie da soli. Prodotti della stessa famiglia funzionale devono ricevere lo stesso percorso anche se compatibili con veicoli differenti. Per accessori trasversali come gli adesivi, considera due percorsi paralleli (ad esempio Ricambi > Accessori > Adesivi e Veicoli > Accessori > Adesivi) solo se entrambi sono coerenti con la tassonomia e rappresentano punti di navigazione utili; se li usi, applicali coerentemente ai prodotti simili. Non creare sinonimi o percorsi ridondanti; aggiungi percorsi multipli solo quando hanno una reale utilità di navigazione. Le collection esistenti non sono un vincolo: se sono tutte inappropriate, proponi una nuova categoria canonica, non una variante iper-specifica. Evita collection con un solo prodotto quando la stessa famiglia può essere raccolta in una categoria esistente o generale. Nomi in italiano, chiari e stabili; massimo tre livelli complessivi. Se mancano prove sufficienti, segnala la criticità."""
+
+DEFAULT_PROMPT = """Classifica per famiglia merceologica e funzione principale. Prima confronta il prodotto con l'intero catalogo delle collection Shopify e con le categorie già approvate, anche non pubblicate. Se una famiglia esistente è corretta, riusa ESATTAMENTE nomi e gerarchia: non creare sinonimi, nuove etichette o sottocategorie per marca, modello, colore o cilindrata. Prodotti con la stessa funzione devono convergere in categorie stabili e utili alla navigazione. Preferisci un percorso principale e al massimo tre livelli; percorsi paralleli sono ammessi solo per rami realmente utili del negozio. Proponi una nuova famiglia solo se nessuna esistente copre il prodotto: nella motivazione indica la categoria vicina valutata e la differenza merceologica concreta. Non forzare categorie sbagliate. Per la SEO privilegia pagine di categoria utili con assortimenti coerenti e intenzioni distinte, evita la frammentazione per keyword o varianti, non inventare dati di ricerca. Distingui le approvazioni umane dalle proposte non approvate dei prodotti simili. Segnala le incertezze."""
 
 
 def now() -> str:
@@ -101,6 +108,25 @@ class PathProposal(BaseModel):
     confidence: float = Field(ge=0, le=1)
     motivazione: str = Field(min_length=1, max_length=300)
 
+    @field_validator("confidence", mode="before")
+    @classmethod
+    def normalize_confidence(cls, value: Any) -> float:
+        if isinstance(value, bool):
+            raise ValueError("Confidenza non valida")
+        percent = isinstance(value, str) and value.strip().endswith("%")
+        text = value.strip().removesuffix("%").strip().replace(",", ".") if isinstance(value, str) else value
+        try:
+            number = float(text)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("Confidenza numerica non valida") from exc
+        if percent:
+            if not 0 <= number <= 100:
+                raise ValueError("Percentuale di confidenza fuori intervallo")
+            return number / 100
+        if 1 < number <= 100:
+            return number / 100
+        return number
+
     @field_validator("motivazione", mode="before")
     @classmethod
     def limit_motivazione(cls, value: Any) -> str:
@@ -128,6 +154,25 @@ class Settings(BaseModel):
     num_predict: int = Field(1200, ge=128, le=16384)
     max_depth: int = Field(3, ge=1, le=3)
     ai_prompt: str = DEFAULT_PROMPT
+    main_categories: list[str] = Field(default_factory=list, max_length=100)
+
+    @field_validator("main_categories", mode="before")
+    @classmethod
+    def validate_main_categories(cls, value: Any) -> list[str]:
+        if not isinstance(value, list):
+            raise ValueError("Le categorie principali devono essere un elenco")
+        result = []
+        seen = set()
+        for item in value:
+            if not isinstance(item, str) or any(char in item for char in (">", "\n", "\r")):
+                raise ValueError("Inserisci solo nomi di categorie principali, senza percorsi o righe multiple")
+            name = " ".join(item.split())
+            if not name or len(name) > 100:
+                raise ValueError("Ogni categoria principale deve contenere da 1 a 100 caratteri")
+            if name.casefold() not in seen:
+                result.append(name)
+                seen.add(name.casefold())
+        return result
 
     @field_validator("ollama_url")
     @classmethod
@@ -173,17 +218,28 @@ def init_db() -> None:
         CREATE TABLE IF NOT EXISTS settings(id INTEGER PRIMARY KEY CHECK(id=1),value_json TEXT NOT NULL,updated_at TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS queue_state(id INTEGER PRIMARY KEY CHECK(id=1),paused INTEGER NOT NULL DEFAULT 0,updated_at TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS publish_previews(id TEXT PRIMARY KEY,product_ids_json TEXT NOT NULL,operations_json TEXT NOT NULL,source_hashes_json TEXT NOT NULL,created_at TEXT NOT NULL,used INTEGER NOT NULL DEFAULT 0);
+        CREATE TABLE IF NOT EXISTS operations(id TEXT PRIMARY KEY,action TEXT NOT NULL,payload_json TEXT NOT NULL,status TEXT NOT NULL,result_json TEXT,error TEXT,created_at TEXT NOT NULL,finished_at TEXT);
+        CREATE INDEX IF NOT EXISTS idx_jobs_queue ON jobs(status,next_attempt_at,created_at);
+        CREATE INDEX IF NOT EXISTS idx_generations_product ON generations(product_id,created_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_generations_approved ON generations(product_id,status,approved_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_snapshots_product ON product_snapshots(product_id,created_at DESC);
+        CREATE INDEX IF NOT EXISTS idx_membership_collection ON product_collections(collection_id);
+        CREATE INDEX IF NOT EXISTS idx_operations_queue ON operations(status,created_at);
         CREATE TABLE IF NOT EXISTS deletion_backups(id TEXT PRIMARY KEY,collection_id TEXT NOT NULL,backup_json TEXT NOT NULL,created_at TEXT NOT NULL);
         """)
         columns = {row[1] for row in db.execute("PRAGMA table_info(collections)")}
         if "source_id" not in columns:
             db.execute("ALTER TABLE collections ADD COLUMN source_id TEXT")
+        collection_columns = {row[1] for row in db.execute("PRAGMA table_info(collections)")}
+        for column in ("category_value", "parent_value", "parent_type"):
+            if column not in collection_columns:
+                db.execute(f"ALTER TABLE collections ADD COLUMN {column} TEXT")
         db.execute("INSERT OR IGNORE INTO settings VALUES(1,?,?)", (Settings().model_dump_json(), now()))
         stored_settings_row = db.execute("SELECT value_json FROM settings WHERE id=1").fetchone()
         stored_settings = loads(stored_settings_row[0], {}) if stored_settings_row else {}
         # Upgrade only the untouched built-in prompt. Never overwrite a merchant's custom prompt.
         settings_changed = False
-        if stored_settings.get("ai_prompt") == LEGACY_DEFAULT_PROMPT:
+        if stored_settings.get("ai_prompt") in {LEGACY_DEFAULT_PROMPT, PREVIOUS_DEFAULT_PROMPT}:
             stored_settings["ai_prompt"] = DEFAULT_PROMPT
             settings_changed = True
         # 180 seconds was the previous application default. Upgrade that legacy value
@@ -195,6 +251,7 @@ def init_db() -> None:
         if settings_changed:
             db.execute("UPDATE settings SET value_json=?,updated_at=? WHERE id=1", (dumps(stored_settings), now()))
         db.execute("INSERT OR IGNORE INTO queue_state VALUES(1,0,?)", (now(),))
+        db.execute("UPDATE operations SET status='queued' WHERE status='processing'")
         db.execute("UPDATE jobs SET status='queued',started_at=NULL WHERE status='processing'")
         db.execute("UPDATE products SET processing_status='queued' WHERE processing_status='processing'")
         db.execute("UPDATE products SET processing_status='completed' WHERE processing_status='reevaluate'")
@@ -226,7 +283,10 @@ def get_settings() -> Settings:
 
 def ensure_prompt_version() -> int:
     settings = get_settings()
-    digest = stable_hash({"system": SYSTEM_PROMPT, "prompt": settings.ai_prompt, "depth": settings.max_depth})
+    fingerprint = {"system": SYSTEM_PROMPT, "prompt": settings.ai_prompt, "depth": settings.max_depth}
+    if settings.main_categories:
+        fingerprint["main_categories"] = settings.main_categories
+    digest = stable_hash(fingerprint)
     with connect() as db:
         row = db.execute("SELECT version FROM prompt_versions WHERE settings_hash=?", (digest,)).fetchone()
         if row:
@@ -243,14 +303,32 @@ def shop_domain() -> str:
     return domain
 
 
+_token_cache: dict[str, Any] = {}
+_http_client: httpx.AsyncClient | None = None
+
+
+@asynccontextmanager
+async def shopify_client():
+    if _http_client is not None:
+        yield _http_client
+    else:
+        async with httpx.AsyncClient(timeout=90) as client:
+            yield client
+
+
 async def shop_token(client: httpx.AsyncClient) -> str:
     if os.getenv("SHOPIFY_ADMIN_ACCESS_TOKEN"):
         return os.environ["SHOPIFY_ADMIN_ACCESS_TOKEN"]
     if not os.getenv("SHOPIFY_CLIENT_ID") or not os.getenv("SHOPIFY_CLIENT_SECRET"):
         raise HTTPException(400, "Credenziali Shopify mancanti")
+    credential_key = stable_hash([shop_domain(), os.environ["SHOPIFY_CLIENT_ID"], os.environ["SHOPIFY_CLIENT_SECRET"]])
+    if _token_cache.get("key") == credential_key and _token_cache.get("expires_at", 0) > time.monotonic():
+        return _token_cache["token"]
     response = await client.post(f"https://{shop_domain()}/admin/oauth/access_token", data={"grant_type": "client_credentials", "client_id": os.environ["SHOPIFY_CLIENT_ID"], "client_secret": os.environ["SHOPIFY_CLIENT_SECRET"]})
     response.raise_for_status()
-    return response.json()["access_token"]
+    body = response.json()
+    _token_cache.update(key=credential_key, token=body["access_token"], expires_at=time.monotonic() + max(0, float(body.get("expires_in", 3600)) - 60))
+    return body["access_token"]
 
 
 SHOPIFY_MAX_RETRIES = 5
@@ -292,7 +370,7 @@ async def graphql(query: str, variables: dict[str, Any]) -> dict[str, Any]:
         for attempt in range(SHOPIFY_MAX_RETRIES + 1):
             response: httpx.Response | None = None
             try:
-                async with httpx.AsyncClient(timeout=90) as client:
+                async with shopify_client() as client:
                     token = await shop_token(client)
                     response = await client.post(
                         f"https://{shop_domain()}/admin/api/{os.getenv('SHOPIFY_API_VERSION', '2026-10')}/graphql.json",
@@ -312,6 +390,9 @@ async def graphql(query: str, variables: dict[str, Any]) -> dict[str, Any]:
                 await asyncio.sleep(delay)
                 continue
 
+            if response.status_code == 401 and attempt < SHOPIFY_MAX_RETRIES and not os.getenv("SHOPIFY_ADMIN_ACCESS_TOKEN"):
+                _token_cache.clear()
+                continue
             if response.status_code == 429:
                 last_error = RuntimeError("Shopify ha restituito HTTP 429 (throttling).")
                 if attempt >= SHOPIFY_MAX_RETRIES:
@@ -393,6 +474,12 @@ async def fetch_all_collections() -> list[dict[str, Any]]:
         if not block["pageInfo"]["hasNextPage"]:
             break
         after = block["pageInfo"]["endCursor"]
+    if len(items) >= 20 and os.getenv("SHOPIFY_BULK_SYNC", "auto").lower() not in {"0", "false", "off"}:
+        memberships = await bulk_collection_memberships({item["id"] for item in items})
+        for item in items:
+            item["product_ids"] = memberships[item["id"]]
+        resolve_collection_hierarchy(items)
+        return items
     for item in items:
         item["product_ids"] = []
         product_after = None
@@ -405,6 +492,56 @@ async def fetch_all_collections() -> list[dict[str, Any]]:
             product_after = connection["pageInfo"]["endCursor"]
     resolve_collection_hierarchy(items)
     return items
+
+
+BULK_MEMBERSHIPS_QUERY = """{collections{edges{node{id products{edges{node{id}}}}}}}"""
+BULK_START = """mutation BulkCollectionMemberships($query:String!){bulkOperationRunQuery(query:$query){bulkOperation{id}userErrors{field message}}}"""
+BULK_STATUS = """query BulkMembershipStatus($id:ID!){node(id:$id){... on BulkOperation{status url errorCode objectCount}}}"""
+
+
+async def bulk_collection_memberships(collection_ids: set[str]) -> dict[str, list[str]]:
+    operation = await mutation(BULK_START, {"query": BULK_MEMBERSHIPS_QUERY}, "bulkOperationRunQuery")
+    operation_id = operation["bulkOperation"]["id"]
+    deadline = time.monotonic() + 600
+    delay = 1.0
+    while time.monotonic() < deadline:
+        status = (await graphql(BULK_STATUS, {"id": operation_id})).get("node")
+        if not status:
+            raise RuntimeError("Operazione bulk Shopify non trovata")
+        if status["status"] == "COMPLETED":
+            if not status.get("url"):
+                raise RuntimeError("Esportazione bulk senza file: snapshot locale conservato")
+            return await read_bulk_memberships(status["url"], collection_ids, int(status["objectCount"]))
+        if status["status"] in {"FAILED", "CANCELED", "EXPIRED"}:
+            raise RuntimeError("Esportazione bulk fallita: " + str(status.get("errorCode") or status["status"]))
+        await asyncio.sleep(delay)
+        delay = min(delay * 1.5, 10)
+    raise RuntimeError("Esportazione bulk oltre il timeout; snapshot locale conservato")
+
+
+async def read_bulk_memberships(url: str, collection_ids: set[str], expected_count: int | None = None) -> dict[str, list[str]]:
+    memberships: dict[str, list[str]] = {}
+    roots = set()
+    count = 0
+    async with httpx.AsyncClient(timeout=120) as client:
+        async with client.stream("GET", url) as response:
+            response.raise_for_status()
+            async for line in response.aiter_lines():
+                if not line.strip():
+                    continue
+                item = json.loads(line)
+                count += 1
+                parent = item.get("__parentId")
+                if parent:
+                    memberships.setdefault(parent, []).append(item["id"])
+                else:
+                    roots.add(item["id"])
+                    memberships.setdefault(item["id"], [])
+    if expected_count is not None and count != expected_count:
+        raise RuntimeError("Esportazione bulk incompleta: snapshot precedente conservato")
+    if roots != collection_ids or set(memberships) != collection_ids:
+        raise RuntimeError("Catalogo collection cambiato durante il bulk: ripeti la sincronizzazione; snapshot precedente conservato")
+    return memberships
 
 
 def resolve_collection_hierarchy(items: list[dict[str, Any]]) -> None:
@@ -477,6 +614,10 @@ async def sync_shopify(origin: str = "sync") -> dict[str, int]:
 async def _sync_shopify(origin: str = "sync") -> dict[str, int]:
     products, collections = await asyncio.gather(fetch_all_products(), fetch_all_collections())
     resolve_collection_hierarchy(collections)
+    return await asyncio.to_thread(store_shopify_snapshot, products, collections, origin)
+
+
+def store_shopify_snapshot(products: list[dict[str, Any]], collections: list[dict[str, Any]], origin: str) -> dict[str, int]:
     synced_at = now()
     new_count = modified_count = 0
     remote_ids = {item["id"] for item in collections}
@@ -496,6 +637,8 @@ async def _sync_shopify(origin: str = "sync") -> dict[str, int]:
             elif old["shopify_hash"] != digest or old["removed"]:
                 modified_count += 1
             db.execute("""INSERT INTO collections(id,title,handle,path_json,kind,source_id,products_count,shopify_hash,removed,updated_at,last_synced_at) VALUES(?,?,?,?,?,?,?, ?,0,?,?) ON CONFLICT(id) DO UPDATE SET title=excluded.title,handle=excluded.handle,path_json=excluded.path_json,kind=excluded.kind,source_id=excluded.source_id,products_count=excluded.products_count,shopify_hash=excluded.shopify_hash,removed=0,updated_at=excluded.updated_at,last_synced_at=excluded.last_synced_at""", (item["id"], item["title"], item["handle"], dumps(path), kind, source_id, len(item["product_ids"]), digest, item.get("updatedAt"), synced_at))
+            parent_field = item.get("parentCollection") or {}
+            db.execute("UPDATE collections SET category_value=?,parent_value=?,parent_type=? WHERE id=?", ((item.get("categoryPath") or {}).get("value"), parent_field.get("value"), parent_field.get("type"), item["id"]))
         removed_count = db.execute(f"UPDATE collections SET removed=1,last_synced_at=? WHERE removed=0 AND id NOT IN ({','.join('?' for _ in remote_ids) or "''"})", (synced_at, *remote_ids)).rowcount
         for product in products:
             content = {"title": product["title"], "descriptionHtml": product.get("descriptionHtml") or "", "vendor": product.get("vendor") or "", "productType": product.get("productType") or "", "variants": product["variants"]["nodes"]}
@@ -519,8 +662,10 @@ async def _sync_shopify(origin: str = "sync") -> dict[str, int]:
     return {"products_total": len(products), "collections_new": new_count, "collections_modified": modified_count, "collections_removed": removed_count}
 
 
-def proposal_schema(product_id: str) -> dict[str, Any]:
+def proposal_schema(product_id: str, main_categories: list[str] | None = None) -> dict[str, Any]:
     path_schema = {"type": "object", "properties": {"livelli": {"type": "array", "items": {"type": "string"}}, "confidence": {"type": "number", "minimum": 0, "maximum": 1}, "motivazione": {"type": "string"}}, "required": ["livelli", "confidence", "motivazione"], "additionalProperties": False}
+    if main_categories:
+        path_schema["properties"]["livelli"].update(prefixItems=[{"type": "string", "enum": main_categories}], minItems=1, maxItems=3)
     body = {
         "type": "object",
         "properties": {
@@ -617,6 +762,9 @@ def _catalog_context(db: sqlite3.Connection, product_id: str, title: str, prompt
         collection_id = row["id"]
         entry: dict[str, Any] = {
             "percorso": path,
+            "collection_id": collection_id,
+            "origine": "shopify",
+            "assegnabile_manualmente": row["kind"] == "manual" and bool(row["source_id"]),
             "tipo": row["kind"],
             "prodotti_count": int(row["products_count"] or 0),
         }
@@ -628,6 +776,23 @@ def _catalog_context(db: sqlite3.Connection, product_id: str, title: str, prompt
         collections.append(entry)
         if overlap:
             collection_scores.append((overlap, int(row["products_count"] or 0), collection_id))
+    # Include the last human-approved taxonomy across prompt versions, even before
+    # Shopify publication. Rejected/superseded/unapproved paths do not become canonical.
+    approvals = db.execute("SELECT product_id,approved_paths_json,status FROM generations WHERE status IN ('approved','published') ORDER BY approved_at DESC,created_at DESC").fetchall()
+    approved_by_product = {}
+    approved_paths = {}
+    for approval in approvals:
+        if approval["product_id"] in approved_by_product:
+            continue
+        paths = loads(approval["approved_paths_json"], [])
+        approved_by_product[approval["product_id"]] = paths
+        for path in paths:
+            key = path_key(path)
+            if key:
+                record = approved_paths.setdefault(key, {"percorso": path, "origine": "approvazione", "tipo": "manual", "prodotti_count": 0, "prodotti_approvati_count": 0})
+                record["prodotti_approvati_count"] += 1
+    existing_keys = {path_key(entry["percorso"]) for entry in collections}
+    collections.extend(record for key, record in approved_paths.items() if key not in existing_keys)
     collections.sort(key=lambda item: path_key(item["percorso"]))
 
     # Supply examples for the strongest matching candidates, without expanding every
@@ -660,7 +825,8 @@ def _catalog_context(db: sqlite3.Connection, product_id: str, title: str, prompt
     related: list[dict[str, Any]] = []
     for _, item in sorted(similar_ranked, key=lambda pair: (-pair[0], str(pair[1]["title"]).casefold()))[:8]:
         related_paths = product_paths(db, item["id"])
-        paths = [path["path"] for path in related_paths]
+        paths = approved_by_product.get(item["id"]) or [path["path"] for path in related_paths]
+        origin = "approvazione" if approved_by_product.get(item["id"]) else "shopify"
         # Newly generated/approved products may not yet have been published to Shopify.
         # Reuse their latest non-rejected proposal as a consistency hint for later jobs.
         if not paths:
@@ -679,6 +845,7 @@ def _catalog_context(db: sqlite3.Connection, product_id: str, title: str, prompt
                     (item["id"], prompt_version),
                 ).fetchone()
             if generation:
+                origin = "proposta_non_approvata" if generation["status"] == "generated" else "approvazione"
                 approved = loads(generation["approved_paths_json"], None)
                 if approved:
                     paths = approved
@@ -690,6 +857,7 @@ def _catalog_context(db: sqlite3.Connection, product_id: str, title: str, prompt
             "vendor": item["vendor"],
             "product_type": item["product_type"],
             "percorsi_attuali_o_ultima_proposta": paths,
+            "origine_percorsi": origin,
         })
     return collections, related
 
@@ -707,22 +875,30 @@ async def call_ollama(row: sqlite3.Row, settings: Settings, attempt: int = 1) ->
         "product_type": row["product_type"],
         "varianti": loads(row["variants_json"], []),
         "percorsi_attuali": [item["path"] for item in current],
+        "categorie_principali_consentite": settings.main_categories,
+        "regola_precedenza": "Le categorie principali consentite prevalgono sui percorsi Shopify precedenti: Ricambi freni, ad esempio, può essere una sottocategoria di Ricambi ma non una nuova radice se non compare nell'elenco." if settings.main_categories else "Nessun vincolo sulle categorie principali; mantieni la tassonomia e le regole attuali.",
         "catalogo_collection_esistenti": categories,
         "prodotti_simili_catalogo": similar_products,
         "regole_tassonomia": {
             "preferire_famiglia_merceologica": True,
             "marca_modello_cilindrata_sono_attributi_non_categorie_automatiche": True,
             "creare_collection_solo_se_semanticamente_necessario": True,
+            "riutilizzare_esattamente_nomi_e_gerarchia_esistenti": True,
+            "categorie_approvate_non_pubblicate_sono_canoniche": True,
+            "nuove_categorie_richiedono_confronto_con_famiglie_esistenti": True,
+            "non_creare_varianti_per_keyword_marca_modello_colore": True,
             "numero_percorsi_preferito": 1,
             "percorsi_paralleli_ammessi_se_gia_coerenti_col_catalogo": True,
         },
         "massimo_livelli": depth_limit,
     }
-    prompt = f"{settings.ai_prompt}\n\nAnalizza l'intero elenco delle collection e gli eventuali prodotti simili qui sotto. Non limitarti a trovare una corrispondenza lessicale: confronta la funzione del prodotto, la gerarchia, i conteggi e gli esempi. Non scegliere una collection esistente solo per evitare di crearne una; non crearne una nuova solo perché il titolo è diverso. Mantieni un solo percorso principale salvo reale necessità.\nDati sorgente e tassonomia, unica fonte ammessa:\n{dumps({row['id']: source})}"
+    prompt = f"{settings.ai_prompt}\n\nAnalizza l'intero elenco delle collection e gli eventuali prodotti simili qui sotto. Non limitarti a trovare una corrispondenza lessicale: confronta la funzione del prodotto, la gerarchia, i conteggi e gli esempi. La priorità è riusare esattamente una collection o un percorso approvato adeguato alla funzione del prodotto. Non rinominare categorie equivalenti. Proponi una nuova famiglia soltanto se manca nel catalogo e motiva la differenza rispetto alla categoria esistente più vicina; non forzare però categorie semanticamente sbagliate. Mantieni un solo percorso principale salvo reale necessità.\nDati sorgente e tassonomia, unica fonte ammessa:\n{dumps({row['id']: source})}"
+    if settings.main_categories:
+        prompt += "\n\nVINCOLO OBBLIGATORIO DEL NEGOZIO: il primo livello di OGNI percorso deve essere uno dei nomi in categorie_principali_consentite, copiato esattamente. Puoi proporre sottocategorie pertinenti soltanto sotto queste categorie principali; non inventare altre radici, nemmeno riusando una collection Shopify fuori dall'elenco. Se il prodotto non può essere classificato correttamente sotto le radici consentite, restituisci percorsi vuoti e spiega la criticità; non forzare una categoria errata."
     payload = {
         "model": settings.model,
         "stream": False,
-        "format": proposal_schema(row["id"]),
+        "format": proposal_schema(row["id"], settings.main_categories),
         "messages": [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": prompt}],
         "options": {"temperature": settings.temperature, "num_predict": settings.num_predict},
     }
@@ -755,7 +931,24 @@ async def call_ollama(row: sqlite3.Row, settings: Settings, attempt: int = 1) ->
         validated = AIProposal.model_validate(parsed[row["id"]]).model_dump()
     except (KeyError, json.JSONDecodeError, ValidationError) as exc:
         raise RuntimeError(f"Risposta Ollama non valida: {exc}") from exc
-    return normalize_ai_output(validated, depth_limit)
+    result = reuse_canonical_categories(validated, categories, depth_limit)
+    return enforce_main_categories(result, settings.main_categories)
+
+
+def enforce_main_categories(output: dict[str, Any], categories: list[str]) -> dict[str, Any]:
+    if not categories:
+        return output
+    allowed = {path_key([name]): name for name in categories}
+    invalid = [item["livelli"][0] for item in output["percorsi"] if path_key([item["livelli"][0]]) not in allowed]
+    if invalid:
+        raise RuntimeError("L'AI ha proposto categorie principali non consentite: " + ", ".join(dict.fromkeys(invalid)) + ". La proposta non è stata salvata e verrà ritentata.")
+    for item in output["percorsi"]:
+        item["livelli"][0] = allowed[path_key([item["livelli"][0]])]
+    for path in output["nuove_categorie"]:
+        if path_key([path[0]]) not in allowed:
+            raise RuntimeError("Nuova categoria principale non consentita: " + path[0])
+        path[0] = allowed[path_key([path[0]])]
+    return output
 
 
 async def process_job(job: sqlite3.Row) -> float:
@@ -771,6 +964,8 @@ async def process_job(job: sqlite3.Row) -> float:
     proposal = await call_ollama(row, settings, attempt=int(job["attempts"]) + 1)
     generation_id = str(uuid.uuid4())
     version = ensure_prompt_version()
+    if get_settings().main_categories != settings.main_categories:
+        raise RuntimeError("Categorie principali cambiate durante la generazione: proposta scartata, il job verrà ritentato.")
     with connect() as db:
         current_snapshot = db.execute("SELECT snapshot_hash FROM product_snapshots WHERE product_id=? ORDER BY created_at DESC LIMIT 1", (row["id"],)).fetchone()
         if not current_snapshot or current_snapshot["snapshot_hash"] != snapshot["snapshot_hash"]:
@@ -783,6 +978,7 @@ async def process_job(job: sqlite3.Row) -> float:
 
 
 worker_task: asyncio.Task | None = None
+operation_worker_task: asyncio.Task | None = None
 
 
 async def worker() -> None:
@@ -849,11 +1045,19 @@ def generation_payload(row: sqlite3.Row | None) -> dict[str, Any] | None:
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    global worker_task
+    global worker_task, operation_worker_task, _http_client
     init_db()
+    _http_client = httpx.AsyncClient(timeout=90)
     worker_task = asyncio.create_task(worker())
-    yield
-    worker_task.cancel()
+    operation_worker_task = asyncio.create_task(operation_worker())
+    try:
+        yield
+    finally:
+        worker_task.cancel()
+        operation_worker_task.cancel()
+        await asyncio.gather(worker_task, operation_worker_task, return_exceptions=True)
+        await _http_client.aclose()
+        _http_client = None
 
 
 app = FastAPI(title="Shopify Collections AI Studio", lifespan=lifespan)
@@ -864,6 +1068,113 @@ app.mount("/static", StaticFiles(directory=BASE / "static"), name="static")
 async def home():
     return FileResponse(BASE / "static/index.html")
 
+
+
+OPERATION_ACTIONS = {"sync", "generate", "preview", "publish", "cleanup_preview", "cleanup", "main_categories_import"}
+
+
+@app.post("/api/operations", status_code=202)
+async def submit_operation(payload: dict[str, Any]):
+    action = payload.get("action")
+    if action not in OPERATION_ACTIONS:
+        raise HTTPException(400, "Operazione non valida")
+    data = payload.get("payload") or {}
+    if not isinstance(data, dict):
+        raise HTTPException(400, "Payload non valido")
+    encoded = dumps(data)
+    with connect() as db:
+        existing = db.execute("SELECT id FROM operations WHERE action=? AND payload_json=? AND status IN ('queued','processing')", (action, encoded)).fetchone()
+        operation_id = existing["id"] if existing else str(uuid.uuid4())
+        if not existing:
+            db.execute("INSERT INTO operations(id,action,payload_json,status,created_at) VALUES(?,?,?,'queued',?)", (operation_id, action, encoded, now()))
+    return {"operation_id": operation_id, "status": "queued"}
+
+
+@app.get("/api/operations/{operation_id}")
+async def operation_status(operation_id: str):
+    with connect() as db:
+        row = db.execute("SELECT * FROM operations WHERE id=?", (operation_id,)).fetchone()
+    if not row:
+        raise HTTPException(404, "Operazione non trovata")
+    return {"id": row["id"], "action": row["action"], "status": row["status"], "result": loads(row["result_json"]), "error": row["error"]}
+
+
+async def run_operation(row: sqlite3.Row) -> None:
+    handlers = {"sync": lambda _: sync_endpoint(), "generate": enqueue, "preview": publish_preview, "publish": publish_execute, "cleanup_preview": lambda _: cleanup_preview(), "cleanup": cleanup_execute, "main_categories_import": lambda _: import_main_categories()}
+    try:
+        if row["action"] == "generate":
+            await sync_shopify("sync")
+            with connect() as db:
+                current = db.execute("SELECT status FROM operations WHERE id=?", (row["id"],)).fetchone()
+            if current["status"] == "cancelled":
+                return
+            result = await _enqueue_products(loads(row["payload_json"], {}), operation_id=row["id"])
+        else:
+            result = await handlers[row["action"]](loads(row["payload_json"], {}))
+        with connect() as db:
+            db.execute("UPDATE operations SET status='completed',result_json=?,finished_at=? WHERE id=? AND status<>'cancelled'", (dumps(result), now(), row["id"]))
+    except asyncio.CancelledError:
+        raise
+    except Exception as exc:
+        error = str(exc.detail) if isinstance(exc, HTTPException) else str(exc)
+        logger.exception("Operazione Shopify %s fallita", row["id"])
+        with connect() as db:
+            db.execute("UPDATE operations SET status='error',error=?,finished_at=? WHERE id=?", (error, now(), row["id"]))
+
+
+async def operation_worker() -> None:
+    while True:
+        try:
+            with connect() as db:
+                row = db.execute("SELECT * FROM operations WHERE status='queued' ORDER BY created_at LIMIT 1").fetchone()
+                if row:
+                    db.execute("UPDATE operations SET status='processing' WHERE id=?", (row["id"],))
+            if row:
+                await run_operation(row)
+            else:
+                await asyncio.sleep(0.25)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            logger.exception("Worker Shopify interrotto")
+            await asyncio.sleep(1)
+
+
+MAIN_CATEGORIES_QUERY = """query MainCollectionCandidates($after:String){collections(first:100,after:$after){nodes{id title parentCollection:metafield(namespace:"custom",key:"parent_collection"){type value}}pageInfo{hasNextPage endCursor}}}"""
+
+
+@app.post("/api/settings/main-categories/import")
+async def import_main_categories():
+    categories = []
+    after = None
+    seen_cursors = set()
+    seen_names = set()
+    while True:
+        block = (await graphql(MAIN_CATEGORIES_QUERY, {"after": after}))["collections"]
+        for item in block["nodes"]:
+            field = item.get("parentCollection")
+            if field and field.get("value") not in {None, "", "null"}:
+                if field.get("type") == "list.collection_reference":
+                    try:
+                        parents = json.loads(field["value"])
+                    except (TypeError, json.JSONDecodeError) as exc:
+                        raise RuntimeError("Campo padre non valido per " + item["title"]) from exc
+                    if not isinstance(parents, list):
+                        raise RuntimeError("Campo padre non valido per " + item["title"])
+                    if parents:
+                        continue
+                else:
+                    continue
+            name = " ".join(item["title"].split())
+            if name and name.casefold() not in seen_names:
+                categories.append(name)
+                seen_names.add(name.casefold())
+        if not block["pageInfo"]["hasNextPage"]:
+            return {"main_categories": sorted(categories, key=str.casefold)}
+        after = block["pageInfo"]["endCursor"]
+        if not after or after in seen_cursors:
+            raise RuntimeError("Paginazione collection Shopify non valida")
+        seen_cursors.add(after)
 
 @app.post("/api/sync")
 async def sync_endpoint():
@@ -926,10 +1237,14 @@ async def facets(category: str = ""):
 
 @app.post("/api/jobs")
 async def enqueue(payload: dict[str, Any]):
+    await sync_shopify("sync")
+    return await _enqueue_products(payload)
+
+
+async def _enqueue_products(payload: dict[str, Any], operation_id: str | None = None):
     product_ids = list(dict.fromkeys(payload.get("product_ids", [])))[:500]
     if not product_ids:
         raise HTTPException(400, "Seleziona almeno un prodotto")
-    await sync_shopify("sync")
     settings = get_settings()
     try:
         await validate_ollama(settings)
@@ -937,6 +1252,10 @@ async def enqueue(payload: dict[str, Any]):
         raise HTTPException(409, str(exc)) from exc
     queued = 0
     with connect() as db:
+        if operation_id:
+            operation = db.execute("SELECT status FROM operations WHERE id=?", (operation_id,)).fetchone()
+            if operation and operation["status"] == "cancelled":
+                return {"queued": 0, "cancelled": True}
         for product_id in product_ids:
             if not db.execute("SELECT 1 FROM product_snapshots WHERE product_id=?", (product_id,)).fetchone():
                 continue
@@ -954,7 +1273,9 @@ async def queue_status():
         counts = {row["status"]: row["n"] for row in db.execute("SELECT status,COUNT(*) n FROM jobs GROUP BY status")}
         paused = bool(db.execute("SELECT paused FROM queue_state WHERE id=1").fetchone()[0])
         current = db.execute("SELECT j.*,p.title FROM jobs j JOIN products p ON p.id=j.product_id WHERE j.status='processing' LIMIT 1").fetchone()
-    return {"paused": paused, "queued": counts.get("queued", 0), "processing": counts.get("processing", 0), "completed": counts.get("completed", 0), "error": counts.get("error", 0), "current": dict(current) if current else None}
+        shopify_counts = {row["status"]: row["n"] for row in db.execute("SELECT status,COUNT(*) n FROM operations GROUP BY status")}
+        shopify_current = db.execute("SELECT id,action,status FROM operations WHERE status='processing' LIMIT 1").fetchone()
+    return {"shopify_queued": shopify_counts.get("queued", 0), "shopify_processing": shopify_counts.get("processing", 0), "shopify_current": dict(shopify_current) if shopify_current else None, "paused": paused, "queued": counts.get("queued", 0), "processing": counts.get("processing", 0), "completed": counts.get("completed", 0), "error": counts.get("error", 0), "current": dict(current) if current else None}
 
 
 @app.post("/api/queue/{action}")
@@ -963,6 +1284,7 @@ async def queue_action(action: Literal["pause", "resume", "cancel"]):
         if action in ("pause", "resume"):
             db.execute("UPDATE queue_state SET paused=?,updated_at=? WHERE id=1", (action == "pause", now()))
         else:
+            db.execute("UPDATE operations SET status='cancelled',finished_at=? WHERE action='generate' AND status IN ('queued','processing')", (now(),))
             ids = [row[0] for row in db.execute("SELECT product_id FROM jobs WHERE status='queued'")]
             db.execute("UPDATE jobs SET status='cancelled',finished_at=? WHERE status='queued'", (now(),))
             db.executemany("UPDATE products SET processing_status='to_analyze' WHERE id=?", [(item,) for item in ids])
@@ -1305,23 +1627,32 @@ async def _publish_execute(payload: dict[str, Any]):
             update = {"id": target["collection_id"], "sourcesToUpdate": [{"condition": {"id": target["source_id"], "inclusion": {"selectionsToAdd": [{"productId": product_id} for product_id in batch]}}}]}
             result = await mutation(UPDATE_SELECTIONS, {"collection": update}, "collectionUpdate")
             await wait_for_job(result.get("job"))
-    # Persist canonical paths for reused legacy collections as well as new ones.
+    # Deduplicate metadata across products and skip values already confirmed by sync.
+    known = {item["id"]: item for item in collections}
+    for key, target in created.items():
+        known[target["collection_id"]] = {"category_value": next(path_label(item["path"]) for item in operations["create_collections"] if path_key(item["path"]) == key)}
+    metafields: dict[tuple[str, str], dict[str, Any]] = {}
     for product in products:
         for desired in product["desired"]:
             for depth in range(1, len(desired) + 1):
                 levels = desired[:depth]
-                target = targets.get(path_key(levels))
-                if target:
-                    await mutation(METAFIELDS_SET, {"metafields": [{"ownerId": target["collection_id"], "namespace": "custom", "key": "category_path", "type": "single_line_text_field", "value": path_label(levels)}]}, "metafieldsSet")
-    # Link every parent/child, including reused collections; never write labels as IDs.
-    for product in products:
-        for desired in product["desired"]:
-            for depth in range(2, len(desired) + 1):
-                child, parent = targets.get(path_key(desired[:depth])), targets.get(path_key(desired[:depth - 1]))
-                if not child or not parent:
-                    raise RuntimeError("Gerarchia non aggiornabile: " + path_label(desired[:depth]))
-                value = parent["collection_id"] if parent_type == "collection_reference" else dumps([parent["collection_id"]])
-                await mutation(METAFIELDS_SET, {"metafields": [{"ownerId": child["collection_id"], "namespace": "custom", "key": "parent_collection", "type": parent_type, "value": value}]}, "metafieldsSet")
+                child = targets.get(path_key(levels))
+                if not child:
+                    raise RuntimeError("Gerarchia non aggiornabile: " + path_label(levels))
+                collection_id = child["collection_id"]
+                current = known.get(collection_id, {})
+                if current.get("category_value") != path_label(levels):
+                    metafields[(collection_id, "category_path")] = {"ownerId": collection_id, "namespace": "custom", "key": "category_path", "type": "single_line_text_field", "value": path_label(levels)}
+                if depth > 1:
+                    parent = targets.get(path_key(levels[:-1]))
+                    if not parent:
+                        raise RuntimeError("Gerarchia non aggiornabile: " + path_label(levels))
+                    value = parent["collection_id"] if parent_type == "collection_reference" else dumps([parent["collection_id"]])
+                    equivalent = current.get("parent_value") == value if parent_type == "collection_reference" else loads(current.get("parent_value")) == loads(value)
+                    if current.get("parent_type") != parent_type or not equivalent:
+                        metafields[(collection_id, "parent_collection")] = {"ownerId": collection_id, "namespace": "custom", "key": "parent_collection", "type": parent_type, "value": value}
+    for batch in chunks(list(metafields.values()), size=25):
+        await mutation(METAFIELDS_SET, {"metafields": batch}, "metafieldsSet")
     # Reconcile channels for new collections and creations recovered on subsequent runs.
     channel_collection_ids = managed_collection_ids - {target["collection_id"] for target in created.values()}
     for collection_id in sorted(channel_collection_ids):

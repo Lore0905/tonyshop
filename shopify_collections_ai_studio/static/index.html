@@ -102,10 +102,20 @@
         <label class="field"><span>Retry</span><input class="control" name="max_retries" type="number" min="0"></label>
         <label class="field"><span>Temperatura</span><input class="control" name="temperature" type="number" min="0" max="2" step="0.1"></label>
         <label class="field"><span>Token risposta</span><input class="control" name="num_predict" type="number" min="128"></label>
+        <section class="sm:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 p-4" aria-labelledby="mainCategoriesTitle">
+          <div class="mb-3 flex flex-wrap items-start justify-between gap-3">
+            <div><h3 id="mainCategoriesTitle" class="font-bold text-slate-900">Categorie principali</h3><p class="mt-1 text-sm text-slate-500">L’AI userà queste categorie come primo livello. Lascia vuoto per mantenere la scelta libera.</p></div>
+            <button id="importMainCategories" type="button" class="btn-secondary">Importa da Shopify</button>
+          </div>
+          <label for="mainCategoryInput" class="mb-1 block text-sm font-semibold text-slate-700">Nuova categoria principale</label>
+          <div class="flex gap-2"><input id="mainCategoryInput" class="control min-w-0 flex-1" type="text" maxlength="100" placeholder="Es. Ricambi o Veicoli"><button id="addMainCategory" type="button" class="btn-primary">Aggiungi</button></div>
+          <p id="mainCategoriesFeedback" class="mt-2 text-sm text-slate-500" role="status" aria-live="polite">Le modifiche verranno applicate con Salva impostazioni.</p>
+          <div id="mainCategoriesCards" class="mt-3 grid gap-3 sm:grid-cols-2"></div>
+        </section>
         <label class="field sm:col-span-2"><span>Prompt personalizzato</span><textarea class="control min-h-32" name="ai_prompt"></textarea></label>
         <div class="sm:col-span-2 flex items-center gap-3"><button id="testOllama" type="button" class="btn-secondary">Testa Ollama</button><span id="ollamaState" class="text-sm text-slate-500"></span></div>
       </div>
-      <div class="dialog-actions"><button type="button" class="btn-secondary close-action">Annulla</button><button class="btn-primary">Salva impostazioni</button></div>
+      <div class="dialog-actions"><button type="button" class="btn-secondary close-action">Annulla</button><button type="submit" class="btn-primary">Salva impostazioni</button></div>
     </form>
   </dialog>
   <script src="/static/app.js" defer></script>

@@ -133,3 +133,16 @@ mutation PublishCollectionChannels($id: ID!, $input: [PublicationInput!]!) {
     userErrors { field message }
   }
 }
+
+mutation BulkCollectionMemberships($query: String!) {
+  bulkOperationRunQuery(query: $query) {
+    bulkOperation { id }
+    userErrors { field message }
+  }
+}
+
+query BulkMembershipStatus($id: ID!) {
+  node(id: $id) {
+    ... on BulkOperation { status url errorCode objectCount }
+  }
+}
