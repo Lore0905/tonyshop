@@ -1031,3 +1031,33 @@ async def test_manual_removal_checks_all_pages_before_detaching_source(monkeypat
     monkeypatch.setattr(app, 'mutation', mutate)
     await app.remove_manual_source_products('c','s',['p'])
     assert updates == [{'id': 'c', 'sourcesToUpdate': [{'condition': {'id': 's', 'inclusion': {'selectionsToRemove': [{'productId': 'p'}]}}}]}]
+
+
+def test_general_prompt_preview_matches_runtime_context_without_mutating_sources():
+    source = {'titolo': 'Valvole YX170', 'catalogo_collection_esistenti': [{'percorso': ['Ricambi', 'Ricambi motori']}]}
+    custom = 'Indicazioni negozio {{testo_letterale}}'
+    rendered = app.build_generation_prompt(custom, 'p', source, False)
+    assert rendered.startswith(custom + '\n\n' + app.CATALOG_INSTRUCTIONS)
+    assert json.loads(rendered.split('unica fonte ammessa:\n', 1)[1]) == {'p': source}
+    assert app.MAIN_CATEGORY_INSTRUCTIONS not in rendered
+    constrained = app.build_generation_prompt(custom, 'p', source, True)
+    assert constrained == rendered + '\n\n' + app.MAIN_CATEGORY_INSTRUCTIONS
+    preview = app.general_prompt_preview()
+    assert preview.startswith(app.SYSTEM_PROMPT)
+    assert app.CATALOG_INSTRUCTIONS in preview
+    assert '{{collection_create}}' in preview
+    assert '{{prompt_personalizzato}}' in preview
+    assert '{{titolo_prodotto}}' in preview
+
+
+@pytest.mark.asyncio
+async def test_settings_expose_readonly_general_prompt_preserving_custom_prompt(monkeypatch, tmp_path):
+    monkeypatch.setattr(app, 'DB', tmp_path / 'general_prompt.sqlite')
+    app.init_db()
+    settings = app.Settings(ai_prompt='Le mie istruzioni da conservare')
+    await app.update_settings(settings)
+    result = await app.read_settings()
+    assert result['ai_prompt'] == settings.ai_prompt
+    assert result['system_prompt'] == app.SYSTEM_PROMPT
+    assert result['general_prompt_template'] == app.general_prompt_preview()
+    assert app.get_settings().ai_prompt == settings.ai_prompt

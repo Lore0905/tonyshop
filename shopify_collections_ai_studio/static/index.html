@@ -94,6 +94,11 @@
     <form id="settingsForm" class="dialog-card max-w-2xl">
       <div class="dialog-head"><div><p class="eyebrow">Configurazione</p><h2 class="text-xl font-bold">Ollama e categorizzazione</h2></div><button type="button" class="close-btn" aria-label="Chiudi">×</button></div>
       <div class="grid max-h-[72vh] gap-4 overflow-y-auto p-5 sm:grid-cols-2">
+        <section class="sm:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <h3 class="font-bold text-slate-900">Prompt generale · sola lettura</h3>
+            <p id="generalPromptHelp" class="mt-3 text-sm text-slate-500">Regole comuni inviate all’AI. I marker vengono sostituiti durante la generazione: {{collection_create}} contiene le collection esistenti e le categorie approvate, {{prodotti_simili}} gli esempi e {{prompt_personalizzato}} le tue indicazioni aggiuntive. Il vincolo sulle radici viene aggiunto solo quando imposti categorie principali.</p>
+            <label class="field mt-3"><span>Prompt e contesto di generazione</span><textarea id="generalPrompt" class="control min-h-64" rows="18" readonly aria-describedby="generalPromptHelp" spellcheck="false"></textarea></label>
+        </section>
         <label class="field sm:col-span-2"><span>Endpoint Ollama</span><input class="control" name="ollama_url" required></label>
         <label class="field"><span>Modello</span><input class="control" name="model" list="ollamaModels" required><datalist id="ollamaModels"></datalist></label>
         <label class="field"><span>Livelli massimi</span><input class="control" name="max_depth" type="number" min="1" max="3" readonly><small class="font-normal text-slate-500">Massimo 3, categoria principale inclusa.</small></label>
@@ -118,6 +123,6 @@
       <div class="dialog-actions"><button type="button" class="btn-secondary close-action">Annulla</button><button type="submit" class="btn-primary">Salva impostazioni</button></div>
     </form>
   </dialog>
-  <script src="/static/app.js" defer></script>
+  <script src="/static/app.js?v=20261015-prompt2" defer></script>
 </body>
 </html>

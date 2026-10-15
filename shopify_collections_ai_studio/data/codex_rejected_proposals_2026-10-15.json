@@ -1,0 +1,374 @@
+[
+  {
+    "product_id": "gid://shopify/Product/9865482010952",
+    "title": "01 Pz CAMERA D'ARIA 80/100/21 ANTERIORE PER CROSS KAYO K2",
+    "generation_id": "6c5ab974-5b84-4503-8848-287907dd82fe",
+    "previous_rejected_generation_id": "e18aac4b-7a24-4839-8ca5-ea583934e4bc",
+    "status": "generated",
+    "output": {
+      "percorsi": [
+        {
+          "livelli": [
+            "Ricambi",
+            "Ricambi gomme",
+            "Camere d'aria"
+          ],
+          "confidence": 0.99,
+          "motivazione": "È una camera d'aria per una ruota: riuso la famiglia specifica esistente, senza suddividerla per misura o modello."
+        }
+      ],
+      "nuove_categorie": [],
+      "criticita": [
+        "Il percorso precedente è riconfermato perché identifica correttamente il prodotto; non è disponibile una motivazione specifica del rifiuto."
+      ]
+    }
+  },
+  {
+    "product_id": "gid://shopify/Product/9865447833928",
+    "title": "01 pz GOMMA COPRI BULLONE DEL MOZZO RUOTE QUAD",
+    "generation_id": "8b3c04c2-e243-46c9-9f57-8f3b36fc9862",
+    "previous_rejected_generation_id": "b0b87375-b879-4369-a308-36feaa35fbf0",
+    "status": "generated",
+    "output": {
+      "percorsi": [
+        {
+          "livelli": [
+            "Ricambi",
+            "Ruote e mozzi"
+          ],
+          "confidence": 0.97,
+          "motivazione": "È un copribullone del mozzo ruota, non un pneumatico né un ricambio motore. La famiglia Ruote e mozzi raggruppa i componenti del mozzo indipendentemente dal quad compatibile."
+        }
+      ],
+      "nuove_categorie": [
+        [
+          "Ricambi",
+          "Ruote e mozzi"
+        ]
+      ],
+      "criticita": []
+    }
+  },
+  {
+    "product_id": "gid://shopify/Product/9865501540680",
+    "title": "01 pz RONDELLA PER GOMMA COPRI BULLONE DEL MOZZO RUOTE QUAD A150 AU150 AU180",
+    "generation_id": "b9df90c9-9a67-4911-9688-3335d8f55add",
+    "previous_rejected_generation_id": "c87b7518-9583-4932-9922-a222c7a8de2b",
+    "status": "generated",
+    "output": {
+      "percorsi": [
+        {
+          "livelli": [
+            "Ricambi",
+            "Ruote e mozzi"
+          ],
+          "confidence": 0.97,
+          "motivazione": "È una rondella del copribullone del mozzo: stessa famiglia del copribullone, senza creare categorie per modello o misura."
+        }
+      ],
+      "nuove_categorie": [
+        [
+          "Ricambi",
+          "Ruote e mozzi"
+        ]
+      ],
+      "criticita": []
+    }
+  },
+  {
+    "product_id": "gid://shopify/Product/9865468838216",
+    "title": "1 Kit Adesivi Colarati CRF 50",
+    "generation_id": "cf393e8f-0dad-4845-869a-8f40e072e363",
+    "previous_rejected_generation_id": "2334c99f-f3fe-4d4c-97e3-83064dc7c29c",
+    "status": "generated",
+    "output": {
+      "percorsi": [
+        {
+          "livelli": [
+            "Ricambi",
+            "Accessori veicoli",
+            "Adesivi"
+          ],
+          "confidence": 0.99,
+          "motivazione": "Il prodotto venduto è un kit adesivi: riuso la collection Adesivi già esistente nel ramo Accessori veicoli. CRF 50 indica compatibilità, non una famiglia separata."
+        }
+      ],
+      "nuove_categorie": [],
+      "criticita": []
+    }
+  },
+  {
+    "product_id": "gid://shopify/Product/9865516319048",
+    "title": "1cp Plastica Fanali Anteriori Miniquad Renegade 49cc",
+    "generation_id": "0d52446b-f578-4cb0-b3a9-baa533b1ffda",
+    "previous_rejected_generation_id": "82628e4f-9ac8-4bb6-91a5-afe9ee4bae14",
+    "status": "generated",
+    "output": {
+      "percorsi": [
+        {
+          "livelli": [
+            "Ricambi",
+            "Accessori veicoli"
+          ],
+          "confidence": 0.75,
+          "motivazione": "Il titolo identifica plastiche dei fanali di un miniquad, non un veicolo completo o un motore. Uso il ramo generale esistente Accessori veicoli senza inventare una sottocategoria."
+        }
+      ],
+      "nuove_categorie": [],
+      "criticita": [
+        "Titolo e descrizione non distinguono chiaramente una cornice estetica da una lente o un corpo del fanale: verificare la foto prima di scegliere un ramo più specifico."
+      ]
+    }
+  },
+  {
+    "product_id": "gid://shopify/Product/9865466184008",
+    "title": "Acceleratore Decespugliatore A Zaino Con Filo Lungo Per Canna Da 26mm",
+    "generation_id": "568e9925-c65e-4000-bf45-7b9d515df316",
+    "previous_rejected_generation_id": "d103840e-6212-48f2-99f2-a22091f4a253",
+    "status": "generated",
+    "output": {
+      "percorsi": [
+        {
+          "livelli": [
+            "Giardinaggio",
+            "Ricambi"
+          ],
+          "confidence": 0.99,
+          "motivazione": "È un acceleratore di ricambio per decespugliatore: il settore è esplicitamente Giardinaggio. Non è un ricambio motore per veicoli."
+        }
+      ],
+      "nuove_categorie": [
+        [
+          "Giardinaggio",
+          "Ricambi"
+        ]
+      ],
+      "criticita": []
+    }
+  },
+  {
+    "product_id": "gid://shopify/Product/9865430368584",
+    "title": "Avviamento a Strappo per Decespugliatore 4 Tempi - Accensione Manuale",
+    "generation_id": "9d53dfc8-4df4-4ce4-be3f-6e087e410064",
+    "previous_rejected_generation_id": "949caa74-6a64-4cb9-a9a4-f82ed16707fb",
+    "status": "generated",
+    "output": {
+      "percorsi": [
+        {
+          "livelli": [
+            "Giardinaggio",
+            "Ricambi"
+          ],
+          "confidence": 0.99,
+          "motivazione": "È un gruppo di avviamento a strappo per decespugliatore: ricambio per attrezzatura da giardinaggio, senza sottocategorie per motorizzazione."
+        }
+      ],
+      "nuove_categorie": [
+        [
+          "Giardinaggio",
+          "Ricambi"
+        ]
+      ],
+      "criticita": []
+    }
+  },
+  {
+    "product_id": "gid://shopify/Product/9865456976200",
+    "title": "Avviamento Easy Start Decespugliatore Facilitato",
+    "generation_id": "ab2f17ec-253b-4b71-b631-f31de9b0e24a",
+    "previous_rejected_generation_id": "d88086f8-d7be-404d-baec-e018d4f7b11f",
+    "status": "generated",
+    "output": {
+      "percorsi": [
+        {
+          "livelli": [
+            "Giardinaggio",
+            "Ricambi"
+          ],
+          "confidence": 0.99,
+          "motivazione": "È un avviamento di ricambio per decespugliatore. Riutilizzo lo stesso percorso degli altri ricambi da giardinaggio; Easy Start e l'adattatore richiesto sono caratteristiche del prodotto."
+        }
+      ],
+      "nuove_categorie": [
+        [
+          "Giardinaggio",
+          "Ricambi"
+        ]
+      ],
+      "criticita": []
+    }
+  },
+  {
+    "product_id": "gid://shopify/Product/9865452945736",
+    "title": "Barra Catena Motosega 45cc 52cc 20\" Lunghezza 50cm",
+    "generation_id": "37d7ea92-6a7c-41ed-a21b-b1c6006e0589",
+    "previous_rejected_generation_id": "21f4560c-7e91-4a13-9c56-dbb66f42cc5f",
+    "status": "generated",
+    "output": {
+      "percorsi": [
+        {
+          "livelli": [
+            "Giardinaggio",
+            "Ricambi"
+          ],
+          "confidence": 0.99,
+          "motivazione": "La barra è un componente di ricambio della motosega. Uso Giardinaggio > Ricambi, mantenendo lunghezza e cilindrate compatibili come attributi."
+        }
+      ],
+      "nuove_categorie": [
+        [
+          "Giardinaggio",
+          "Ricambi"
+        ]
+      ],
+      "criticita": []
+    }
+  },
+  {
+    "product_id": "gid://shopify/Product/9729806958920",
+    "title": "KAYO ATV Quad Au300 300cc – Campione Fiera",
+    "generation_id": "44a15de3-15ab-4007-aac4-1529f020e648",
+    "previous_rejected_generation_id": "ee906b2b-ce4a-4139-b580-92bad83fb237",
+    "status": "generated",
+    "output": {
+      "percorsi": [
+        {
+          "livelli": [
+            "Veicoli",
+            "Veicoli quad"
+          ],
+          "confidence": 0.99,
+          "motivazione": "È un quad completo KAYO AU300: riuso la famiglia Veicoli quad sotto la radice consentita Veicoli. Cilindrata e condizione di campione fiera non giustificano sottocategorie."
+        }
+      ],
+      "nuove_categorie": [
+        [
+          "Veicoli",
+          "Veicoli quad"
+        ]
+      ],
+      "criticita": [
+        "La collection Veicoli quad esiste come radice separata: il percorso ne propone il riuso sotto Veicoli, senza una categoria aggiuntiva per AU300 o 300cc."
+      ]
+    }
+  },
+  {
+    "product_id": "gid://shopify/Product/9865565176136",
+    "title": "Kit Leva Freno Posteriore Sinistra Au180",
+    "generation_id": "2a03862a-34f5-4dc0-a0a7-4d816ca7505d",
+    "previous_rejected_generation_id": "be6f82d4-3df1-481d-ae0c-8f91190b5d72",
+    "status": "generated",
+    "output": {
+      "percorsi": [
+        {
+          "livelli": [
+            "Ricambi",
+            "Freni"
+          ],
+          "confidence": 0.99,
+          "motivazione": "È una leva dell'impianto frenante: riuso il percorso generale Ricambi > Freni, senza creare una collection per posizione, lato o modello compatibile."
+        }
+      ],
+      "nuove_categorie": [],
+      "criticita": []
+    }
+  },
+  {
+    "product_id": "gid://shopify/Product/9729808171336",
+    "title": "MINICROSS DRAGON 2 tempi 49cc racing doppio scarico",
+    "generation_id": "4729c0e7-2429-4789-bc47-073e018b9ebe",
+    "previous_rejected_generation_id": "08b73c9f-de8d-4034-add1-961fee33934d",
+    "status": "generated",
+    "output": {
+      "percorsi": [
+        {
+          "livelli": [
+            "Veicoli",
+            "Minicross"
+          ],
+          "confidence": 1.0,
+          "motivazione": "La scheda descrive un minicross completo, con motore, ruote e misure della sella. Riuso Veicoli > Minicross; doppio scarico e 49cc sono caratteristiche, non il prodotto venduto."
+        }
+      ],
+      "nuove_categorie": [],
+      "criticita": []
+    }
+  },
+  {
+    "product_id": "gid://shopify/Product/9865565143368",
+    "title": "Perno Interno Spessore Trapezio Anteriore Quad KAYO Au180",
+    "generation_id": "1a4276fd-4872-4174-bdce-cbe330af89d3",
+    "previous_rejected_generation_id": "93a5325e-63f9-4081-b8a9-8a8bd98d5171",
+    "status": "generated",
+    "output": {
+      "percorsi": [
+        {
+          "livelli": [
+            "Ricambi",
+            "Sospensioni"
+          ],
+          "confidence": 0.97,
+          "motivazione": "Il perno del trapezio anteriore è un componente delle sospensioni del quad. Propongo una famiglia generale, evitando rami per cilindrata o motorizzazione non dichiarata."
+        }
+      ],
+      "nuove_categorie": [
+        [
+          "Ricambi",
+          "Sospensioni"
+        ]
+      ],
+      "criticita": [
+        "Il tipo prodotto riporta pit bike e cross, ma titolo e descrizione indicano quad KAYO AU180. Non deduco compatibilità aggiuntive né classifico il perno come motore."
+      ]
+    }
+  },
+  {
+    "product_id": "gid://shopify/Product/9865401827656",
+    "title": "Pneumatico Posteriore Quad 125cc 18x9.5-8 | Gomma ATV e Miniquad",
+    "generation_id": "1d70f04e-2f37-46fe-99ea-9dd6d084e1b1",
+    "previous_rejected_generation_id": "562169d0-233e-43de-af0a-daa554cbd914",
+    "status": "generated",
+    "output": {
+      "percorsi": [
+        {
+          "livelli": [
+            "Ricambi",
+            "Ricambi gomme"
+          ],
+          "confidence": 0.99,
+          "motivazione": "È uno pneumatico posteriore per quad: riuso la famiglia Ricambi gomme, senza introdurre categorie per misura, cilindrata o modello."
+        }
+      ],
+      "nuove_categorie": [
+        [
+          "Ricambi",
+          "Ricambi gomme"
+        ]
+      ],
+      "criticita": [
+        "La collection Ricambi gomme esiste come radice separata: il percorso ne propone il riuso sotto la categoria principale consentita Ricambi."
+      ]
+    }
+  },
+  {
+    "product_id": "gid://shopify/Product/9865564782920",
+    "title": "Selettore Marce Cambio Per Blocco Motore Cp250 250cc K2pro T4 K4",
+    "generation_id": "aecb430a-9a79-459f-afae-8e503d7bb50d",
+    "previous_rejected_generation_id": "e66b5b45-eb60-455c-ae5b-9dbd5c6b0e7f",
+    "status": "generated",
+    "output": {
+      "percorsi": [
+        {
+          "livelli": [
+            "Ricambi",
+            "Ricambi motori"
+          ],
+          "confidence": 0.99,
+          "motivazione": "È un selettore del cambio del blocco motore CP250. Riuso Ricambi > Ricambi motori senza inventare un motore diverso o una sottocategoria specifica per modello."
+        }
+      ],
+      "nuove_categorie": [],
+      "criticita": []
+    }
+  }
+]
