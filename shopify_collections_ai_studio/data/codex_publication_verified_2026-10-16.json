@@ -1,0 +1,45 @@
+{
+  "verified_published_products": 3717,
+  "pending": 0,
+  "missing_or_invalid": [],
+  "extra_manual_memberships": [],
+  "excluded_without_paths": 54,
+  "active_collections": 373,
+  "main_roots": [
+    {
+      "id": "gid://shopify/Collection/668315418952",
+      "path": [
+        "Veicoli"
+      ],
+      "parent": null
+    },
+    {
+      "id": "gid://shopify/Collection/668317712712",
+      "path": [
+        "Ricambi"
+      ],
+      "parent": null
+    },
+    {
+      "id": "gid://shopify/Collection/668317745480",
+      "path": [
+        "Giardinaggio"
+      ],
+      "parent": null
+    },
+    {
+      "id": "gid://shopify/Collection/668327936328",
+      "path": [
+        "Arredamento"
+      ],
+      "parent": null
+    },
+    {
+      "id": "gid://shopify/Collection/668334489928",
+      "path": [
+        "illuminazione"
+      ],
+      "parent": null
+    }
+  ]
+}

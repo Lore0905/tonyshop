@@ -214,9 +214,12 @@ def empty_manual_collections(collections: list[dict[str, Any]]) -> list[dict[str
     return [item for item in collections if item.get("kind") == "manual" and not item.get("removed") and int(item.get("products_count", 0)) == 0]
 
 
-def match_collection_paths(products: list[dict[str, Any]], collections: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def match_collection_paths(products: list[dict[str, Any]], collections: list[dict[str, Any]], main_categories: Iterable[str] = ()) -> list[dict[str, Any]]:
     """Reuse an unambiguous legacy collection lacking hierarchy before creating one."""
     result = [dict(item) for item in collections]
+    reserved_roots = {path_key(path[:1]) for product in products for path in product.get('desired', []) if path}
+    reserved_roots.update(path_key([name]) for name in main_categories)
+    reserved_roots.update(path_key(item['path'][:1]) for item in result if len(item.get('path', [])) > 1)
     paths = {path_key(item['path']) for item in result if not item.get('removed')}
     for product in products:
         for desired in product.get('desired', []):
@@ -225,7 +228,7 @@ def match_collection_paths(products: list[dict[str, Any]], collections: list[dic
                 key = path_key(levels)
                 if key in paths:
                     continue
-                candidates = [item for item in result if not item.get('removed') and len(item.get('path', [])) == 1 and path_key([item['title']]) == path_key([levels[-1]])]
+                candidates = [item for item in result if not item.get('removed') and len(item.get('path', [])) == 1 and path_key([item['title']]) == path_key([levels[-1]]) and not (len(levels) > 1 and path_key(item['path']) in reserved_roots)]
                 if len(candidates) > 1:
                     raise ValueError('Collection omonime senza gerarchia: ' + path_label(levels))
                 if candidates:
@@ -249,6 +252,11 @@ def _category_name_key(name: str) -> str:
     return _SPACE.sub(' ', re.sub(r"[’'/_-]+", ' ', name.casefold())).strip()
 
 
+def compatibility_branch(level: str) -> bool:
+    """Legacy vehicle-specific spare branches are compatibility, not function."""
+    return bool(re.search(r"\b(?:quad|atv|pit\s*bike|pitbike|cross|minicross|minimoto|miniquad|scooter|monopattin[oi])\b", _category_name_key(level)))
+
+
 def reuse_canonical_categories(output: dict[str, Any], categories: list[dict[str, Any]], max_depth: int) -> dict[str, Any]:
     """Repair spelling/explicit synonyms; never guess equivalence from fuzzy similarity."""
     known = [entry for entry in categories if entry.get('percorso')]
@@ -267,6 +275,20 @@ def reuse_canonical_categories(output: dict[str, Any], categories: list[dict[str
     result = normalize_ai_output(output, max_depth)
     for item in result['percorsi']:
         original = item['livelli']
+        # Reuse an existing functional path for the identical component. Never
+        # infer a family from fuzzy wording or move a part across sector roots.
+        if len(original) == 3 and _category_name_key(original[0]) == 'ricambi' and compatibility_branch(original[1]):
+            candidates = {
+                tuple(entry['percorso']) for entry in known
+                if len(entry['percorso']) == 3
+                and _category_name_key(entry['percorso'][0]) == 'ricambi'
+                and not compatibility_branch(entry['percorso'][1])
+                and alias_key([entry['percorso'][-1]]) == alias_key([original[-1]])
+            }
+            if len(candidates) == 1:
+                item['livelli'] = list(candidates.pop())
+                item['motivazione'] = ''
+                original = item['livelli']
         chosen = exact.get(exact_key(original)) or aliases.get(alias_key(original))
         if chosen and chosen != original:
             item['livelli'] = chosen

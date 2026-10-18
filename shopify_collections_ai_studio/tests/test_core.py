@@ -1061,3 +1061,159 @@ async def test_settings_expose_readonly_general_prompt_preserving_custom_prompt(
     assert result['system_prompt'] == app.SYSTEM_PROMPT
     assert result['general_prompt_template'] == app.general_prompt_preview()
     assert app.get_settings().ai_prompt == settings.ai_prompt
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('first_paths', [[], ['Ricambi motori', 'Valvole'], ['Ricambi', 'Ricambi pit bike e cross', 'Valvole']])
+async def test_ollama_repairs_empty_or_invalid_root_using_exact_target(monkeypatch, tmp_path, first_paths):
+    monkeypatch.setattr(app, 'DB', tmp_path / 'repair.sqlite')
+    app.init_db()
+    with app.connect() as db:
+        db.execute("INSERT INTO products(id,title,description_html,content_hash,last_synced_at) VALUES('p','Valvole motore YX170','Valvole aspirazione e scarico','x',?)", (app.now(),))
+        row = db.execute("SELECT * FROM products WHERE id='p'").fetchone()
+    captured = []
+    class Response:
+        status_code = 200
+        def raise_for_status(self): pass
+        def json(self):
+            path = first_paths if len(captured) == 1 else ['Ricambi', 'Ricambi motori', 'Valvole']
+            return {'message': {'content': json.dumps({'p': {'percorsi': [{'livelli': path, 'confidence': .95, 'motivazione': ''}] if path else [], 'nuove_categorie': [], 'criticita': []}})}}
+    class Client:
+        def __init__(self, **kwargs): pass
+        async def __aenter__(self): return self
+        async def __aexit__(self, *args): pass
+        async def post(self, url, json):
+            captured.append(__import__('copy').deepcopy(json))
+            return Response()
+    async def available(_): return ['m']
+    monkeypatch.setattr(app, 'validate_ollama', available)
+    monkeypatch.setattr(app.httpx, 'AsyncClient', Client)
+    result = await app.call_ollama(row, app.Settings(model='m', main_categories=['Ricambi']))
+    assert result['percorsi'][0]['livelli'] == ['Ricambi', 'Ricambi motori', 'Valvole']
+    assert len(captured) == 2
+    assert 'Valvole motore YX170' in captured[1]['messages'][-1]['content']
+    assert captured[1]['options']['temperature'] == 0
+    assert captured[0]['options']['num_ctx'] >= 8192
+
+
+@pytest.mark.parametrize('vehicle_branch', ['Ricambi pit bike e cross', 'Ricambi quad 4t', 'Ricambi minicross', 'Ricambi scooter'])
+def test_reuse_functional_family_for_same_component_across_vehicle_types(vehicle_branch):
+    from core import reuse_canonical_categories
+    wrong = ['Ricambi', vehicle_branch, "Camere d'aria"]
+    right = ['Ricambi', 'Ricambi gomme', "Camere d'aria"]
+    output = {'percorsi': [{'livelli': wrong, 'confidence': .9, 'motivazione': 'Compatibile con pit bike'}], 'nuove_categorie': [wrong], 'criticita': []}
+    categories = [{'percorso': wrong}, {'percorso': right}]
+    result = reuse_canonical_categories(output, categories, 3)
+    assert result['percorsi'][0]['livelli'] == right
+    assert result['nuove_categorie'] == []
+    assert result['percorsi'][0]['motivazione'] == ''
+
+
+def test_functional_family_reuse_does_not_guess_ambiguous_or_cross_sector_matches():
+    from core import reuse_canonical_categories
+    path = ['Ricambi', 'Ricambi pit bike e cross', 'Filtri']
+    output = {'percorsi': [{'livelli': path, 'confidence': .9}], 'nuove_categorie': [], 'criticita': []}
+    categories = [{'percorso': ['Ricambi', family, 'Filtri']} for family in ['Ricambi motori', 'Ricambi carburazione']]
+    categories.append({'percorso': ['Giardinaggio', 'Ricambi', 'Filtri']})
+    assert reuse_canonical_categories(output, categories, 3)['percorsi'][0]['livelli'] == path
+
+
+@pytest.mark.asyncio
+async def test_large_publish_reads_bulk_memberships_and_preserves_smart_rules(monkeypatch):
+    ids = ['p'+str(i) for i in range(50)]
+    rules = [{'__typename': 'CollectionSourceInclusionConditionProductTag', 'id': 'rule'}]
+    source = {'__typename': 'CollectionConditionsSource', 'id': 's', 'targetType': 'PRODUCTS', 'shareable': False, 'inclusion': {'conditions': rules}}
+    collections = [{'id': 'c', 'title': 'Valvole', 'resolved_path': ['Ricambi', 'Ricambi motori', 'Valvole'], 'sources': [source], 'product_ids': ids}]
+    calls = []
+    async def products(): calls.append('products'); return [{'id': pid} for pid in ids]
+    async def fetched(): calls.append('collections'); return collections
+    async def individual(_): raise AssertionError('Nessuna lettura per prodotto nei batch grandi')
+    monkeypatch.setattr(app, 'fetch_all_products', products)
+    monkeypatch.setattr(app, 'fetch_all_collections', fetched)
+    monkeypatch.setattr(app, 'fresh_product_state', individual)
+    states = await app.fresh_publish_states(ids)
+    assert sorted(calls) == ['collections', 'products']
+    assert set(states) == set(ids)
+    assert states['p0'][0]['kind'] == 'smart'
+    assert states['p0'][0]['path'] == ['Ricambi', 'Ricambi motori', 'Valvole']
+    assert source['inclusion']['conditions'] == rules
+
+
+@pytest.mark.asyncio
+async def test_large_publish_bulk_read_rejects_deleted_product(monkeypatch):
+    ids = ['p'+str(i) for i in range(50)]
+    async def products(): return [{'id': pid} for pid in ids[:-1]]
+    async def collections(): return []
+    monkeypatch.setattr(app, 'fetch_all_products', products)
+    monkeypatch.setattr(app, 'fetch_all_collections', collections)
+    with pytest.raises(app.HTTPException, match='p49'):
+        await app.fresh_publish_states(ids)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('recover_legacy', [False, True])
+async def test_publish_verifies_and_finalizes_every_product_when_new_leaf_has_subset(monkeypatch, tmp_path, recover_legacy):
+    monkeypatch.setattr(app, 'DB', tmp_path / 'subset.sqlite')
+    app.init_db()
+    desired = {'p1': [['Ricambi']], 'p2': [['Ricambi', 'Valvole']]}
+    remote = {'p1': [], 'p2': []}
+    if recover_legacy:
+        for paths in remote.values():paths.append({'id':'cRicambi','title':'Ricambi','path':['Vecchio'],'kind':'manual','source_id':'sRicambi'})
+    with app.connect() as db:
+        for pid, paths in desired.items():
+            db.execute('INSERT INTO products(id,title,content_hash,last_synced_at) VALUES(?,?,?,?)', (pid,pid,'x',app.now()))
+            db.execute("INSERT INTO generations(id,product_id,prompt_version,model,output_json,approved_paths_json,status,source_hash,created_at) VALUES(?,?,1,'m','{}',?,'approved','x',?)", ('g'+pid,pid,json.dumps(paths),app.now()))
+        operations = {'approval_signatures': {pid: stable_hash({'id':'g'+pid,'paths':paths}) for pid,paths in desired.items()}}
+        db.execute('INSERT INTO publish_previews VALUES(?,?,?,?,?,0)',('v',json.dumps(list(desired)),json.dumps(operations),'{}',app.now()))
+    async def sync(_): return {}
+    async def fresh(pid): return remote[pid], 'x'
+    async def parent(): return 'list.collection_reference'
+    async def channels(): return ['channel']
+    async def publish_channels(*args): pass
+    async def graphql(query,variables):
+        recovered = {'id':'cRicambi','sources':[{'__typename':'CollectionConditionsSource','id':'sRicambi'}]} if recover_legacy and variables.get('handle') == 'category-'+stable_hash('ricambi')[:24] else None
+        return {'collectionByHandle': recovered}
+    async def mutate(query,variables,field):
+        if field == 'metafieldsSet':
+            for field_item in variables['metafields']:
+                if field_item['ownerId']=='cRicambi' and field_item['key']=='category_path':
+                    for paths in remote.values():
+                        for item in paths:
+                            if item['id']=='cRicambi':item['path']=['Ricambi']
+        if field == 'collectionCreate':
+            c=variables['collection']; title=c['title']; cid='c'+title; sid='s'+title
+            path=['Ricambi'] if title=='Ricambi' else ['Ricambi',title]
+            for selection in c['sources'][0]['source']['inclusion']['selections']:
+                remote[selection['productId']].append({'id':cid,'title':title,'path':path,'kind':'manual','source_id':sid})
+            return {'collection': {'id':cid,'sources':[{'__typename':'CollectionConditionsSource','id':sid}]}}
+        return {}
+    async def remove(*args): raise AssertionError('Una collection richiesta non deve essere rimossa')
+    monkeypatch.setattr(app,'remove_manual_source_products',remove)
+    monkeypatch.setattr(app,'sync_shopify',sync)
+    monkeypatch.setattr(app,'fresh_product_state',fresh)
+    monkeypatch.setattr(app,'parent_collection_type',parent)
+    monkeypatch.setattr(app,'collection_channel_ids',channels)
+    monkeypatch.setattr(app,'ensure_collection_channels',publish_channels)
+    monkeypatch.setattr(app,'graphql',graphql)
+    monkeypatch.setattr(app,'mutation',mutate)
+    result=await app.publish_execute({'preview_id':'v','confirm':True})
+    assert result['published_products']==2
+    with app.connect() as db:
+        assert db.execute("SELECT count(*) FROM generations WHERE status='published'").fetchone()[0]==2
+
+
+def test_root_collection_cannot_be_reused_as_another_sectors_child():
+    from core import match_collection_paths
+    products = [{'desired': [['Giardinaggio','Ricambi','Carburatori']]}, {'desired': [['Ricambi','Ricambi motori','Valvole']]}]
+    collections = [{'id':'root','title':'Ricambi','path':['Ricambi']}]
+    matched = match_collection_paths(products,collections)
+    assert matched[0]['path'] == ['Ricambi']
+    result = build_dry_run([{'id':'p','desired':products[0]['desired'],'current':[]}],matched)
+    assert ['Giardinaggio','Ricambi'] in [item['path'] for item in result['create_collections']]
+
+
+def test_configured_root_is_reserved_when_only_other_sector_is_selected():
+    from core import match_collection_paths
+    products = [{'desired': [['Giardinaggio','Ricambi','Valvole']]}]
+    collections = [{'id':'r','title':'Ricambi','path':['Ricambi']}]
+    assert match_collection_paths(products, collections, ['Ricambi','Giardinaggio'])[0]['path']==['Ricambi']

@@ -22,7 +22,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, ValidationError, field_validator
 
-from core import collection_priority, reuse_canonical_categories, match_collection_paths, build_dry_run, collection_path, empty_manual_collections, normalize_ai_output, path_key, path_label, plain, stable_hash
+from core import compatibility_branch, collection_priority, reuse_canonical_categories, match_collection_paths, build_dry_run, collection_path, empty_manual_collections, normalize_ai_output, path_key, path_label, plain, stable_hash
 
 
 BASE = Path(__file__).resolve().parent
@@ -43,6 +43,14 @@ OBIETTIVO E PRIORITÀ:
 - Identifica prima il prodotto: articolo completo, ricambio o accessorio. Non confondere il ricambio con il macchinario o veicolo compatibile.
 - Primo livello: settore principale. Secondo livello: famiglia merceologica o ruolo, per esempio Ricambi o Accessori. Terzo livello: tipo concreto di prodotto o componente, espresso normalmente con UNA O DUE PAROLE in italiano, preferibilmente al plurale.
 - Quando settore, famiglia e componente sono riconoscibili, usa tre livelli se massimo_livelli lo consente. Non fermarti a un contenitore generico come Giardinaggio > Ricambi quando il titolo identifica Carburatori, Valvole o Avviamenti. Usa meno livelli solo se la struttura è già specifica o i dati non permettono una distinzione attendibile. Non aggiungere un livello vuoto o ridondante soltanto per arrivare a tre.
+
+SECONDO LIVELLO FUNZIONALE, NON COMPATIBILITÀ:
+- Sotto Ricambi, il secondo livello deve indicare una famiglia funzionale trasversale: Ricambi gomme, Ricambi motori, Freni, Sospensioni, Ricambi elettrico, Accessori veicoli. Riusa il nome canonico equivalente disponibile: gli esempi non impongono nuovi sinonimi.
+- NON usare al secondo livello Ricambi pit bike e cross, Ricambi quad 4t, Ricambi minicross, Ricambi scooter o altri rami basati sul mezzo compatibile, anche se già presenti o approvati. La compatibilità rimane un attributo del prodotto, non decide la famiglia funzionale.
+- Una collection esistente sotto il mezzo compatibile non ha priorità sul percorso funzionale. Per lo stesso componente cerca prima la famiglia funzionale e riusa la collection corretta; se manca, proponi il percorso funzionale pertinente. Non modificare le collection storiche.
+- Esempio: "CAMERA D'ARIA 60/100-14 ANTERIORE PIT BIKE CROSS MINICROSS 2.5x14" → Ricambi > Ricambi gomme > Camere d'aria. NO: Ricambi > Ricambi pit bike e cross > Camere d'aria. La stessa famiglia vale per camere d'aria di quad e scooter.
+- Esempio: "Pastiglie freno per quad" → Ricambi > Freni > Pastiglie; non Ricambi > Ricambi quad 4t > Pastiglie. "Valvole per pit bike" → Ricambi > Ricambi motori > Valvole.
+- Questa regola riguarda i ricambi sotto Ricambi. Per mezzi completi Veicoli > Quad resta valido; per altri settori mantieni settore > Ricambi > componente.
 
 COME LEGGERE LE FONTI:
 1. Leggi per primo il TITOLO: individua il sostantivo che identifica ciò che è in vendita. Estrai mentalmente una o due parole chiave merceologiche, non parole promozionali. Esempio: in "1cp Valvole Blocco Motore YX170 TT170R 170cc" il componente è Valvole, non Blocco motore e non Motori 4T.
@@ -81,7 +89,7 @@ CONTROLLO FINALE:
 - Le categorie devono raggruppare prodotti comparabili, non accumulare keyword. Non inventare dati di ricerca né promettere posizionamenti SEO.
 - Confidence tra 0 e 1. Motivazione: una sola frase concisa, massimo 250 caratteri e mai oltre 300; quando proponi una famiglia nuova spiega brevemente perché il contenitore esistente è troppo generico. Rispetta esattamente lo schema JSON."""
 
-CATALOG_INSTRUCTIONS = """Analizza tutte le collection e i prodotti simili. Riusa i percorsi equivalenti sufficientemente specifici; una famiglia generica non sostituisce il componente chiaramente identificato nel titolo. Se manca la famiglia funzionale, proponi un terzo livello breve, normalmente di una o due parole. Non creare sinonimi o categorie per attributi. Applica le regole del prompt generale anche se le indicazioni personalizzate suggeriscono maggiore genericità. Mantieni un percorso principale salvo reale necessità.
+CATALOG_INSTRUCTIONS = """Analizza tutte le collection e i prodotti simili. Riusa i percorsi equivalenti sufficientemente specifici; una famiglia generica non sostituisce il componente chiaramente identificato nel titolo. Se manca la famiglia funzionale, proponi un terzo livello breve, normalmente di una o due parole. Il secondo livello sotto Ricambi indica la famiglia funzionale, mai il mezzo compatibile: una camera d’aria per pit bike va in Ricambi > Ricambi gomme > Camere d’aria, anche se esiste un ramo Ricambi pit bike e cross. Non creare sinonimi o categorie per attributi. Applica le regole del prompt generale anche se le indicazioni personalizzate suggeriscono maggiore genericità. Mantieni un percorso principale salvo reale necessità.
 Dati sorgente e tassonomia, unica fonte ammessa:"""
 
 MAIN_CATEGORY_INSTRUCTIONS = """VINCOLO OBBLIGATORIO DEL NEGOZIO: il primo livello di OGNI percorso deve essere uno dei nomi in categorie_principali_consentite, copiato esattamente. Puoi proporre sottocategorie pertinenti soltanto sotto queste categorie principali; non inventare altre radici, nemmeno riusando una collection Shopify fuori dall'elenco. Se il prodotto non può essere classificato correttamente sotto le radici consentite, restituisci percorsi vuoti e spiega la criticità; non forzare una categoria errata."""
@@ -766,7 +774,7 @@ _CORE_TYPE_TOKENS = {
     "pneumatici", "camera", "camere", "manubrio", "manubri", "forcella", "forcelle", "ammortizzatore",
     "ammortizzatori", "filtro", "filtri", "candela", "candele", "pistone", "pistoni", "casco", "caschi",
     "guanto", "guanti", "plastiche", "plastica", "paramani", "pedana", "pedane", "batteria", "batterie",
-    "carena", "carene", "parafango", "parafanghi", "frizione", "frizioni", "radiatore", "radiatori",
+    "carena", "carene", "parafango", "parafanghi", "frizione", "frizioni", "radiatore", "radiatori", "valvola", "valvole",
 }
 
 _TOKEN_STOPWORDS = {
@@ -949,6 +957,7 @@ async def call_ollama(row: sqlite3.Row, settings: Settings, attempt: int = 1) ->
             "titolo_prioritario_per_componente_terzo_livello": True,
             "terzo_livello_specifico_breve_se_componente_identificabile": True,
             "categoria_generica_non_equivalente_a_componente_specifico": True,
+            "secondo_livello_ricambi_per_funzione_non_veicolo_compatibile": True,
             "categorie_approvate_non_pubblicate_sono_canoniche": True,
             "nuove_categorie_richiedono_confronto_con_famiglie_esistenti": True,
             "non_creare_varianti_per_keyword_marca_modello_colore": True,
@@ -958,12 +967,16 @@ async def call_ollama(row: sqlite3.Row, settings: Settings, attempt: int = 1) ->
         "massimo_livelli": depth_limit,
     }
     prompt = build_generation_prompt(settings.ai_prompt, row["id"], source, bool(settings.main_categories))
+    # Reserve room for both the complete catalog and the response. Leaving num_ctx
+    # to the server can silently truncate the title/instructions on small defaults.
+    needed_context = (len(SYSTEM_PROMPT) + len(prompt)) // 2 + settings.num_predict + 1024
+    context_size = max(8192, ((needed_context + 4095) // 4096) * 4096)
     payload = {
         "model": settings.model,
         "stream": False,
         "format": proposal_schema(row["id"], settings.main_categories),
         "messages": [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": prompt}],
-        "options": {"temperature": settings.temperature, "num_predict": settings.num_predict},
+        "options": {"temperature": settings.temperature, "num_predict": settings.num_predict, "num_ctx": context_size},
     }
     await validate_ollama(settings)
     timeout = ollama_http_timeout(settings, attempt)
@@ -972,30 +985,51 @@ async def call_ollama(row: sqlite3.Row, settings: Settings, attempt: int = 1) ->
         "Chiamata Ollama: prodotto=%s modello=%s tentativo=%s timeout_lettura=%ss prompt_chars=%s",
         row["id"], settings.model, attempt, int(read_timeout), len(prompt),
     )
-    try:
-        async with httpx.AsyncClient(timeout=timeout) as client:
-            response = await client.post(f"{settings.ollama_url}/api/chat", json=payload)
-            if response.status_code == 404:
-                raise OllamaConfigurationError(f"Ollama non espone /api/chat oppure non trova il modello '{settings.model}'.")
-            response.raise_for_status()
-    except httpx.ReadTimeout as exc:
-        raise OllamaRequestTimeoutError(
-            f"Ollama non ha completato la risposta entro {int(read_timeout)} secondi "
-            f"(tentativo {attempt}). Il job verrà ritentato con un timeout maggiore. "
-            "Verifica che il PC che ospita Ollama non sia in sospensione e che modello/RAM siano sufficienti."
-        ) from exc
-    except (httpx.ConnectTimeout, httpx.PoolTimeout, httpx.WriteTimeout) as exc:
-        raise OllamaRequestTimeoutError(
-            f"Timeout di connessione/comunicazione con Ollama ({type(exc).__name__}) "
-            f"all'indirizzo {settings.ollama_url}. Verifica rete ed endpoint."
-        ) from exc
-    try:
-        parsed = json.loads(response.json()["message"]["content"])
-        validated = AIProposal.model_validate(parsed[row["id"]]).model_dump()
-    except (KeyError, json.JSONDecodeError, ValidationError) as exc:
-        raise RuntimeError(f"Risposta Ollama non valida: {exc}") from exc
-    result = reuse_canonical_categories(validated, categories, depth_limit)
-    return enforce_main_categories(result, settings.main_categories)
+    for repair_attempt in range(2):
+        try:
+            async with httpx.AsyncClient(timeout=timeout) as client:
+                response = await client.post(f"{settings.ollama_url}/api/chat", json=payload)
+                if response.status_code == 404:
+                    raise OllamaConfigurationError(f"Ollama non espone /api/chat oppure non trova il modello '{settings.model}'.")
+                response.raise_for_status()
+        except httpx.ReadTimeout as exc:
+            raise OllamaRequestTimeoutError(
+                f"Ollama non ha completato la risposta entro {int(read_timeout)} secondi "
+                f"(tentativo {attempt}). Il job verrà ritentato con un timeout maggiore. "
+                "Verifica che il PC che ospita Ollama non sia in sospensione e che modello/RAM siano sufficienti."
+            ) from exc
+        except (httpx.ConnectTimeout, httpx.PoolTimeout, httpx.WriteTimeout) as exc:
+            raise OllamaRequestTimeoutError(
+                f"Timeout di connessione/comunicazione con Ollama ({type(exc).__name__}) "
+                f"all'indirizzo {settings.ollama_url}. Verifica rete ed endpoint."
+            ) from exc
+        try:
+            body = response.json()
+            if body.get("done_reason") == "length":
+                raise RuntimeError("Risposta Ollama troncata: aumenta Token risposta nelle impostazioni.")
+            parsed = json.loads(body["message"]["content"])
+            validated = AIProposal.model_validate(parsed[row["id"]]).model_dump()
+            result = enforce_main_categories(reuse_canonical_categories(validated, categories, depth_limit), settings.main_categories)
+            for item in result["percorsi"]:
+                levels = item["livelli"]
+                if len(levels) >= 2 and path_key([levels[0]]) == "ricambi" and compatibility_branch(levels[1]):
+                    raise RuntimeError("Secondo livello basato sulla compatibilità: " + levels[1] + ". Scegli la famiglia funzionale del componente (gomme, motori, freni, elettrico, sospensioni), riusando il nome canonico pertinente, non il tipo di veicolo.")
+            if result["percorsi"] or repair_attempt:
+                return result
+            problem = "Hai restituito percorsi vuoti. Verifica se il titolo identifica già il componente; non richiedere marca o compatibilità per riconoscere una famiglia."
+        except (KeyError, TypeError, json.JSONDecodeError, ValidationError, RuntimeError) as exc:
+            if repair_attempt:
+                raise RuntimeError(f"Risposta Ollama non valida dopo correzione: {exc}") from exc
+            problem = str(exc)[:600]
+        logger.warning("Riesame risposta Ollama per %s: %s", row["id"], problem)
+        # Keep the original source and catalog, never feed a wrong answer back as an example.
+        payload["messages"] = payload["messages"][:2] + [{"role": "user", "content":
+            "Correggi la classificazione. " + problem + "\nTitolo ESATTO del solo prodotto da classificare: " + row["title"] +
+            "\nDescrizione del solo prodotto: " + plain(row["description_html"])[:1800] +
+            "\nRadici consentite: " + dumps(settings.main_categories) +
+            "\nRispetta lo schema JSON e massimo " + str(depth_limit) + " livelli. I prodotti simili non sono il prodotto da classificare. "
+            "Un componente riconoscibile non richiede il modello esatto del veicolo. Non inventare radici: Ricambi motori è una famiglia sotto Ricambi, se questa radice è consentita."}]
+        payload["options"]["temperature"] = 0
 
 
 def enforce_main_categories(output: dict[str, Any], categories: list[str]) -> dict[str, Any]:
@@ -1421,7 +1455,7 @@ async def publish_preview(payload: dict[str, Any]):
             raise HTTPException(400, "Nessuna proposta approvata per i prodotti selezionati")
         collections = [{**dict(row), "path": loads(row["path_json"], [])} for row in db.execute("SELECT * FROM collections")]
         try:
-            collections = match_collection_paths(products, collections)
+            collections = match_collection_paths(products, collections, get_settings().main_categories)
         except ValueError as exc:
             raise HTTPException(409, str(exc)) from exc
         operations = build_dry_run(products, collections)
@@ -1432,6 +1466,32 @@ async def publish_preview(payload: dict[str, Any]):
         preview_id = str(uuid.uuid4())
         db.execute("INSERT INTO publish_previews VALUES(?,?,?,?,?,0)", (preview_id, dumps([item["id"] for item in products]), dumps(operations), dumps(source_hashes), now()))
     return {"preview_id": preview_id, **operations}
+
+
+async def fresh_publish_states(product_ids: list[str]) -> dict[str, list[dict[str, Any]]]:
+    """Read a fresh complete membership snapshot for large publish batches.
+
+    fetch_all_collections validates the bulk file and resolves every parent. Also
+    check live product existence, so a deleted product cannot pass with empty paths.
+    Small batches keep the individual read path (including its existing checks).
+    """
+    if len(product_ids) < 50:
+        return {product_id: (await fresh_product_state(product_id))[0] for product_id in product_ids}
+    products, collections = await asyncio.gather(fetch_all_products(), fetch_all_collections())
+    requested = set(product_ids)
+    missing = requested - {item["id"] for item in products}
+    if missing:
+        raise HTTPException(404, "Prodotti Shopify non trovati: " + ", ".join(sorted(missing)))
+    states: dict[str, list[dict[str, Any]]] = {product_id: [] for product_id in product_ids}
+    for item in collections:
+        sources = item.get("sources") or []
+        smart = any(source.get("__typename") != "CollectionConditionsSource" or (source.get("inclusion") or {}).get("conditions") for source in sources)
+        entry = {"id": item["id"], "path": item.get("resolved_path") or collection_path(item["title"], (item.get("categoryPath") or {}).get("value")), "kind": "smart" if smart else "manual", "source_id": writable_collection_source(sources), "title": item["title"]}
+        for product_id in requested.intersection(item["product_ids"]):
+            states[product_id].append(dict(entry))
+    for paths in states.values():
+        paths.sort(key=lambda item: (path_key(item["path"]), item["id"]))
+    return states
 
 
 async def fresh_product_state(product_id: str) -> tuple[list[dict[str, Any]], str]:
@@ -1696,10 +1756,11 @@ async def _publish_execute(payload: dict[str, Any]):
             raise HTTPException(409, "Approvazioni cambiate o anteprima precedente alla nuova versione: crea una nuova anteprima.")
         collections = [{**dict(row), "path": loads(row["path_json"], [])} for row in db.execute("SELECT * FROM collections WHERE removed=0")]
         # Reconcile live memberships, including writes completed before a previous failure.
+        current_states = await fresh_publish_states(product_ids)
         for product in products:
-            product["current"], _ = await fresh_product_state(product["id"])
+            product["current"] = current_states[product["id"]]
         try:
-            collections = match_collection_paths(products, collections)
+            collections = match_collection_paths(products, collections, get_settings().main_categories)
         except ValueError as exc:
             raise HTTPException(409, str(exc)) from exc
         operations = build_dry_run(products, collections)
@@ -1727,8 +1788,8 @@ async def _publish_execute(payload: dict[str, Any]):
         if item["collection_id"] is None:
             pending_adds[path_key(item["path"])] = item["product_ids"]
     for item in sorted(operations["create_collections"], key=lambda entry: (len(entry["path"]), path_key(entry["path"]))):
-        product_ids = pending_adds.get(path_key(item["path"]), [])
-        source = {"source": {"title": "Selezione manuale", "targetType": "PRODUCTS", "inclusion": {"selections": [{"productId": product_id} for product_id in product_ids[:250]]}}}
+        seed_product_ids = pending_adds.get(path_key(item["path"]), [])
+        source = {"source": {"title": "Selezione manuale", "targetType": "PRODUCTS", "inclusion": {"selections": [{"productId": product_id} for product_id in seed_product_ids[:250]]}}}
         # A deterministic handle lets recovery find a collection even if creation succeeded
         # but the response or subsequent metafield write was lost.
         handle = "category-" + stable_hash(path_key(item["path"]))[:24]
@@ -1789,17 +1850,25 @@ async def _publish_execute(payload: dict[str, Any]):
     channel_collection_ids = managed_collection_ids - {target["collection_id"] for target in created.values()}
     for collection_id in sorted(channel_collection_ids):
         await ensure_collection_channels(collection_id, channel_ids)
-    # Verify additions BEFORE removing the old categories.
-    for product in products:
-        required_ids = {targets[path_key(path[:depth])]["collection_id"] for path in product["desired"] for depth in range(1, len(path) + 1) if path_key(path[:depth]) in targets}
-        for attempt in range(5):
-            actual, _ = await fresh_product_state(product["id"])
-            if required_ids <= {entry["id"] for entry in actual}:
-                break
-            if attempt < 4:
-                await asyncio.sleep(0.5 * (attempt + 1))
-        else:
-            raise RuntimeError("Shopify non conferma le aggiunte: categorie precedenti conservate. Ripeti la pubblicazione.")
+    # Verify a complete fresh snapshot BEFORE removing any old membership.
+    required_by_product = {product["id"]: {targets[path_key(path[:depth])]["collection_id"] for path in product["desired"] for depth in range(1, len(path) + 1) if path_key(path[:depth]) in targets} for product in products}
+    for attempt in range(5):
+        added_states = await fresh_publish_states(product_ids)
+        pending = [product_id for product_id, required_ids in required_by_product.items() if not required_ids <= {entry["id"] for entry in added_states[product_id]}]
+        if not pending:
+            break
+        if attempt < 4:
+            await asyncio.sleep(0.5 * (attempt + 1))
+    else:
+        raise RuntimeError("Shopify non conferma le aggiunte: categorie precedenti conservate. Ripeti la pubblicazione.")
+    # A recovered deterministic handle can be a required target even when its
+    # old metadata made the planner regard it as obsolete. Never remove a product
+    # from any required target after additions have been verified.
+    operations["remove_products"] = [
+        {**item, "product_ids": [product_id for product_id in item["product_ids"] if item["collection_id"] not in required_by_product.get(product_id, set())]}
+        for item in operations["remove_products"]
+    ]
+    operations["remove_products"] = [item for item in operations["remove_products"] if item["product_ids"]]
     for item in operations["remove_products"]:
         await remove_manual_source_products(item["collection_id"], item["source_id"], item["product_ids"])
 
@@ -1817,13 +1886,15 @@ async def _publish_execute(payload: dict[str, Any]):
         for product_id in operation.get("product_ids", []):
             required_collection_targets.setdefault(product_id, []).append((target_collection_id, path_label(operation["path"])))
 
-    for product_id in product_ids:
-        wanted_paths = desired_paths.get(product_id, [])
-        required_keys = {path_key(path) for path in wanted_paths if path}
-        required_targets = required_collection_targets.get(product_id, [])
-        missing_labels: list[str] = []
-        for attempt in range(5):
-            actual_paths, _ = await fresh_product_state(product_id)
+    failures: dict[str, list[str]] = {}
+    for attempt in range(5):
+        final_states = await fresh_publish_states(product_ids)
+        failures = {}
+        for product_id in product_ids:
+            wanted_paths = desired_paths.get(product_id, [])
+            required_keys = {path_key(path) for path in wanted_paths if path}
+            required_targets = required_collection_targets.get(product_id, [])
+            actual_paths = final_states[product_id]
             actual_keys = {path_key(item["path"]) for item in actual_paths}
             actual_ids = {item["id"] for item in actual_paths}
             missing_keys = required_keys - actual_keys
@@ -1833,16 +1904,15 @@ async def _publish_execute(payload: dict[str, Any]):
             missing_labels = list(dict.fromkeys(missing_labels))
             obsolete = [operation for operation in operations["remove_products"] if product_id in operation["product_ids"] and operation["collection_id"] in actual_ids]
             missing_labels.extend("Rimozione non confermata: " + path_label(operation["path"]) for operation in obsolete)
-            if not missing_labels:
-                break
-            if attempt < 4:
-                await asyncio.sleep(0.5 * (attempt + 1))
-        if missing_labels:
-            logger.error("Shopify publish verification failed for %s; missing memberships: %s", product_id, missing_labels)
-            raise RuntimeError(
-                f"Shopify non conferma ancora tutte le categorie per il prodotto {product_id}: "
-                f"{', '.join(missing_labels)}. Nessuna proposta è stata marcata come pubblicata; sincronizza lo stato Shopify prima di riprovare."
-            )
+            if missing_labels:
+                failures[product_id] = missing_labels
+        if not failures:
+            break
+        if attempt < 4:
+            await asyncio.sleep(0.5 * (attempt + 1))
+    if failures:
+        logger.error("Shopify publish verification failed: %s", failures)
+        raise RuntimeError("Shopify non conferma ancora tutte le categorie: " + dumps(failures) + ". Nessuna proposta è stata marcata come pubblicata; sincronizza e riprova.")
 
     # Refresh local membership only after Shopify confirms the writes; if sync fails,
     # keep the preview/generation unfinalized instead of reporting a false success.
