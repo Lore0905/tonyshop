@@ -43,3 +43,11 @@ pytest -q
 ```
 
 I test non contattano Shopify o Ollama. Il server Ollama deve supportare `/api/chat`, `/api/tags` e JSON Schema nel parametro `format`.
+
+## Import Autofantasy e accuratezza
+
+La sottoscheda **Import Autofantasy** mostra titolo, descrizione lunga/breve e metadati SEO ufficiali, con SKU abbinati e data import. Il pulsante Import lavora in bulk sui selezionati oppure sull'intero catalogo locale. La generazione aggiorna prima la fonte del lotto e conserva una copia per ogni proposta. Sono richiesti `AUTOFANTASY_WEBSERVICE_KEY` e permessi di lettura `products` e `combinations`; il `.env` superiore viene caricato come fallback senza sovrascrivere la configurazione locale.
+
+La descrizione usa un editor visuale e HTML ripulito. Le proposte passano controlli deterministici e una seconda revisione AI; quelle con problemi tecnici o fonte non verificabile non possono essere approvate. Il salvataggio azzera le approvazioni. La pubblicazione invia soltanto i quattro campi editoriali approvati, dopo controllo conflitti e backup persistente.
+
+Consulta [SEO_GUIDELINES.md](SEO_GUIDELINES.md) per fonti ufficiali, flusso completo, limiti e recupero dei backup.

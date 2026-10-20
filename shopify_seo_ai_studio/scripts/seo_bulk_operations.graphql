@@ -1,0 +1,11 @@
+query SeoCatalogSnapshot {products{edges{node{id title descriptionHtml status handle vendor productType updatedAt seo{title description} variants{edges{node{id sku price compareAtPrice inventoryQuantity inventoryItem{id}}}}}}}}
+
+mutation SeoBulkRead($query:String!){bulkOperationRunQuery(query:$query){bulkOperation{id}userErrors{field message}}}
+
+query SeoBulkStatus($id:ID!){node(id:$id){... on BulkOperation{id status errorCode objectCount url partialDataUrl}}}
+
+mutation SeoBulkStage($input:[StagedUploadInput!]!){stagedUploadsCreate(input:$input){stagedTargets{url parameters{name value}}userErrors{field message}}}
+
+mutation PublishSeoBulk($product:ProductUpdateInput!){productUpdate(product:$product){product{id title updatedAt seo{title description}}userErrors{field message}}}
+
+mutation SeoBulkWrite($mutation:String!,$path:String!,$client:String!){bulkOperationRunMutation(mutation:$mutation,stagedUploadPath:$path,clientIdentifier:$client){bulkOperation{id}userErrors{field message}}}

@@ -6,6 +6,13 @@ from app import Proposal
 from seo import score_content
 from fastapi.testclient import TestClient
 
+
+def attach_source(pid='p',gid='g'):
+    imported={"status":"matched","reason":"","source_hash":"supplier-v1","imported_at":app.now(),"data":{"matched_skus":[],"title":"Nuovo Prima Dopo", "descriptionHtml":"<p>Nuova Descrizione</p>","reference":""}}
+    with app.connect() as c:
+        c.execute("INSERT OR REPLACE INTO supplier_imports VALUES(?,?,?,?,?,?)",(pid,"matched","",app.jdump(imported["data"]),"supplier-v1",imported["imported_at"]))
+        c.execute("INSERT OR REPLACE INTO generation_sources VALUES(?,?,?,?)",(gid,"supplier-v1",app.jdump(imported),app.jdump({"issues":[]})))
+
 def test_seo_score_is_repeatable_and_bounded():
     content={"title":"Carburatore racing per Pit Bike 125 cc","descriptionHtml":"<p>Carburatore documentato per Pit Bike. "+"Descrizione tecnica chiara e completa. "*8+"</p>","metaTitle":"Carburatore Pit Bike 125 cc | Ricambi","metaDescription":"Carburatore per Pit Bike 125 cc con descrizione tecnica chiara. Verifica misure e compatibilità indicate nella scheda prima dell'acquisto online."}
     first=score_content(content);second=score_content(content)
@@ -75,6 +82,7 @@ async def test_selective_approval_is_persisted(monkeypatch,tmp_path):
     output={"voto":80,"title":"Nuovo","descriptionHtml":"<p>Nuova</p>","metaTitle":"Meta","metaDescription":"Descrizione","keywords":[],"criticita":[],"modificheSuggerite":[]}
     with app.connect() as c:
         c.execute("INSERT INTO products(id,title,status,content_hash,last_synced_at) VALUES('p','P','ACTIVE','x',?)",(app.now(),));c.execute("INSERT INTO generations(id,product_id,prompt_version,model,output_json,score,status,source_hash,created_at) VALUES('g','p',1,'m',?,80,'generated','x',?)",(json.dumps(output),app.now()))
+    attach_source()
     result=await app.approve('g',{"fields":["metaTitle"]})
     assert result=={"approved":["metaTitle"]}
     with app.connect() as c:
@@ -83,9 +91,10 @@ async def test_selective_approval_is_persisted(monkeypatch,tmp_path):
 
 @pytest.mark.asyncio
 async def test_publish_stops_on_shopify_conflict(monkeypatch,tmp_path):
-    monkeypatch.setattr(app,"DB",tmp_path/"conflict.sqlite");app.init_db();source={"title":"Prima","descriptionHtml":"","metaTitle":"","metaDescription":""};output={"voto":80,"title":"Dopo","descriptionHtml":"","metaTitle":"","metaDescription":"","keywords":[],"criticita":[],"modificheSuggerite":[]}
+    monkeypatch.setattr(app,"DB",tmp_path/"conflict.sqlite");app.init_db();source={"title":"Prima","descriptionHtml":"","metaTitle":"","metaDescription":""};output={"voto":80,"title":"Dopo","descriptionHtml":"<p>Nuova</p>","metaTitle":"","metaDescription":"","keywords":[],"criticita":[],"modificheSuggerite":[]}
     with app.connect() as c:
         c.execute("INSERT INTO products(id,title,status,content_hash,last_synced_at) VALUES('p','Prima','ACTIVE',?,?)",(app.fingerprint(source),app.now()));c.execute("INSERT INTO shopify_snapshots VALUES('s','p',?,?,?,'sync')",(json.dumps(source),app.fingerprint(source),app.now()));c.execute("INSERT INTO generations(id,product_id,prompt_version,model,output_json,score,status,source_hash,created_at) VALUES('g','p',1,'m',?,80,'approved',?,?)",(json.dumps(output),app.fingerprint(source),app.now()));c.execute("INSERT INTO approvals VALUES('a','g','title',1,?)",(app.now(),))
+    attach_source()
     async def changed(_):return {**source,"title":"Modificato fuori app"}
     monkeypatch.setattr(app,"fresh_product",changed)
     with pytest.raises(Exception) as exc:await app.publish('g')
@@ -135,3 +144,19 @@ async def test_generate_is_rejected_before_queue_when_no_ollama_models(monkeypat
     assert exc.value.status_code==409
     assert "non ha modelli installati" in exc.value.detail
     with app.connect() as c:assert c.execute("SELECT COUNT(*) FROM jobs").fetchone()[0]==0
+
+
+def test_editorial_score_does_not_reward_title_repetition_as_product_copy():
+    common={'title':'Carburatore PZ22 per pit bike 4 tempi','metaTitle':'Carburatore PZ22 per pit bike 4 tempi'}
+    copied={**common,'descriptionHtml':'<p>'+common['title']+'.</p><p>Riferimento: M647</p>','metaDescription':common['title']+'.'}
+    useful={**common,'descriptionHtml':'<p>Il carburatore PZ22 è destinato a pit bike a 4 tempi. L’interasse dei fori di fissaggio è 48mm, con imbocco collettore 22mm e filtro 39mm.</p>','metaDescription':'Carburatore PZ22 per pit bike a 4 tempi: interasse 48mm, imbocco al collettore 22mm e al filtro 39mm.'}
+    assert score_content(useful)['score']>score_content(copied)['score']
+    assert any('ripete soltanto' in x for x in score_content(copied)['issues'])
+
+
+def test_keyword_check_distinguishes_normal_metadata_from_stuffing():
+    content = {'title': 'Carburatore PZ22', 'descriptionHtml': '<p>Carburatore PZ22 con interasse 48mm.</p>',
+               'metaTitle': 'Carburatore PZ22', 'metaDescription': 'Carburatore PZ22 con diametro 22mm.'}
+    assert 'Possibile keyword stuffing' not in score_content(content)['issues']
+    content['title'] = 'Carburatore carburatore carburatore carburatore carburatore PZ22'
+    assert 'Possibile keyword stuffing' in score_content(content)['issues']

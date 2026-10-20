@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#172554">
   <title>Shopify SEO AI Studio</title>
-  <link rel="stylesheet" href="/static/styles.css?v=20261010-4">
+  <link rel="stylesheet" href="/static/styles.css?v=20261019-4">
 </head>
 <body>
   <header class="topbar">
@@ -13,7 +13,7 @@
       <div>
         <p class="eyebrow">Shopify / AI Operations</p>
         <h1 class="text-3xl font-black tracking-tight sm:text-4xl">SEO AI Studio</h1>
-        <p class="subtitle">Analizza, migliora e pubblica i contenuti SEO del catalogo con Ollama locale.</p>
+        <p class="subtitle">Confronta i dati Autofantasy, rivedi le proposte SEO e pubblica i contenuti approvati.</p>
       </div>
       <div class="head-actions">
         <button class="icon" id="settingsBtn" title="Impostazioni" aria-label="Apri impostazioni">⚙</button>
@@ -29,6 +29,7 @@
     <section class="toolbar">
       <div class="action-row">
         <button class="btn" id="analyzeBtn">Analizza SEO</button>
+        <button class="btn" id="importBtn" title="Importa selezionati oppure tutto il catalogo se non selezioni prodotti">Import Autofantasy</button>
         <button class="btn accent" id="generateBtn">Genera miglioramenti</button>
         <button class="btn primary" id="publishBtn">Pubblica approvate</button>
         <span id="selectedCount">0 selezionati</span>
@@ -38,8 +39,8 @@
         <select id="shopifyStatus" multiple title="Stato Shopify" aria-label="Filtra stato Shopify">
           <option>ACTIVE</option><option>DRAFT</option><option>ARCHIVED</option>
         </select>
-        <select id="processing" multiple title="Stato elaborazione" aria-label="Filtra stato elaborazione">
-          <option value="to_analyze">Da analizzare</option><option value="queued">In coda</option><option value="processing">In elaborazione</option><option value="completed">Elaborato</option><option value="published">Pubblicato</option><option value="reevaluate">Da rivalutare</option><option value="error">Errore</option>
+        <select id="processing" multiple title="Stato elaborazione: nessuna selezione mostra tutti; Cmd/Ctrl permette più stati" aria-label="Filtra stato elaborazione">
+          <option value="to_analyze">Da analizzare</option><option value="queued">In coda</option><option value="processing">In elaborazione</option><option value="completed">Elaborato</option><option value="to_approve">Da approvare</option><option value="needs_review">Verifica tecnica</option><option value="published">Pubblicato</option><option value="reevaluate">Da rivalutare</option><option value="error">Errore</option>
         </select>
         <select id="vendor" multiple title="Vendor" aria-label="Filtra vendor"></select>
         <select id="productType" multiple title="Product type" aria-label="Filtra tipologia prodotto"></select>
@@ -102,6 +103,6 @@
     </form>
   </dialog>
 
-  <script src="/static/app.js?v=20261010-1"></script>
+  <script src="/static/app.js?v=20261019-4"></script>
 </body>
 </html>
